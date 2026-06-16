@@ -48,6 +48,16 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    
+    // Room Database
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    // KSP/annotation processor (generates the actual SQLite database helper code during build)
+    annotationProcessor(libs.androidx.room.compiler)
+
+    // TensorFlow Lite
+    implementation(libs.tensorflow.lite)
+
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
