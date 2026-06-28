@@ -3,6 +3,7 @@ package com.example.voxa.services
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
@@ -13,6 +14,7 @@ import android.os.IBinder
 import android.os.PowerManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import com.example.voxa.MainActivity
 
 /**
  * 🎙️ VoxaListenerService
@@ -213,13 +215,29 @@ class VoxaListenerService : Service() {
 
     /**
      * Constructs the persistent notification displayed in the drawer when listening is active.
+     * Tapping the notification brings the user back into the Voxa app.
      */
     private fun createNotification(): Notification {
+        // Create an intent that opens MainActivity when the notification is tapped.
+        // This is like a portal that brings the user straight back to the main app dashboard.
+        val tapIntent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+                    Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                    Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            this,
+            0,
+            tapIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE // FLAG_IMMUTABLE required on Android 12+
+        )
+
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("🎙️ Voxa Listening Active")
             .setContentText("Listening for child vocalizations in the background...")
             .setSmallIcon(android.R.drawable.ic_btn_speak_now) // Standard Android system microphone icon
             .setOngoing(true) // Makes the notification persistent (the user cannot swipe it away)
+            .setContentIntent(pendingIntent) // ← Tapping notification opens the app
             .build()
     }
 

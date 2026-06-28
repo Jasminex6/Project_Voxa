@@ -53,3 +53,6 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+
+# ── Exclude internal documentation ──
+Docs/

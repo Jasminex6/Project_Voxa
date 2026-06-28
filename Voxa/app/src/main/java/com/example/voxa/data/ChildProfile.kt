@@ -9,5 +9,6 @@ data class ChildProfile(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val name: String,
     val gender: String, // "Male" or "Female" (swaps child-like voice packs)
-    val isActive: Boolean = false
+    val isActive: Boolean = false,
+    val avatarEmoji: String = "👦"
 )

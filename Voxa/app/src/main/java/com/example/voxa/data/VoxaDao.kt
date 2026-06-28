@@ -76,4 +76,55 @@ interface VoxaDao {
      */
     @Query("SELECT * FROM acoustic_templates WHERE intentId = :intentId")
     suspend fun getTemplatesForIntent(intentId: Long): List<AcousticTemplate>
+
+    // ==========================================
+    // ➕ ADDITIONAL ACTIONS FOR COMPOSE UI SHELL
+    // ==========================================
+
+    /**
+     * Retrieves all child profiles to display in the profile selector.
+     * Returns a Flow so that the UI updates automatically when profiles are added or modified.
+     */
+    @Query("SELECT * FROM child_profiles")
+    fun getAllProfilesFlow(): kotlinx.coroutines.flow.Flow<List<ChildProfile>>
+
+    /**
+     * Retrieves all intents for a child as a Flow for real-time UI updates.
+     */
+    @Query("SELECT * FROM enrolled_intents WHERE profileId = :profileId")
+    fun getIntentsForProfileFlow(profileId: Long): kotlinx.coroutines.flow.Flow<List<EnrolledIntent>>
+
+    /**
+     * Deletes an enrolled intent and cascades to its training templates.
+     */
+    @Delete
+    suspend fun deleteIntent(intent: EnrolledIntent)
+
+    /**
+     * Clears the active flag from all profiles.
+     */
+    @Query("UPDATE child_profiles SET isActive = 0")
+    suspend fun clearActiveProfiles()
+
+    /**
+     * Sets a specific profile as active.
+     */
+    @Query("UPDATE child_profiles SET isActive = 1 WHERE id = :profileId")
+    suspend fun setActiveProfile(profileId: Long)
+
+    /**
+     * Switches the active child profile atomically.
+     */
+    @Transaction
+    suspend fun selectActiveProfile(profileId: Long) {
+        clearActiveProfiles()
+        setActiveProfile(profileId)
+    }
+
+    @Update
+    suspend fun updateProfile(profile: ChildProfile)
+
+    @Delete
+    suspend fun deleteProfile(profile: ChildProfile)
 }
+

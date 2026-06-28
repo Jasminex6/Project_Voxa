@@ -18,7 +18,7 @@ import androidx.room.RoomDatabase
  */
 @Database(
     entities = [ChildProfile::class, EnrolledIntent::class, AcousticTemplate::class],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class VoxaDatabase : RoomDatabase() {
@@ -68,7 +68,7 @@ abstract class VoxaDatabase : RoomDatabase() {
                  * "If the schema changes during development, just delete the old database file 
                  * and create a new clean one."
                  */
-                .fallbackToDestructiveMigration()
+                .fallbackToDestructiveMigration(dropAllTables = true)
                 .build()
                 
                 // Cache the newly created instance

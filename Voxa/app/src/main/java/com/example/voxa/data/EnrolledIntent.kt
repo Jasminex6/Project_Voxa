@@ -18,5 +18,5 @@ data class EnrolledIntent(
     val profileId: Long, // Links to ChildProfile
     val intentName: String, // e.g. "Water", "Help"
     val outputPhrase: String, // e.g. "أنا عايز مية"
-    val audioAssetPath: String // e.g. "audio/masc/water.mp3"
+    val audioAssetPath: String // e.g. "water.mp3" (gender-neutral filename, resolved dynamically at playback)
 )
