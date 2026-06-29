@@ -1,5 +1,6 @@
 package com.example.voxa.ui
 
+import android.content.Context
 import com.example.voxa.data.ChildProfile
 import com.example.voxa.data.EnrolledIntent
 import kotlinx.coroutines.flow.StateFlow
@@ -27,17 +28,21 @@ interface IVoxaViewModel {
     val enrolledIntents: StateFlow<List<EnrolledIntent>>
     val isListening: StateFlow<Boolean>
     val recentEvents: StateFlow<List<LogEvent>>
+    val volumeLevel: StateFlow<Float>
 
     fun createProfile(name: String, gender: String, avatarEmoji: String)
     fun selectActiveProfile(profileId: Long)
     fun enrollIntent(intentName: String, outputPhrase: String, audioAssetPath: String)
     fun enrollIntent(intentName: String, outputPhrase: String, audioAssetPath: String, tempFilePaths: List<String>) {}
+    fun exportProfileData(context: Context)
+    fun importProfileData(context: Context, uri: android.net.Uri, onSuccess: () -> Unit, onError: (String) -> Unit)
     fun deleteIntent(intent: EnrolledIntent)
     fun toggleListening()
     fun updateListeningState()
     fun addLogSystemEvent(message: String)
     fun simulateVoiceMatch(word: String, phrase: String, confidence: Float, isMatch: Boolean, reason: String)
     fun clearLogs()
+    fun playRecordedSample(intent: EnrolledIntent)
     fun deleteProfile(profile: ChildProfile) {}
     fun updateProfileGender(profile: ChildProfile, newGender: String) {}
 }

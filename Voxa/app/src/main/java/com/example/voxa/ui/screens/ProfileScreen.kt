@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.sp
 import com.example.voxa.data.*
 import com.example.voxa.ui.*
 import com.example.voxa.ui.theme.*
+import android.content.Context
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
@@ -429,15 +430,19 @@ private class MockProfileViewModel : IVoxaViewModel {
     override val enrolledIntents = kotlinx.coroutines.flow.MutableStateFlow(emptyList<com.example.voxa.data.EnrolledIntent>())
     override val isListening = kotlinx.coroutines.flow.MutableStateFlow(false)
     override val recentEvents = kotlinx.coroutines.flow.MutableStateFlow(emptyList<LogEvent>())
+    override val volumeLevel = kotlinx.coroutines.flow.MutableStateFlow(0f)
     override fun createProfile(name: String, gender: String, avatarEmoji: String) {}
     override fun selectActiveProfile(profileId: Long) {}
     override fun enrollIntent(intentName: String, outputPhrase: String, audioAssetPath: String) {}
+    override fun exportProfileData(context: Context) {}
+    override fun importProfileData(context: Context, uri: android.net.Uri, onSuccess: () -> Unit, onError: (String) -> Unit) {}
     override fun deleteIntent(intent: EnrolledIntent) {}
     override fun toggleListening() {}
     override fun updateListeningState() {}
     override fun addLogSystemEvent(message: String) {}
     override fun simulateVoiceMatch(word: String, phrase: String, confidence: Float, isMatch: Boolean, reason: String) {}
     override fun clearLogs() {}
+    override fun playRecordedSample(intent: EnrolledIntent) {}
 }
 
 @androidx.compose.ui.tooling.preview.Preview(showBackground = true, showSystemUi = true, name = "Profile Screen Preview")

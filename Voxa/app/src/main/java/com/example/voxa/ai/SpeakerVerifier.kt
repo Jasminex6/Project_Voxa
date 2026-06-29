@@ -20,9 +20,10 @@ class SpeakerVerifier(context: Context, modelName: String = "ecapa_speaker_id.tf
             
             // 2. Initialize the TensorFlow Lite interpreter with the mapped buffer.
             interpreter = Interpreter(modelBuffer)
+            android.util.Log.d("SpeakerVerifier", "TFLite interpreter loaded successfully for $modelName")
         } catch (e: Exception) {
-            // Catch and log file access issues (useful if running in host tests where context is not real).
-            e.printStackTrace()
+            // Catch and log file access issues
+            android.util.Log.e("SpeakerVerifier", "Failed to initialize SpeakerVerifier interpreter: ${e.message}", e)
         }
     }
 
@@ -39,6 +40,13 @@ class SpeakerVerifier(context: Context, modelName: String = "ecapa_speaker_id.tf
         
         // Return the first batch output containing our speaker features vector
         return output[0]
+    }
+
+    /**
+     * Checks if the TFLite interpreter is successfully loaded and ready.
+     */
+    fun isValid(): Boolean {
+        return interpreter != null
     }
 
     companion object {

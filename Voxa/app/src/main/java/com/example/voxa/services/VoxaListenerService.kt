@@ -15,6 +15,10 @@ import android.os.PowerManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.example.voxa.MainActivity
+import com.example.voxa.ai.VoxaClassifierEngine
+import com.example.voxa.data.VoxaDatabase
+import com.example.voxa.utils.AudioPlayer
+import kotlinx.coroutines.*
 
 /**
  * 🎙️ VoxaListenerService
@@ -23,6 +27,9 @@ import com.example.voxa.MainActivity
  * 1. Obtains a CPU WakeLock to keep the device's processor active even when the screen is turned off.
  * 2. Spawns a dedicated, high-priority background thread that captures raw 16kHz Mono 16-bit PCM audio
  *    from the microphone using Android's AudioRecord API.
+ *
+ * Integration: Audio blocks are piped through VoxaClassifierEngine for real-time
+ * VAD → Speaker Verification → MFCC → DTW → Margin Gate classification.
  */
 class VoxaListenerService : Service() {
 
@@ -39,6 +46,15 @@ class VoxaListenerService : Service() {
     
     // The Android hardware-access object used to capture raw, uncompressed PCM audio bytes from the mic.
     private var audioRecord: AudioRecord? = null
+
+    // AI/DSP classifier engine — instantiated from Room data at service start
+    private var classifierEngine: VoxaClassifierEngine? = null
+
+    // Audio playback for matched translation phrases
+    private var audioPlayer: AudioPlayer? = null
+
+    // Coroutine scope for database loading
+    private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     /**
      * onBind() is a mandatory method of the Service class.
@@ -57,6 +73,7 @@ class VoxaListenerService : Service() {
         isRunning = true
         // Initialize the notification channel (required by Android 8.0+ before posting notifications)
         createNotificationChannel()
+        audioPlayer = AudioPlayer(this)
     }
 
     /**
@@ -80,12 +97,51 @@ class VoxaListenerService : Service() {
             acquire(10 * 60 * 1000L /* 10 minutes safety timeout */)
         }
 
-        // 3. Launch the background microphone recording thread
-        startRecording()
+        // 3. Load AI pipeline data from Room then start recording
+        loadPipelineAndStart()
 
         // START_STICKY tells Android: "If you have to force-kill this service due to low RAM,
         // recreate it and start it again as soon as memory clears up."
         return START_STICKY
+    }
+
+    /**
+     * Loads the active profile, enrolled intents, and templates from Room database,
+     * then instantiates the classifier engine and starts the recording thread.
+     */
+    private fun loadPipelineAndStart() {
+        serviceScope.launch {
+            try {
+                val dao = VoxaDatabase.getDatabase(applicationContext).voxaDao()
+                val profile = dao.getActiveProfile()
+                
+                if (profile == null) {
+                    Log.w("VoxaService", "No active profile — starting without classifier")
+                    startRecording()
+                    return@launch
+                }
+
+                val intents = dao.getIntentsForProfile(profile.id)
+                val templateMap = mutableMapOf<Long, MutableList<com.example.voxa.data.AcousticTemplate>>()
+                for (intent in intents) {
+                    val templates = dao.getTemplatesForIntent(intent.id)
+                    templateMap[intent.id] = templates.toMutableList()
+                }
+
+                classifierEngine = VoxaClassifierEngine(
+                    context = applicationContext,
+                    activeProfile = profile,
+                    enrolledIntents = intents,
+                    intentTemplates = templateMap
+                )
+
+                Log.d("VoxaService", "Pipeline loaded: ${intents.size} intents for profile '${profile.name}'")
+                startRecording()
+            } catch (e: Exception) {
+                Log.e("VoxaService", "Failed to load pipeline: ${e.message}")
+                startRecording() // Start without classifier so mic is active
+            }
+        }
     }
 
     /**
@@ -127,6 +183,11 @@ class VoxaListenerService : Service() {
                 // Create a temporary buffer array to hold each read audio block in memory
                 val audioData = ShortArray(minBufferSize)
 
+                // Accumulation buffer: collect ~2 seconds of audio before processing
+                // This gives the VAD enough context to extract speech segments
+                val accumulationTarget = sampleRate * 2  // 32000 samples = 2 seconds
+                val accBuffer = mutableListOf<Short>()
+
                 // ── THE PERPETUAL RECORDING LOOP ──
                 // This loop runs continuously on our background thread.
                 while (isRecording) {
@@ -136,10 +197,47 @@ class VoxaListenerService : Service() {
                     
                     // If we successfully read data from the hardware buffer
                     if (readResult > 0) {
-                        // 🔍 INTEGRATION SPOT:
-                        // This is where Developer B captures the live PCM audio block (audioData)
-                        // and pipes it to Developer A's DSP/AI model (VAD, MFCC features, and DTW).
-                        Log.d("VoxaService", "Captured buffer frame: read $readResult samples")
+                        // Compute peak amplitude for visual feedback
+                        var maxVal = 0
+                        for (i in 0 until readResult) {
+                            val absVal = kotlin.math.abs(audioData[i].toInt())
+                            if (absVal > maxVal) {
+                                maxVal = absVal
+                            }
+                        }
+                        val peakVal = maxVal.toFloat() / 32768f
+                        val volIntent = Intent(ACTION_VOLUME_UPDATE).apply {
+                            putExtra(EXTRA_VOLUME, peakVal)
+                            setPackage(packageName)
+                        }
+                        sendBroadcast(volIntent)
+
+                        // Accumulate audio data
+                        for (i in 0 until readResult) {
+                            accBuffer.add(audioData[i])
+                        }
+
+                        // Process accumulated audio when we have enough
+                        if (accBuffer.size >= accumulationTarget) {
+                            val engine = classifierEngine
+                            if (engine != null) {
+                                val pcmBlock = accBuffer.toShortArray()
+                                accBuffer.clear()
+
+                                try {
+                                    val result = engine.processAudioBlock(pcmBlock)
+                                    if (result != null) {
+                                        handleClassificationResult(result)
+                                    }
+                                } catch (e: Exception) {
+                                    Log.e("VoxaService", "Classification error: ${e.message}")
+                                }
+                            } else {
+                                // No classifier — just clear and continue
+                                accBuffer.clear()
+                                Log.d("VoxaService", "Captured buffer frame (no classifier active)")
+                            }
+                        }
                     }
                 }
             } catch (e: SecurityException) {
@@ -155,6 +253,38 @@ class VoxaListenerService : Service() {
             // preventing dropped audio frames.
             priority = Thread.MAX_PRIORITY
             start()
+        }
+    }
+
+    /**
+     * Handles a classification result from the AI pipeline.
+     * If matched, plays the translation audio and broadcasts an event to the UI.
+     */
+    private fun handleClassificationResult(result: com.example.voxa.ai.ClassificationResult) {
+        Log.d("VoxaService", "Classification: match=${result.isMatch}, intent=${result.intentName}, " +
+                "confidence=${result.confidence}, reason=${result.reason}")
+
+        // Broadcast the result to VoxaViewModel for timeline display
+        val broadcastIntent = Intent(ACTION_CLASSIFICATION_RESULT).apply {
+            putExtra(EXTRA_IS_MATCH, result.isMatch)
+            putExtra(EXTRA_INTENT_NAME, result.intentName ?: "Unknown")
+            putExtra(EXTRA_OUTPUT_PHRASE, result.outputPhrase ?: "")
+            putExtra(EXTRA_CONFIDENCE, result.confidence)
+            putExtra(EXTRA_REASON, result.reason)
+            setPackage(packageName)
+        }
+        sendBroadcast(broadcastIntent)
+
+        // Play translation audio on match
+        if (result.isMatch && result.audioAssetPath != null && result.outputPhrase != null) {
+            val dao = VoxaDatabase.getDatabase(applicationContext).voxaDao()
+            serviceScope.launch {
+                val profile = dao.getActiveProfile()
+                val gender = profile?.gender ?: "Male"
+                withContext(Dispatchers.Main) {
+                    audioPlayer?.playTranslation(result.audioAssetPath, gender, result.outputPhrase)
+                }
+            }
         }
     }
 
@@ -194,6 +324,11 @@ class VoxaListenerService : Service() {
                 it.release()
             }
         }
+
+        // 4. Release audio player and coroutine scope
+        audioPlayer?.release()
+        audioPlayer = null
+        serviceScope.cancel()
     }
 
     // ==========================================
@@ -244,6 +379,18 @@ class VoxaListenerService : Service() {
     companion object {
         private const val CHANNEL_ID = "voxa_listener_channel"
         private const val NOTIFICATION_ID = 42
+
+        // Broadcast action for classification results
+        const val ACTION_CLASSIFICATION_RESULT = "com.example.voxa.CLASSIFICATION_RESULT"
+        const val EXTRA_IS_MATCH = "is_match"
+        const val EXTRA_INTENT_NAME = "intent_name"
+        const val EXTRA_OUTPUT_PHRASE = "output_phrase"
+        const val EXTRA_CONFIDENCE = "confidence"
+        const val EXTRA_REASON = "reason"
+
+        // Broadcast action for live mic volume levels
+        const val ACTION_VOLUME_UPDATE = "com.example.voxa.VOLUME_UPDATE"
+        const val EXTRA_VOLUME = "volume"
 
         @Volatile
         var isRunning = false

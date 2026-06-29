@@ -35,6 +35,11 @@ import com.example.voxa.ui.*
 import com.example.voxa.ui.theme.*
 import java.text.SimpleDateFormat
 import java.util.*
+import android.net.Uri
+import android.widget.Toast
+import android.content.Context
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 
 // The dance floor (The main monitoring screen where the action happens)
 /**
@@ -53,6 +58,7 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
     val isListening by viewModel.isListening.collectAsState()
     val activeProfile by viewModel.activeProfile.collectAsState()
     val recentEvents by viewModel.recentEvents.collectAsState()
+    val volumeLevel by viewModel.volumeLevel.collectAsState()
 
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
     
@@ -100,6 +106,28 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
     var showCaregiverEditDialog by remember { mutableStateOf(false) }
     var caregiverName by remember { mutableStateOf("Parent / Caregiver") }
     var caregiverPhone by remember { mutableStateOf("+1 234 567 890") }
+    val context = LocalContext.current
+
+    val importLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            viewModel.importProfileData(
+                context = context,
+                uri = uri,
+                onSuccess = {
+                    Toast.makeText(context, "Profile imported successfully!", Toast.LENGTH_SHORT).show()
+                },
+                onError = { error ->
+                    Toast.makeText(context, "Import failed: $error", Toast.LENGTH_LONG).show()
+                }
+            )
+        }
+    }
+
+    val lastVocalEvent = remember(recentEvents) {
+        recentEvents.firstOrNull { it.word != "SYSTEM" }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -194,72 +222,107 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
                 }
             }
 
-            // ── DEMO ACTION PANEL ──
+            // ── LIVE TRANSLATION TRANSCRIPT CARD ──
             Text(
-                text = "Simulator Panel",
+                text = "Live Translation",
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
                 color = Sky400,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
             Card(
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = Slate800),
-                border = BorderStroke(1.dp, Slate700),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (lastVocalEvent == null || !isListening) Slate800 else if (lastVocalEvent.isMatch) Color(0xFF0C2417) else Color(0xFF2C1919)
+                ),
+                border = BorderStroke(
+                    width = 1.5.dp,
+                    color = if (lastVocalEvent == null || !isListening) Slate700 else if (lastVocalEvent.isMatch) SuccessGreen else ErrorRed
+                ),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                        .padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Button(
-                            onClick = {
-                                viewModel.simulateVoiceMatch(
-                                    word = "Water",
-                                    phrase = "أنا عايز ميّه",
-                                    confidence = 0.89f,
-                                    isMatch = true,
-                                    reason = "Passed absolute and margin thresholds"
+                    if (lastVocalEvent == null || !isListening) {
+                        Text(
+                            text = if (isListening) "🎙️ Listening..." else "🎙️ Ready to Translate",
+                            color = Slate300,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center
+                        )
+                        
+                        if (isListening) {
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth(0.7f)
+                                    .height(6.dp)
+                                    .clip(RoundedCornerShape(3.dp))
+                                    .background(Slate900)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth(volumeLevel.coerceIn(0f, 1f))
+                                        .fillMaxHeight()
+                                        .background(
+                                            Brush.horizontalGradient(
+                                                colors = listOf(Color(0xFF00F2FE), Sky400)
+                                            )
+                                        )
                                 )
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = Sky500),
-                            shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text("Simulate Water", color = Color.White, fontSize = 11.sp, maxLines = 1)
+                            }
                         }
 
-                        Button(
-                            onClick = {
-                                viewModel.simulateVoiceMatch(
-                                    word = "Help",
-                                    phrase = "الحقني",
-                                    confidence = 0.52f,
-                                    isMatch = false,
-                                    reason = "Low acoustic confidence match score"
-                                )
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = WarningAmber),
-                            shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text("Simulate Ambiguous", color = Color.White, fontSize = 11.sp, maxLines = 1)
-                        }
-                    }
-
-                    Button(
-                        onClick = { viewModel.clearLogs() },
-                        colors = ButtonDefaults.buttonColors(containerColor = Slate700),
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Clear Timeline Logs", color = Color.White, fontSize = 12.sp)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = if (isListening) "Waiting for child vocalizations..." else "Tap the microphone to start monitoring",
+                            color = Slate400,
+                            fontSize = 12.sp,
+                            textAlign = TextAlign.Center
+                        )
+                    } else if (lastVocalEvent.isMatch) {
+                        Text(
+                            text = lastVocalEvent.phrase, // Arabic phrase
+                            color = SuccessGreen,
+                            fontSize = 28.sp,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Translated: ${lastVocalEvent.word}", // English meaning
+                            color = Color.White,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "Confidence: ${(lastVocalEvent.confidence * 100).toInt()}%",
+                            color = Slate300,
+                            fontSize = 11.sp
+                        )
+                    } else {
+                        Text(
+                            text = "Unrecognized Sound",
+                            color = ErrorRed,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = lastVocalEvent.detail, // Reason
+                            color = Slate300,
+                            fontSize = 12.sp,
+                            textAlign = TextAlign.Center
+                        )
                     }
                 }
             }
@@ -289,7 +352,7 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "No recent sounds detected.\nActivate monitoring or use the simulator above.",
+                        text = "No recent sounds detected.\nActivate monitoring to start translating.",
                         color = Slate300,
                         textAlign = TextAlign.Center,
                         fontSize = 14.sp
@@ -477,6 +540,55 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
                                 )
                             }
                         }
+
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                        // 💾 Data Management Section
+                        Text(
+                            text = "💾 Data Management",
+                            color = Sky400,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(bottom = 6.dp)
+                        )
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = Slate900),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(10.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text(
+                                    text = "📤 Export Profile & Intents",
+                                    color = Sky400,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.clickable {
+                                        viewModel.exportProfileData(context)
+                                    }
+                                )
+                                Text(
+                                    text = "📥 Import Profile & Intents",
+                                    color = SuccessGreen,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.clickable {
+                                        importLauncher.launch("application/json")
+                                    }
+                                )
+                                Text(
+                                    text = "🧹 Clear Timeline Logs",
+                                    color = ErrorRed,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.clickable {
+                                        viewModel.clearLogs()
+                                        Toast.makeText(context, "Timeline cleared!", Toast.LENGTH_SHORT).show()
+                                    }
+                                )
+                            }
+                        }
                     }
 
                     // Version Tag
@@ -591,7 +703,7 @@ fun TimelineItem(event: LogEvent) {
                             color = Color.White,
                             fontSize = 12.sp
                         )
-                        if (event.word != "SYSTEM") {
+                        if (event.word != "SYSTEM" && event.isMatch) {
                             Spacer(modifier = Modifier.width(8.dp))
                             Box(
                                 modifier = Modifier
@@ -652,15 +764,19 @@ private class MockDashboardViewModel : IVoxaViewModel {
             LogEvent(word = "SYSTEM", phrase = "Listening session active — monitoring background sounds", confidence = 1.0f, isMatch = true, detail = "System Action")
         )
     )
+    override val volumeLevel = kotlinx.coroutines.flow.MutableStateFlow(0f)
     override fun createProfile(name: String, gender: String, avatarEmoji: String) {}
     override fun selectActiveProfile(profileId: Long) {}
     override fun enrollIntent(intentName: String, outputPhrase: String, audioAssetPath: String) {}
+    override fun exportProfileData(context: Context) {}
+    override fun importProfileData(context: Context, uri: android.net.Uri, onSuccess: () -> Unit, onError: (String) -> Unit) {}
     override fun deleteIntent(intent: com.example.voxa.data.EnrolledIntent) {}
     override fun toggleListening() {}
     override fun updateListeningState() {}
     override fun addLogSystemEvent(message: String) {}
     override fun simulateVoiceMatch(word: String, phrase: String, confidence: Float, isMatch: Boolean, reason: String) {}
     override fun clearLogs() {}
+    override fun playRecordedSample(intent: com.example.voxa.data.EnrolledIntent) {}
 }
 
 @androidx.compose.ui.tooling.preview.Preview(showBackground = true, showSystemUi = true, name = "Dashboard Screen Preview")

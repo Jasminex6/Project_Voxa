@@ -19,24 +19,42 @@ object AudioFileHelper {
     private const val SILENCE_THRESHOLD = 300 // Lowered from 500 to capture normal speech sensitivity
 
     /**
-     * Trims leading and trailing silence from the raw PCM buffer using a simple amplitude threshold.
+     * Trims leading and trailing silence from the raw PCM buffer using a robust window-based average amplitude.
+     * This avoids clipping on transient clicks/rustles and ensures clean templates.
      */
     fun trimSilence(pcmData: ShortArray): ShortArray {
+        val windowSize = 160 // 10ms window at 16kHz
+        val threshold = 350  // average absolute amplitude threshold
+        
         var start = 0
-        while (start < pcmData.size && abs(pcmData[start].toInt()) < SILENCE_THRESHOLD) {
-            start++
+        while (start + windowSize <= pcmData.size) {
+            var sum = 0L
+            for (i in 0 until windowSize) {
+                sum += abs(pcmData[start + i].toInt())
+            }
+            if (sum / windowSize >= threshold) {
+                break
+            }
+            start += 16 // 1ms step
         }
 
-        var end = pcmData.size - 1
-        while (end >= start && abs(pcmData[end].toInt()) < SILENCE_THRESHOLD) {
-            end--
+        var end = pcmData.size
+        while (end - windowSize >= start) {
+            var sum = 0L
+            for (i in 0 until windowSize) {
+                sum += abs(pcmData[end - windowSize + i].toInt())
+            }
+            if (sum / windowSize >= threshold) {
+                break
+            }
+            end -= 16 // 1ms step
         }
 
-        if (start > end) {
+        if (start >= end) {
             return ShortArray(0)
         }
 
-        return pcmData.copyOfRange(start, end + 1)
+        return pcmData.copyOfRange(start, end)
     }
 
     /**

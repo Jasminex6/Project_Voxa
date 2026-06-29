@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.sp
 import com.example.voxa.data.EnrolledIntent
 import com.example.voxa.ui.*
 import com.example.voxa.ui.theme.*
+import android.content.Context
 
 /**
  * 📚 LibraryScreen
@@ -88,7 +89,11 @@ fun LibraryScreen(viewModel: IVoxaViewModel, onNavigateToEnrollment: () -> Unit)
                     contentPadding = PaddingValues(bottom = 80.dp) // Space for floating button
                 ) {
                     items(intents, key = { it.id }) { intent ->
-                        LibraryIntentItem(intent = intent, onDelete = { viewModel.deleteIntent(intent) })
+                        LibraryIntentItem(
+                            intent = intent,
+                            onPlayPreview = { viewModel.playRecordedSample(intent) },
+                            onDelete = { viewModel.deleteIntent(intent) }
+                        )
                     }
                 }
             }
@@ -125,7 +130,7 @@ fun LibraryScreen(viewModel: IVoxaViewModel, onNavigateToEnrollment: () -> Unit)
 }
 
 @Composable
-fun LibraryIntentItem(intent: EnrolledIntent, onDelete: () -> Unit) {
+fun LibraryIntentItem(intent: EnrolledIntent, onPlayPreview: () -> Unit, onDelete: () -> Unit) {
     Card(
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Slate800),
@@ -158,6 +163,16 @@ fun LibraryIntentItem(intent: EnrolledIntent, onDelete: () -> Unit) {
             }
 
             IconButton(
+                onClick = onPlayPreview,
+                modifier = Modifier.padding(end = 4.dp)
+            ) {
+                Text(
+                    text = "🔊",
+                    fontSize = 18.sp
+                )
+            }
+
+            IconButton(
                 onClick = onDelete
             ) {
                 Text(
@@ -183,15 +198,19 @@ private class MockLibraryViewModel : IVoxaViewModel {
     )
     override val isListening = kotlinx.coroutines.flow.MutableStateFlow(false)
     override val recentEvents = kotlinx.coroutines.flow.MutableStateFlow(emptyList<LogEvent>())
+    override val volumeLevel = kotlinx.coroutines.flow.MutableStateFlow(0f)
     override fun createProfile(name: String, gender: String, avatarEmoji: String) {}
     override fun selectActiveProfile(profileId: Long) {}
     override fun enrollIntent(intentName: String, outputPhrase: String, audioAssetPath: String) {}
+    override fun exportProfileData(context: Context) {}
+    override fun importProfileData(context: Context, uri: android.net.Uri, onSuccess: () -> Unit, onError: (String) -> Unit) {}
     override fun deleteIntent(intent: EnrolledIntent) {}
     override fun toggleListening() {}
     override fun updateListeningState() {}
     override fun addLogSystemEvent(message: String) {}
     override fun simulateVoiceMatch(word: String, phrase: String, confidence: Float, isMatch: Boolean, reason: String) {}
     override fun clearLogs() {}
+    override fun playRecordedSample(intent: EnrolledIntent) {}
 }
 
 @androidx.compose.ui.tooling.preview.Preview(showBackground = true, showSystemUi = true, name = "Library Screen Preview")
