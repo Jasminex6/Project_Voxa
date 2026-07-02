@@ -31,6 +31,8 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Close
 
+import androidx.compose.ui.res.stringResource
+import com.example.voxa.R
 import com.example.voxa.ui.*
 import com.example.voxa.ui.theme.*
 import java.text.SimpleDateFormat
@@ -52,7 +54,11 @@ import androidx.activity.result.contract.ActivityResultContracts
  * 4. Recent vocalization log events timeline.
  */
 @Composable
-fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) {
+fun DashboardScreen(
+    viewModel: IVoxaViewModel,
+    onNavigateToProfile: () -> Unit,
+    onNavigateToPractice: () -> Unit
+) {
     // Observing state flows from the ViewModel. Think of these as subscribing to digital notice boards.
     // Compose automatically recomposes (re-renders) this screen whenever these values change.
     val isListening by viewModel.isListening.collectAsState()
@@ -215,7 +221,7 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
                 ) {
                     Icon(
                         imageVector = if (isListening) Icons.Default.Mic else Icons.Default.MicOff,
-                        contentDescription = if (isListening) "Listening Active" else "Listening Paused",
+                        contentDescription = if (isListening) stringResource(id = R.string.listening_active) else stringResource(id = R.string.listening_ready),
                         tint = if (isListening) Color(0xFF00F2FE) else Slate400,
                         modifier = Modifier.size(44.dp)
                     )
@@ -224,7 +230,7 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
 
             // ── LIVE TRANSLATION TRANSCRIPT CARD ──
             Text(
-                text = "Live Translation",
+                text = stringResource(id = R.string.header_live_translation),
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
                 color = Sky400,
@@ -250,7 +256,7 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
                 ) {
                     if (lastVocalEvent == null || !isListening) {
                         Text(
-                            text = if (isListening) "🎙️ Listening..." else "🎙️ Ready to Translate",
+                            text = if (isListening) stringResource(id = R.string.listening_active) else stringResource(id = R.string.listening_ready),
                             color = Slate300,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
@@ -281,7 +287,7 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
 
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = if (isListening) "Waiting for child vocalizations..." else "Tap the microphone to start monitoring",
+                            text = if (isListening) stringResource(id = R.string.listening_waiting) else stringResource(id = R.string.listening_tap_mic),
                             color = Slate400,
                             fontSize = 12.sp,
                             textAlign = TextAlign.Center
@@ -296,7 +302,7 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "Translated: ${lastVocalEvent.word}", // English meaning
+                            text = stringResource(id = R.string.label_intent, lastVocalEvent.word), // English meaning (e.g. Intent: Water)
                             color = Color.White,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Medium,
@@ -304,13 +310,13 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
                         )
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            text = "Confidence: ${(lastVocalEvent.confidence * 100).toInt()}%",
+                            text = "${(lastVocalEvent.confidence * 100).toInt()}%",
                             color = Slate300,
                             fontSize = 11.sp
                         )
                     } else {
                         Text(
-                            text = "Unrecognized Sound",
+                            text = stringResource(id = R.string.unrecognized_sound),
                             color = ErrorRed,
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
@@ -337,7 +343,7 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "📋 Activity Log Timeline",
+                    text = stringResource(id = R.string.title_activity_log),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
@@ -352,7 +358,7 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "No recent sounds detected.\nActivate monitoring to start translating.",
+                        text = stringResource(id = R.string.log_empty),
                         color = Slate300,
                         textAlign = TextAlign.Center,
                         fontSize = 14.sp
@@ -409,7 +415,7 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "Voxa Hub Menu",
+                                text = stringResource(id = R.string.sidebar_title),
                                 color = Color.White,
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold
@@ -427,7 +433,7 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
 
                         // 👦 Child Info Section
                         Text(
-                            text = "👦 Child Info",
+                            text = stringResource(id = R.string.sidebar_child_info),
                             color = Sky400,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
@@ -448,13 +454,13 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
                                 Spacer(modifier = Modifier.width(10.dp))
                                 Column {
                                     Text(
-                                        text = activeProfile?.name ?: "No profile active",
+                                        text = activeProfile?.name ?: stringResource(id = R.string.profile_empty),
                                         color = Color.White,
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 13.sp
                                     )
                                     Text(
-                                        text = "Voice Pack: ${activeProfile?.gender ?: "None"}",
+                                        text = stringResource(id = R.string.voice_pack_label, activeProfile?.gender ?: "None"),
                                         color = Slate400,
                                         fontSize = 11.sp
                                     )
@@ -471,14 +477,14 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
                             modifier = Modifier.fillMaxWidth().height(32.dp),
                             contentPadding = PaddingValues(0.dp)
                         ) {
-                            Text("Manage Profiles", color = Slate900, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            Text(stringResource(id = R.string.btn_manage_profiles), color = Slate900, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                         }
 
                         Spacer(modifier = Modifier.height(20.dp))
 
                         // 👨‍👩‍👧 Caregivers Info Section
                         Text(
-                            text = "👨‍👩‍👧 Caregivers Info",
+                            text = stringResource(id = R.string.sidebar_caregivers_info),
                             color = Sky400,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
@@ -503,7 +509,7 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
                                 )
                                 Spacer(modifier = Modifier.height(6.dp))
                                 Text(
-                                    text = "✏️ Edit Caregiver Details",
+                                    text = stringResource(id = R.string.btn_edit_caregiver),
                                     color = Sky400,
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
@@ -516,7 +522,7 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
 
                         // ⚙️ Settings Section
                         Text(
-                            text = "⚙️ Settings",
+                            text = stringResource(id = R.string.sidebar_settings),
                             color = Sky400,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
@@ -526,17 +532,90 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
                             colors = CardDefaults.cardColors(containerColor = Slate900),
                             modifier = Modifier.fillMaxWidth()
                         ) {
+                            val prefs = context.getSharedPreferences("voxa_settings", Context.MODE_PRIVATE)
+                            val currentLang = prefs.getString("app_language", "en") ?: "en"
+                            
                             Column(modifier = Modifier.padding(10.dp)) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            val newLang = if (currentLang == "en") "ar" else "en"
+                                            prefs.edit().putString("app_language", newLang).apply()
+                                            (context as? android.app.Activity)?.recreate()
+                                        },
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "Language / اللغة",
+                                        color = Color.White,
+                                        fontSize = 11.sp
+                                    )
+                                    Text(
+                                        text = if (currentLang == "en") "English" else "العربية",
+                                        color = Sky400,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "Continuous Listening",
+                                        color = Color.White,
+                                        fontSize = 11.sp
+                                    )
+                                    Text(
+                                        text = "ON",
+                                        color = SuccessGreen,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                        // 🎮 Practice Game Section
+                        Text(
+                            text = "Speech Practice Game",
+                            color = Sky400,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(bottom = 6.dp)
+                        )
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = Slate900),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    isSidebarOpen = false
+                                    onNavigateToPractice()
+                                }
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(10.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
                                 Text(
-                                    text = "App Language: English",
+                                    text = "Launch Pronunciation Practice",
                                     color = Color.White,
                                     fontSize = 11.sp
                                 )
-                                Spacer(modifier = Modifier.height(6.dp))
                                 Text(
-                                    text = "Continuous Listening: ON",
-                                    color = Color.White,
-                                    fontSize = 11.sp
+                                    text = "PLAY 🎮",
+                                    color = Sky400,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
                                 )
                             }
                         }
@@ -545,7 +624,7 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
 
                         // 💾 Data Management Section
                         Text(
-                            text = "💾 Data Management",
+                            text = stringResource(id = R.string.sidebar_data_management),
                             color = Sky400,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
@@ -560,7 +639,7 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 Text(
-                                    text = "📤 Export Profile & Intents",
+                                    text = stringResource(id = R.string.btn_export_profile),
                                     color = Sky400,
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
@@ -569,7 +648,7 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
                                     }
                                 )
                                 Text(
-                                    text = "📥 Import Profile & Intents",
+                                    text = stringResource(id = R.string.btn_import_profile),
                                     color = SuccessGreen,
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
@@ -578,13 +657,13 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
                                     }
                                 )
                                 Text(
-                                    text = "🧹 Clear Timeline Logs",
+                                    text = stringResource(id = R.string.btn_clear_timeline),
                                     color = ErrorRed,
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
                                     modifier = Modifier.clickable {
                                         viewModel.clearLogs()
-                                        Toast.makeText(context, "Timeline cleared!", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, context.getString(R.string.toast_timeline_cleared), Toast.LENGTH_SHORT).show()
                                     }
                                 )
                             }
@@ -757,6 +836,7 @@ private class MockDashboardViewModel : IVoxaViewModel {
     override val allProfiles = kotlinx.coroutines.flow.MutableStateFlow(emptyList<com.example.voxa.data.ChildProfile>())
     override val activeProfile = kotlinx.coroutines.flow.MutableStateFlow(com.example.voxa.data.ChildProfile(name = "Adam", gender = "Male", isActive = true))
     override val enrolledIntents = kotlinx.coroutines.flow.MutableStateFlow(emptyList<com.example.voxa.data.EnrolledIntent>())
+    override val practiceStats = kotlinx.coroutines.flow.MutableStateFlow(emptyList<com.example.voxa.data.PracticeStats>())
     override val isListening = kotlinx.coroutines.flow.MutableStateFlow(true)
     override val recentEvents = kotlinx.coroutines.flow.MutableStateFlow(
         listOf(
@@ -783,7 +863,7 @@ private class MockDashboardViewModel : IVoxaViewModel {
 @Composable
 fun DashboardScreenPreview() {
     VoxaTheme {
-        DashboardScreen(viewModel = MockDashboardViewModel(), onNavigateToProfile = {})
+        DashboardScreen(viewModel = MockDashboardViewModel(), onNavigateToProfile = {}, onNavigateToPractice = {})
     }
 }
 

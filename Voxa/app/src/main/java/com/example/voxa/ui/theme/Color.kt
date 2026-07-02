@@ -20,6 +20,7 @@ val Slate900 = Color(0xFF0F172A) // Main background (deep slate dark)
 val Slate800 = Color(0xFF1E293B) // Card, dialog, and bottom nav container
 val Slate700 = Color(0xFF334155) // Selected navigation item indicator
 val Slate600 = Color(0xFF475569) // Unfocused borders
+val Slate500 = Color(0xFF64748B) // Muted text / secondary borders
 val Slate400 = Color(0xFF94A3B8) // Secondary description text label
 val Slate300 = Color(0xFFCBD5E1) // Secondary lighter subtitle label
 val SelectedActiveBlue = Color(0xFF0F3E5F) // Selected/Active profile item container background

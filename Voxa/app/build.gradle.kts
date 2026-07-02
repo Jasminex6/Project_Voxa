@@ -61,6 +61,9 @@ dependencies {
     // TensorFlow Lite (LiteRT with 16KB support)
     implementation(libs.litert)
 
+    implementation(libs.androidx.appcompat)
+    implementation(libs.play.services.location)
+
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)

@@ -3,6 +3,7 @@ package com.example.voxa.ui
 import android.content.Context
 import com.example.voxa.data.ChildProfile
 import com.example.voxa.data.EnrolledIntent
+import com.example.voxa.data.PracticeStats
 import kotlinx.coroutines.flow.StateFlow
 
 // Exposing LogEvent at the package level for clean modular boundaries.
@@ -26,9 +27,13 @@ interface IVoxaViewModel {
     val allProfiles: StateFlow<List<ChildProfile>>
     val activeProfile: StateFlow<ChildProfile?>
     val enrolledIntents: StateFlow<List<EnrolledIntent>>
+    val practiceStats: StateFlow<List<PracticeStats>>
     val isListening: StateFlow<Boolean>
     val recentEvents: StateFlow<List<LogEvent>>
     val volumeLevel: StateFlow<Float>
+    val bifurcationWarningTriggered: StateFlow<String?> get() = kotlinx.coroutines.flow.MutableStateFlow(null)
+
+    fun clearBifurcationWarning() {}
 
     fun createProfile(name: String, gender: String, avatarEmoji: String)
     fun selectActiveProfile(profileId: Long)
@@ -45,4 +50,6 @@ interface IVoxaViewModel {
     fun playRecordedSample(intent: EnrolledIntent)
     fun deleteProfile(profile: ChildProfile) {}
     fun updateProfileGender(profile: ChildProfile, newGender: String) {}
+    fun recordPracticeAttempt(word: String, score: Int, stars: Int) {}
+    fun updateCaregiverPhones(phone1: String, phone2: String, phone3: String) {}
 }

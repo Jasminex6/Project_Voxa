@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import android.content.Context
 import androidx.core.content.ContextCompat
 import com.example.voxa.services.VoxaListenerService
 import com.example.voxa.ui.*
@@ -35,9 +36,25 @@ import com.example.voxa.ui.screens.EnrollmentScreen
 import com.example.voxa.ui.screens.LibraryScreen
 import com.example.voxa.ui.screens.ProfileScreen
 import com.example.voxa.ui.screens.EmergencyScreen
+import com.example.voxa.ui.screens.OnboardingScreen
+import com.example.voxa.ui.screens.SpeechPracticeScreen
 import com.example.voxa.ui.theme.*
 
 class MainActivity : ComponentActivity() {
+
+    override fun attachBaseContext(newBase: Context) {
+        val prefs = newBase.getSharedPreferences("voxa_settings", MODE_PRIVATE)
+        val lang = prefs.getString("app_language", "en") ?: "en"
+        val locale = java.util.Locale(lang)
+        java.util.Locale.setDefault(locale)
+        val config = android.content.res.Configuration(newBase.resources.configuration)
+        config.setLocale(locale)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+            config.setLayoutDirection(locale)
+        }
+        val context = newBase.createConfigurationContext(config)
+        super.attachBaseContext(context)
+    }
 
     // The ViewModel acts as the central brain/storekeeper for the UI. It retrieves flows
     // from the Room database and keeps them updated in-memory for our Compose screens.
@@ -76,7 +93,8 @@ enum class Screen(val title: String, val icon: String) {
     Enrollment("Enroll", "➕"),
     Library("Library", "📚"),
     Emergency("Emergency", "🆘"),
-    Profile("Profile", "👤")
+    Profile("Profile", "👤"),
+    Practice("Practice", "🎮")
 }
 
 // Security gate (night club analogy)
@@ -118,8 +136,21 @@ fun VoxaAppEntry(viewModel: IVoxaViewModel, modifier: Modifier = Modifier) {
         }
     )
 
-    // Decide which screen to show based on our permission states
-    if (isMicGranted && isNotificationGranted) {
+    val prefs = remember { context.getSharedPreferences("voxa_settings", Context.MODE_PRIVATE) }
+    var isOnboardingCompleted by remember {
+        mutableStateOf(prefs.getBoolean("is_first_boot_completed", false))
+    }
+
+    // Decide which screen to show based on our onboarding and permission states
+    if (!isOnboardingCompleted) {
+        OnboardingScreen(
+            viewModel = viewModel,
+            onOnboardingCompleted = {
+                prefs.edit().putBoolean("is_first_boot_completed", true).apply()
+                isOnboardingCompleted = true
+            }
+        )
+    } else if (isMicGranted && isNotificationGranted) {
         VoxaAppContent(viewModel = viewModel, modifier = modifier)
     } else {
         PermissionRequiredScreen(
@@ -201,7 +232,8 @@ fun VoxaAppContent(viewModel: IVoxaViewModel, modifier: Modifier = Modifier) {
             when (currentScreen) {
                 Screen.Dashboard -> DashboardScreen(
                     viewModel = viewModel,
-                    onNavigateToProfile = { currentScreen = Screen.Profile }
+                    onNavigateToProfile = { currentScreen = Screen.Profile },
+                    onNavigateToPractice = { currentScreen = Screen.Practice }
                 )
                 Screen.Enrollment -> EnrollmentScreen(
                     viewModel = viewModel,
@@ -213,6 +245,10 @@ fun VoxaAppContent(viewModel: IVoxaViewModel, modifier: Modifier = Modifier) {
                 )
                 Screen.Emergency -> EmergencyScreen(viewModel = viewModel)
                 Screen.Profile -> ProfileScreen(
+                    viewModel = viewModel,
+                    onBack = { currentScreen = Screen.Dashboard }
+                )
+                Screen.Practice -> SpeechPracticeScreen(
                     viewModel = viewModel,
                     onBack = { currentScreen = Screen.Dashboard }
                 )

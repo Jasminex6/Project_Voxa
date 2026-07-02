@@ -1,5 +1,4 @@
-package com.example.voxa.ai
-
+package com.example.voxa.ai.archive
 import android.content.Context
 import com.example.voxa.utils.TFLiteModelLoader
 import org.tensorflow.lite.Interpreter

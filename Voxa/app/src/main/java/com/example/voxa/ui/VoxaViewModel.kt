@@ -10,6 +10,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.voxa.data.ChildProfile
 import com.example.voxa.data.EnrolledIntent
 import com.example.voxa.data.AcousticTemplate
+import com.example.voxa.data.PracticeStats
 import com.example.voxa.data.VoxaDatabase
 import com.example.voxa.services.VoxaListenerService
 import android.widget.Toast
@@ -29,6 +30,9 @@ class VoxaViewModel(application: Application) : AndroidViewModel(application), I
 
     // Access door to the database queries.
     private val voxaDao = VoxaDatabase.getDatabase(application).voxaDao()
+
+    // YAMNet encoder for prototypical matching enrollment
+    private val yamnetEncoder = com.example.voxa.ai.YamnetEncoder(application)
 
     // ── 👤 CHILD PROFILE STATES ──
 
@@ -66,6 +70,20 @@ class VoxaViewModel(application: Application) : AndroidViewModel(application), I
             initialValue = emptyList()
         )
 
+    override val practiceStats: StateFlow<List<PracticeStats>> = activeProfile
+        .flatMapLatest { profile ->
+            if (profile != null) {
+                voxaDao.getPracticeStatsForProfileFlow(profile.id)
+            } else {
+                flowOf(emptyList())
+            }
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
     // ── 🎙️ LISTENING SYSTEM STATES ──
 
     // Tracks if the microphone recorder service is actively listening.
@@ -81,6 +99,14 @@ class VoxaViewModel(application: Application) : AndroidViewModel(application), I
 
     private val _volumeLevel = MutableStateFlow(0f)
     override val volumeLevel: StateFlow<Float> = _volumeLevel.asStateFlow()
+
+    // ── ⚠️ BIFURCATION WARNING STATE ──
+    private val _bifurcationWarningTriggered = MutableStateFlow<String?>(null)
+    override val bifurcationWarningTriggered: StateFlow<String?> = _bifurcationWarningTriggered.asStateFlow()
+
+    override fun clearBifurcationWarning() {
+        _bifurcationWarningTriggered.value = null
+    }
 
     // ── BROADCAST RECEIVER FOR REAL-TIME RESULTS & VOLUME ──
 
@@ -184,164 +210,60 @@ class VoxaViewModel(application: Application) : AndroidViewModel(application), I
         tempFilePaths: List<String>
     ) {
         val profile = _activeProfile.value ?: return
-        val application = getApplication<Application>()
 
         viewModelScope.launch {
-            val intent = EnrolledIntent(
-                profileId = profile.id,
-                intentName = intentName,
-                outputPhrase = outputPhrase,
-                audioAssetPath = audioAssetPath
-            )
-            val intentId = voxaDao.insertIntent(intent)
+            try {
+                // Clear any previous warning
+                _bifurcationWarningTriggered.value = null
 
-            // Extract MFCC features from each PCM file and store as serialized JSON
-            val mfccExtractor = com.example.voxa.ai.MfccExtractor()
-            var firstPcm: ShortArray? = null
-
-            for (path in tempFilePaths) {
-                try {
-                    val pcmData = com.example.voxa.utils.AudioFileHelper.readPcmFile(java.io.File(path))
-                    if (firstPcm == null) firstPcm = pcmData
-
-                    val features = mfccExtractor.extract(pcmData) // Array<FloatArray> [T x 40]
-                    val serialized = serializeMfccFeatures(features)
-
-                    val template = AcousticTemplate(
-                        intentId = intentId,
-                        templateFeatures = serialized
-                    )
-                    voxaDao.insertTemplate(template)
-                } catch (e: Exception) {
-                    android.util.Log.e("VoxaViewModel", "MFCC extraction failed for $path: ${e.message}")
-                    // Fallback: store the path as before
-                    val template = AcousticTemplate(
-                        intentId = intentId,
-                        templateFeatures = path
-                    )
-                    voxaDao.insertTemplate(template)
-                }
-            }
-
-            // Extract speaker embedding if not already enrolled
-            if (profile.speakerEmbedding == null && firstPcm != null) {
-                try {
-                    val verifier = com.example.voxa.ai.SpeakerVerifier(application)
-                    if (verifier.isValid()) {
-                        val melSpec = computeEnrollmentMelSpec(firstPcm!!)
-                        if (melSpec.isNotEmpty()) {
-                            val embedding = verifier.extractEmbedding(melSpec)
-                            val embeddingJson = embedding.joinToString(",", prefix = "[", postfix = "]")
-                            val updated = profile.copy(speakerEmbedding = embeddingJson)
-                            voxaDao.updateProfile(updated)
-                            _activeProfile.value = updated
-                            android.util.Log.d("VoxaViewModel", "Speaker embedding enrolled for ${profile.name}")
-                        }
-                    } else {
-                        android.util.Log.w("VoxaViewModel", "Speaker verifier model not active — skipping speaker profile enrollment")
+                // 1. Load and process all PCM recordings to extract YAMNet embeddings
+                val embeddings = mutableListOf<FloatArray>()
+                for (path in tempFilePaths) {
+                    try {
+                        val pcmData = com.example.voxa.utils.AudioFileHelper.readPcmFile(java.io.File(path))
+                        // Extract embedding using the YamnetEncoder helper
+                        val emb = yamnetEncoder.extractFromPcm(pcmData)
+                        embeddings.add(emb)
+                    } catch (e: Exception) {
+                        android.util.Log.e("VoxaViewModel", "Embedding extraction failed for $path: ${e.message}")
                     }
-                } catch (e: Exception) {
-                    android.util.Log.e("VoxaViewModel", "Speaker embedding extraction failed: ${e.message}")
                 }
+
+                if (embeddings.isEmpty()) {
+                    android.util.Log.e("VoxaViewModel", "No valid audio embeddings extracted for enrollment")
+                    return@launch
+                }
+
+                // 2. Run the PrototypicalMatcher's enrollment centroid pipeline
+                val protoResult = com.example.voxa.ai.PrototypicalMatcher.computeEnrollmentCentroids(embeddings)
+
+                // 3. Create and insert the EnrolledIntent
+                val intent = EnrolledIntent(
+                    profileId = profile.id,
+                    intentName = intentName.trim(),
+                    outputPhrase = outputPhrase.trim(),
+                    audioAssetPath = audioAssetPath,
+                    oodThreshold = protoResult.oodThreshold
+                )
+                val intentId = voxaDao.insertIntent(intent)
+
+                // 4. Serialize centroids and store in AcousticTemplate
+                val serializedCentroids = com.example.voxa.ai.PrototypicalMatcher.serializeCentroids(protoResult.centroids)
+                val template = AcousticTemplate(
+                    intentId = intentId,
+                    templateFeatures = serializedCentroids
+                )
+                voxaDao.insertTemplate(template)
+
+                // 5. If K-Means bifurcation was triggered, notify UI
+                if (protoResult.bifurcated) {
+                    _bifurcationWarningTriggered.value = "These recordings sound very different. For best results, try recording when ${profile.name} is calm, or record the stressed version separately."
+                }
+
+                android.util.Log.d("VoxaViewModel", "Successfully enrolled intent '$intentName' with ${protoResult.centroids.size} centroids (bifurcated=${protoResult.bifurcated})")
+            } catch (e: Exception) {
+                android.util.Log.e("VoxaViewModel", "Failed to enroll intent: ${e.message}", e)
             }
-        }
-    }
-
-    /**
-     * Serializes an Array<FloatArray> [T x 40] into a flat JSON array string for Room storage.
-     */
-    private fun serializeMfccFeatures(features: Array<FloatArray>): String {
-        val sb = StringBuilder("[")
-        var first = true
-        for (frame in features) {
-            for (value in frame) {
-                if (!first) sb.append(",")
-                sb.append(value)
-                first = false
-            }
-        }
-        sb.append("]")
-        return sb.toString()
-    }
-
-    /**
-     * Computes 80-band log-mel spectrogram for ECAPA-TDNN speaker verification during enrollment.
-     * Uses separate DSP parameters from the MFCC pipeline (80 mels, Hann window, nFft=400).
-     */
-    private fun computeEnrollmentMelSpec(pcmInt16: ShortArray): Array<FloatArray> {
-        val sampleRate = 16000
-        val nFft = 400
-        val hopLength = 160
-        val nMels = 80
-
-        val pcmFloat = FloatArray(pcmInt16.size) { pcmInt16[it].toFloat() / 32768.0f }
-        val emphasized = FloatArray(pcmFloat.size)
-        emphasized[0] = pcmFloat[0]
-        for (i in 1 until pcmFloat.size) {
-            emphasized[i] = pcmFloat[i] - 0.97f * pcmFloat[i - 1]
-        }
-
-        val numFrames = (emphasized.size - nFft) / hopLength + 1
-        if (numFrames <= 0) return emptyArray()
-
-        val hannWindow = FloatArray(nFft) { i ->
-            (0.5 * (1.0 - Math.cos(2.0 * Math.PI * i / (nFft - 1)))).toFloat()
-        }
-
-        val melFb = buildMelFilterbank80(nMels, nFft, sampleRate)
-        val spec = Array(numFrames) { FloatArray(nMels) }
-
-        for (t in 0 until numFrames) {
-            val start = t * hopLength
-            val frame = FloatArray(nFft) { i -> emphasized[start + i] * hannWindow[i] }
-            val re = DoubleArray(512)
-            val im = DoubleArray(512)
-            for (i in frame.indices) re[i] = frame[i].toDouble()
-            com.example.voxa.ai.MfccExtractor.fftInPlace(re, im)
-
-            val nBins = nFft / 2 + 1
-            val power = FloatArray(nBins) { k -> ((re[k] * re[k] + im[k] * im[k]) / nFft.toDouble()).toFloat() }
-
-            for (m in 0 until nMels) {
-                var energy = 0.0f
-                for (k in power.indices) energy += melFb[m][k] * power[k]
-                spec[t][m] = Math.log(Math.max(energy.toDouble(), 1e-10)).toFloat()
-            }
-        }
-
-        // Per-utterance mean normalization
-        val means = FloatArray(nMels)
-        for (m in 0 until nMels) {
-            var sum = 0.0f
-            for (t in 0 until numFrames) sum += spec[t][m]
-            means[m] = sum / numFrames
-        }
-        for (t in 0 until numFrames) {
-            for (m in 0 until nMels) spec[t][m] -= means[m]
-        }
-        return spec
-    }
-
-    private fun buildMelFilterbank80(nMels: Int, nFft: Int, sampleRate: Int): Array<FloatArray> {
-        val nBins = nFft / 2 + 1
-        fun hzToMel(hz: Double) = 2595.0 * Math.log10(1.0 + hz / 700.0)
-        fun melToHz(mel: Double) = 700.0 * (Math.pow(10.0, mel / 2595.0) - 1.0)
-
-        val melMin = hzToMel(0.0)
-        val melMax = hzToMel(8000.0)
-        val melPoints = DoubleArray(nMels + 2) { i -> melMin + i * (melMax - melMin) / (nMels + 1) }
-        val binPoints = melPoints.map { (melToHz(it) * nFft / sampleRate).toInt() }
-
-        return Array(nMels) { m ->
-            val fb = FloatArray(nBins)
-            val left = binPoints[m]; val center = binPoints[m + 1]; val right = binPoints[m + 2]
-            for (k in left until center) {
-                if (k in 0 until nBins && center > left) fb[k] = (k - left).toFloat() / (center - left)
-            }
-            for (k in center until right) {
-                if (k in 0 until nBins && right > center) fb[k] = (right - k).toFloat() / (right - center)
-            }
-            fb
         }
     }
 
@@ -575,7 +497,7 @@ class VoxaViewModel(application: Application) : AndroidViewModel(application), I
     override fun playRecordedSample(intent: EnrolledIntent) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val cleanIntentName = intent.intentName.trim().lowercase().replace(" ", "_")
+                val cleanIntentName = intent.intentName.trim().lowercase().replace(Regex("[^\\p{L}\\p{N}_]"), "_")
                 val file = java.io.File(getApplication<Application>().cacheDir, "template_${intent.profileId}_${cleanIntentName}_0.pcm")
                 if (file.exists()) {
                     val pcmData = com.example.voxa.utils.AudioFileHelper.readPcmFile(file)
@@ -605,6 +527,29 @@ class VoxaViewModel(application: Application) : AndroidViewModel(application), I
             } catch (e: Exception) {
                 android.util.Log.e("VoxaViewModel", "Failed to play recorded sample preview: ${e.message}", e)
             }
+        }
+    }
+
+    override fun recordPracticeAttempt(word: String, score: Int, stars: Int) {
+        val profile = _activeProfile.value ?: return
+        viewModelScope.launch {
+            voxaDao.insertPracticeStats(
+                PracticeStats(
+                    profileId = profile.id,
+                    word = word,
+                    score = score,
+                    stars = stars
+                )
+            )
+        }
+    }
+
+    override fun updateCaregiverPhones(phone1: String, phone2: String, phone3: String) {
+        val profile = _activeProfile.value ?: return
+        viewModelScope.launch {
+            val updated = profile.copy(caregiverPhone1 = phone1, caregiverPhone2 = phone2, caregiverPhone3 = phone3)
+            voxaDao.updateProfile(updated)
+            _activeProfile.value = updated
         }
     }
 }

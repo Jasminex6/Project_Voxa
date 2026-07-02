@@ -286,6 +286,32 @@ class VoxaListenerService : Service() {
                 }
             }
         }
+
+        // Intercept background SOS / help vocal trigger
+        if (result.isMatch && result.intentName != null &&
+            (result.intentName.trim().lowercase() == "sos" || result.intentName.trim().lowercase() == "help")) {
+            val dao = VoxaDatabase.getDatabase(applicationContext).voxaDao()
+            serviceScope.launch {
+                val activeProfile = dao.getActiveProfile()
+                if (activeProfile != null) {
+                    com.example.voxa.utils.LocationHelper.dispatchEmergencyAlert(
+                        context = applicationContext,
+                        profile = activeProfile,
+                        addLog = { logMsg ->
+                            val logIntent = Intent(ACTION_CLASSIFICATION_RESULT).apply {
+                                putExtra(EXTRA_IS_MATCH, true)
+                                putExtra(EXTRA_INTENT_NAME, "SYSTEM")
+                                putExtra(EXTRA_OUTPUT_PHRASE, logMsg)
+                                putExtra(EXTRA_CONFIDENCE, 1.0f)
+                                putExtra(EXTRA_REASON, "SOS Trigger Dispatch")
+                                setPackage(packageName)
+                            }
+                            sendBroadcast(logIntent)
+                        }
+                    )
+                }
+            }
+        }
     }
 
     /**

@@ -126,5 +126,18 @@ interface VoxaDao {
 
     @Delete
     suspend fun deleteProfile(profile: ChildProfile)
+
+    // ==========================================
+    // 🎮 PRACTICE STATS QUERIES
+    // ==========================================
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertPracticeStats(stats: PracticeStats): Long
+
+    @Query("SELECT * FROM practice_stats WHERE profileId = :profileId ORDER BY timestamp DESC")
+    fun getPracticeStatsForProfileFlow(profileId: Long): kotlinx.coroutines.flow.Flow<List<PracticeStats>>
+
+    @Query("SELECT * FROM practice_stats WHERE profileId = :profileId ORDER BY timestamp DESC")
+    suspend fun getPracticeStatsForProfile(profileId: Long): List<PracticeStats>
 }
 

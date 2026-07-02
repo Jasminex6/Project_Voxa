@@ -71,17 +71,67 @@ class AudioPlayer(private val context: Context) {
         } catch (e: Exception) {
             Log.w(TAG, "Audio asset not found: $assetPath — falling back to TTS")
             // Fallback to TTS
-            speakWithTts(outputPhrase)
+            speakWithTts(outputPhrase, gender)
         }
+    }
+
+    /**
+     * Preprocesses Arabic text to apply Tashkeel vowelization diacritics for Egyptian dialect pronunciation.
+     */
+    private fun applyTashkeel(text: String): String {
+        val wordDiacritics = mapOf(
+            "مية" to "مَيَّة",
+            "عايز" to "عَايِز",
+            "عايزة" to "عَايْزَة",
+            "أكل" to "أَكْل",
+            "اشرب" to "اِشْرَب",
+            "أنا" to "أَنَا",
+            "بابا" to "بَابَا",
+            "ماما" to "مَامَا",
+            "حمام" to "حَمَّام",
+            "تعبان" to "تَعْبَان",
+            "نام" to "نَام",
+            "بردان" to "بَرْدَان",
+            "حران" to "حَرَّان"
+        )
+        var processedText = text
+        for ((word, diacriticWord) in wordDiacritics) {
+            processedText = processedText.replace(word, diacriticWord)
+        }
+        return processedText
     }
 
     /**
      * Uses Android's Text-To-Speech engine to speak the Arabic phrase.
      */
-    private fun speakWithTts(text: String) {
+    private fun speakWithTts(text: String, gender: String) {
         if (isTtsReady && tts != null) {
-            tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "voxa_translation")
-            Log.d(TAG, "TTS speaking: $text")
+            val voices = tts?.voices
+            if (voices != null) {
+                val isFemale = gender.equals("Female", ignoreCase = true)
+                val matchVoice = voices.find { voice ->
+                    val locale = voice.locale
+                    (locale.language == "ar") && (
+                        if (isFemale) {
+                            voice.name.contains("female", ignoreCase = true) ||
+                            voice.name.contains("are", ignoreCase = true) ||
+                            voice.name.contains("arf", ignoreCase = true)
+                        } else {
+                            voice.name.contains("male", ignoreCase = true) ||
+                            voice.name.contains("ard", ignoreCase = true) ||
+                            voice.name.contains("arc", ignoreCase = true)
+                        }
+                    )
+                }
+                if (matchVoice != null) {
+                    tts?.voice = matchVoice
+                    Log.d(TAG, "Selected TTS Voice: ${matchVoice.name}")
+                }
+            }
+
+            val vocalizedText = applyTashkeel(text)
+            tts?.speak(vocalizedText, TextToSpeech.QUEUE_FLUSH, null, "voxa_translation")
+            Log.d(TAG, "TTS speaking (Tashkeel applied): $vocalizedText")
         } else {
             Log.w(TAG, "TTS not ready, cannot speak: $text")
         }

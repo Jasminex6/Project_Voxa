@@ -17,8 +17,8 @@ import androidx.room.RoomDatabase
  * - exportSchema = false: Prevents Room from exporting the DB schema design to a JSON file during builds.
  */
 @Database(
-    entities = [ChildProfile::class, EnrolledIntent::class, AcousticTemplate::class],
-    version = 3,
+    entities = [ChildProfile::class, EnrolledIntent::class, AcousticTemplate::class, PracticeStats::class],
+    version = 5,
     exportSchema = false
 )
 abstract class VoxaDatabase : RoomDatabase() {
