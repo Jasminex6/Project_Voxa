@@ -10,6 +10,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.voxa.data.ChildProfile
 import com.example.voxa.data.EnrolledIntent
 import com.example.voxa.data.AcousticTemplate
+import com.example.voxa.data.PracticeStats
 import com.example.voxa.data.VoxaDatabase
 import com.example.voxa.services.VoxaListenerService
 import android.widget.Toast
@@ -56,6 +57,25 @@ class VoxaViewModel(application: Application) : AndroidViewModel(application), I
         .flatMapLatest { profile ->
             if (profile != null) {
                 voxaDao.getIntentsForProfileFlow(profile.id)
+            } else {
+                flowOf(emptyList())
+            }
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+    // ── 🎮 PRACTICE STATS STATES ──
+
+    // Flow of practice attempt results filtered by the active child profile.
+    // Uses the same flatMapLatest pattern as enrolledIntents to automatically
+    // redirect the query stream when the active profile switches.
+    override val practiceStats: StateFlow<List<PracticeStats>> = activeProfile
+        .flatMapLatest { profile ->
+            if (profile != null) {
+                voxaDao.getPracticeStatsForProfileFlow(profile.id)
             } else {
                 flowOf(emptyList())
             }
@@ -432,6 +452,26 @@ class VoxaViewModel(application: Application) : AndroidViewModel(application), I
             if (_activeProfile.value?.id == profile.id) {
                 _activeProfile.value = updated
             }
+        }
+    }
+
+    // ── 🎮 PRACTICE STATS ACTIONS ──
+
+    /**
+     * Saves a pronunciation practice attempt result to the database.
+     * Called by SpeechPracticeScreen after DTW scoring completes.
+     */
+    override fun savePracticeResult(word: String, dtwDistance: Float, score: Int, stars: Int) {
+        val profile = _activeProfile.value ?: return
+        viewModelScope.launch {
+            val stats = PracticeStats(
+                profileId = profile.id,
+                word = word,
+                dtwDistance = dtwDistance,
+                score = score,
+                stars = stars
+            )
+            voxaDao.insertPracticeStats(stats)
         }
     }
 

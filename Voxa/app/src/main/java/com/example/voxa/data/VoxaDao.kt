@@ -126,5 +126,28 @@ interface VoxaDao {
 
     @Delete
     suspend fun deleteProfile(profile: ChildProfile)
+
+    // ==========================================
+    // 🎮 PRACTICE STATS QUERIES
+    // ==========================================
+
+    /**
+     * Inserts a new pronunciation practice attempt result.
+     */
+    @Insert
+    suspend fun insertPracticeStats(stats: PracticeStats): Long
+
+    /**
+     * Retrieves all practice stats for a child as a Flow for real-time UI updates.
+     * Ordered newest-first so the most recent attempts appear at the top of the history list.
+     */
+    @Query("SELECT * FROM practice_stats WHERE profileId = :profileId ORDER BY timestamp DESC")
+    fun getPracticeStatsForProfileFlow(profileId: Long): kotlinx.coroutines.flow.Flow<List<PracticeStats>>
+
+    /**
+     * Retrieves the 20 most recent practice stats for a child (non-Flow, for one-shot reads).
+     */
+    @Query("SELECT * FROM practice_stats WHERE profileId = :profileId ORDER BY timestamp DESC LIMIT 20")
+    suspend fun getRecentPracticeStats(profileId: Long): List<PracticeStats>
 }
 

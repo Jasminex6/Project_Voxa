@@ -2,6 +2,7 @@ package com.example.voxa.ui
 
 import android.content.Context
 import com.example.voxa.data.ChildProfile
+import com.example.voxa.data.PracticeStats
 import com.example.voxa.data.EnrolledIntent
 import kotlinx.coroutines.flow.StateFlow
 
@@ -45,4 +46,8 @@ interface IVoxaViewModel {
     fun playRecordedSample(intent: EnrolledIntent)
     fun deleteProfile(profile: ChildProfile) {}
     fun updateProfileGender(profile: ChildProfile, newGender: String) {}
+
+    // 🎮 Speech Practice
+    val practiceStats: StateFlow<List<PracticeStats>>
+    fun savePracticeResult(word: String, dtwDistance: Float, score: Int, stars: Int)
 }

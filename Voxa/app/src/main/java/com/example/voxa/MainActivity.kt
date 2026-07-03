@@ -35,6 +35,8 @@ import com.example.voxa.ui.screens.EnrollmentScreen
 import com.example.voxa.ui.screens.LibraryScreen
 import com.example.voxa.ui.screens.ProfileScreen
 import com.example.voxa.ui.screens.EmergencyScreen
+import com.example.voxa.ui.screens.SpeechPracticeScreen
+import com.example.voxa.ui.screens.PracticeViolet
 import com.example.voxa.ui.theme.*
 
 class MainActivity : ComponentActivity() {
@@ -75,6 +77,7 @@ enum class Screen(val title: String, val icon: String) {
     Dashboard("Home", "🏠"),
     Enrollment("Enroll", "➕"),
     Library("Library", "📚"),
+    Practice("Practice", "🎮"),
     Emergency("Emergency", "🆘"),
     Profile("Profile", "👤")
 }
@@ -212,6 +215,7 @@ fun VoxaAppContent(viewModel: IVoxaViewModel, modifier: Modifier = Modifier) {
                     onNavigateToEnrollment = { currentScreen = Screen.Enrollment }
                 )
                 Screen.Emergency -> EmergencyScreen(viewModel = viewModel)
+                Screen.Practice -> SpeechPracticeScreen(viewModel = viewModel)
                 Screen.Profile -> ProfileScreen(
                     viewModel = viewModel,
                     onBack = { currentScreen = Screen.Dashboard }
@@ -240,26 +244,30 @@ fun CustomBottomBar(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Center Home (Dashboard) flanked by Library and Emergency
-            val tabScreens = listOf(Screen.Library, Screen.Dashboard, Screen.Emergency)
+            // Center Home (Dashboard) flanked by Library, Practice, and Emergency
+            val tabScreens = listOf(Screen.Library, Screen.Dashboard, Screen.Practice, Screen.Emergency)
             
             tabScreens.forEach { screen ->
                 val isSelected = currentScreen == screen
                 
                 val activeBgColor = when (screen) {
                     Screen.Emergency -> ErrorRed.copy(alpha = 0.15f)
+                    Screen.Practice -> PracticeViolet.copy(alpha = 0.15f)
                     else -> Sky400.copy(alpha = 0.15f)
                 }
                 val activeContentColor = when (screen) {
                     Screen.Emergency -> ErrorRed
+                    Screen.Practice -> PracticeViolet
                     else -> Sky400
                 }
                 val activeBorderColor = when (screen) {
                     Screen.Emergency -> ErrorRed.copy(alpha = 0.3f)
+                    Screen.Practice -> PracticeViolet.copy(alpha = 0.3f)
                     else -> Sky400.copy(alpha = 0.3f)
                 }
                 val inactiveContentColor = when (screen) {
                     Screen.Emergency -> ErrorRed.copy(alpha = 0.6f)
+                    Screen.Practice -> PracticeViolet.copy(alpha = 0.6f)
                     else -> Slate400
                 }
                 
