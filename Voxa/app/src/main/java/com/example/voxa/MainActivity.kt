@@ -36,7 +36,7 @@ import com.example.voxa.ui.screens.LibraryScreen
 import com.example.voxa.ui.screens.ProfileScreen
 import com.example.voxa.ui.screens.EmergencyScreen
 import com.example.voxa.ui.screens.SpeechPracticeScreen
-import com.example.voxa.ui.screens.SetupScreen
+import com.example.voxa.ui.screens.OnboardingScreen
 import com.example.voxa.ui.screens.PracticeViolet
 import com.example.voxa.data.EmergencyContactPrefs
 import com.example.voxa.ui.theme.*
@@ -89,118 +89,17 @@ enum class Screen(val title: String, val icon: String) {
 fun VoxaAppEntry(viewModel: IVoxaViewModel, modifier: Modifier = Modifier) {
     val context = LocalContext.current
 
-    // Helper functions to check if the permissions are already granted
-    fun hasMicPermission(): Boolean {
-        return ContextCompat.checkSelfPermission(
-            context,
-            Manifest.permission.RECORD_AUDIO
-        ) == PackageManager.PERMISSION_GRANTED
-    }
-
-    fun hasNotificationPermission(): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.POST_NOTIFICATIONS
-            ) == PackageManager.PERMISSION_GRANTED
-        } else {
-            true
-        }
-    }
-
-    fun hasLocationPermission(): Boolean {
-        return ContextCompat.checkSelfPermission(
-            context,
-            Manifest.permission.ACCESS_FINE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED
-    }
-
-    // Track permission states in Compose
-    var isMicGranted by remember { mutableStateOf(hasMicPermission()) }
-    var isNotificationGranted by remember { mutableStateOf(hasNotificationPermission()) }
-    var isLocationGranted by remember { mutableStateOf(hasLocationPermission()) }
-
-    // Register a launcher for multiple permissions
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestMultiplePermissions(),
-        onResult = { permissions ->
-            isMicGranted = permissions[Manifest.permission.RECORD_AUDIO] ?: isMicGranted
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                isNotificationGranted = permissions[Manifest.permission.POST_NOTIFICATIONS] ?: isNotificationGranted
-            }
-            isLocationGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] ?: isLocationGranted
-        }
-    )
-
     // Track whether first-time setup has been completed
     var isSetupDone by remember { mutableStateOf(EmergencyContactPrefs.isSetupComplete(context)) }
 
-    // Decide which screen to show based on our permission states and setup completion
-    if (isMicGranted && isNotificationGranted && isLocationGranted) {
-        if (isSetupDone) {
-            VoxaAppContent(viewModel = viewModel, modifier = modifier)
-        } else {
-            SetupScreen(
-                viewModel = viewModel,
-                onSetupComplete = { isSetupDone = true }
-            )
-        }
-    } else {
-        PermissionRequiredScreen(
-            onRequestPermission = {
-                val list = mutableListOf(
-                    Manifest.permission.RECORD_AUDIO,
-                    Manifest.permission.ACCESS_FINE_LOCATION
-                )
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    list.add(Manifest.permission.POST_NOTIFICATIONS)
-                }
-                permissionLauncher.launch(list.toTypedArray())
-            },
-            modifier = modifier
+    // Decide which screen to show based on our setup completion
+    if (!isSetupDone) {
+        OnboardingScreen(
+            viewModel = viewModel,
+            onOnboardingCompleted = { isSetupDone = true }
         )
-    }
-}
-
-@Composable
-fun PermissionRequiredScreen(
-    onRequestPermission: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        modifier = modifier.fillMaxSize(),
-        color = Slate900 // Sleek slate dark background
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "🎙️ Permissions Required",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
-                textAlign = TextAlign.Center
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = "Voxa requires microphone access to translate your child's vocalizations, and notification access to monitor sounds continuously in the background.\n\nAll audio is processed locally and never leaves this device.",
-                fontSize = 14.sp,
-                color = Slate400,
-                textAlign = TextAlign.Center,
-                lineHeight = 20.sp
-            )
-            Spacer(modifier = Modifier.height(32.dp))
-            Button(
-                onClick = onRequestPermission,
-                colors = ButtonDefaults.buttonColors(containerColor = Sky400)
-            ) {
-                Text("Grant Permissions", color = Slate900, fontWeight = FontWeight.Bold)
-            }
-        }
+    } else {
+        VoxaAppContent(viewModel = viewModel, modifier = modifier)
     }
 }
 
@@ -334,11 +233,3 @@ fun CustomBottomBar(
 }
 
 // ── PREVIEWS FOR ANDROID STUDIO DESIGN PANEL ──
-
-@androidx.compose.ui.tooling.preview.Preview(showBackground = true, showSystemUi = true, name = "Permission Screen")
-@Composable
-fun PermissionRequiredScreenPreview() {
-    VoxaTheme {
-        PermissionRequiredScreen(onRequestPermission = {})
-    }
-}
