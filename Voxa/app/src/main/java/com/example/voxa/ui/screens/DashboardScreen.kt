@@ -8,6 +8,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -409,7 +413,11 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Column {
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .verticalScroll(rememberScrollState())
+                    ) {
                         // Title & Close Button
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -480,44 +488,6 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
                             contentPadding = PaddingValues(0.dp)
                         ) {
                             Text("Manage Profiles", color = Slate900, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                        }
-
-                        Spacer(modifier = Modifier.height(20.dp))
-
-                        // 👨‍👩‍👧 Caregivers Info Section
-                        Text(
-                            text = "👨‍👩‍👧 Caregivers Info",
-                            color = Sky400,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(bottom = 6.dp)
-                        )
-                        Card(
-                            colors = CardDefaults.cardColors(containerColor = Slate900),
-                            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
-                        ) {
-                            Column(modifier = Modifier.padding(10.dp)) {
-                                Text(
-                                    text = caregiverName,
-                                    color = Color.White,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 12.sp
-                                )
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(
-                                    text = "Phone: $caregiverPhone",
-                                    color = Slate300,
-                                    fontSize = 11.sp
-                                )
-                                Spacer(modifier = Modifier.height(6.dp))
-                                Text(
-                                    text = "✏️ Edit Caregiver Details",
-                                    color = Sky400,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.clickable { showCaregiverEditDialog = true }
-                                )
-                            }
                         }
 
                         Spacer(modifier = Modifier.height(20.dp))
@@ -766,13 +736,26 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
                         )
                         OutlinedTextField(
                             value = tempEcPhone,
-                            onValueChange = { tempEcPhone = it },
+                            onValueChange = { 
+                                val digits = it.filter { char -> char.isDigit() }
+                                if (digits.length <= 11) {
+                                    tempEcPhone = digits
+                                }
+                            },
                             label = { Text("Phone Number", color = Slate400) },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                            isError = tempEcPhone.isNotEmpty() && tempEcPhone.length < 11,
+                            supportingText = {
+                                if (tempEcPhone.isNotEmpty() && tempEcPhone.length < 11) {
+                                    Text("Phone number must be exactly 11 digits", color = MaterialTheme.colorScheme.error)
+                                }
+                            },
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedTextColor = Color.White,
                                 unfocusedTextColor = Color.White,
                                 focusedBorderColor = Sky400,
-                                unfocusedBorderColor = Slate600
+                                unfocusedBorderColor = Slate600,
+                                errorBorderColor = MaterialTheme.colorScheme.error
                             ),
                             singleLine = true
                         )
@@ -792,10 +775,11 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
                     }
                 },
                 confirmButton = {
+                    val isValid = tempEcName.isNotBlank() && tempEcRelation.isNotBlank() &&
+                        tempEcPhone.length == 11 && tempEcMessage.isNotBlank()
                     Button(
                         onClick = {
-                            if (tempEcName.isNotBlank() && tempEcRelation.isNotBlank() &&
-                                tempEcPhone.isNotBlank() && tempEcMessage.isNotBlank()) {
+                            if (isValid) {
                                 ecName = tempEcName
                                 ecRelation = tempEcRelation
                                 ecPhone = tempEcPhone
@@ -804,10 +788,15 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
                                     context, tempEcName.trim(), tempEcRelation.trim(),
                                     tempEcPhone.trim(), tempEcMessage.trim()
                                 )
+                                showEmergencyContactEditDialog = false
                             }
-                            showEmergencyContactEditDialog = false
                         },
-                        colors = ButtonDefaults.buttonColors(containerColor = Sky400)
+                        enabled = isValid,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Sky400,
+                            disabledContainerColor = Sky400.copy(alpha = 0.5f),
+                            disabledContentColor = Slate900
+                        )
                     ) {
                         Text("Save", color = Slate900, fontWeight = FontWeight.Bold)
                     }
