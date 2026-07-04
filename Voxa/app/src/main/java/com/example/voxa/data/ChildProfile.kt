@@ -8,8 +8,11 @@ import androidx.room.PrimaryKey
 data class ChildProfile(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val name: String,
-    val gender: String, // "Male" or "Female" (swaps child-like voice packs)
+    val gender: String, // "Male" or "Female" (swaps child-like voice profiles)
     val isActive: Boolean = false,
     val avatarEmoji: String = "👦",
-    val speakerEmbedding: String? = null // JSON-serialized FloatArray(192) — ECAPA-TDNN voice fingerprint
+    val speakerEmbedding: String? = null, // JSON-serialized FloatArray(192) — ECAPA-TDNN voice fingerprint
+    val caregiverPhone1: String = "",
+    val caregiverPhone2: String = "",
+    val caregiverPhone3: String = ""
 )

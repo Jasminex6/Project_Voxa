@@ -28,6 +28,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.clickable
 import android.widget.Toast
+import androidx.compose.ui.res.stringResource
+import com.example.voxa.R
 import com.example.voxa.ui.*
 import com.example.voxa.ui.theme.*
 import com.example.voxa.utils.AudioFileHelper
@@ -49,6 +51,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 @Composable
 fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
     val activeProfile by viewModel.activeProfile.collectAsState()
+    val bifurcationWarning by viewModel.bifurcationWarningTriggered.collectAsState()
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
@@ -151,17 +154,29 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                 }
 
                 val rawPcm = pcmBufferList.toShortArray()
-                val trimmedPcm = AudioFileHelper.trimSilence(rawPcm)
+                
+                // Use the exact same VAD engine as live listening to extract the segment, 
+                // preserving the natural trailing room noise required for YAMNet matching.
+                val vad = com.example.voxa.ai.VoxaVAD()
+                val segments = vad.processAudio(rawPcm)
                 
                 withContext(Dispatchers.Main) {
                     isRecordingSample = false
                     volumeLevel = 0f
+                    
+                    if (segments.isEmpty()) {
+                        Toast.makeText(context, "No speech detected. Please speak louder.", Toast.LENGTH_SHORT).show()
+                        return@withContext
+                    }
+                    
+                    val processedPcm = segments[0]
+                    
                     try {
-                        AudioFileHelper.validateDuration(trimmedPcm)
+                        AudioFileHelper.validateDuration(processedPcm)
                         val activeId = activeProfile?.id ?: 0L
-                        val cleanIntentName = intentName.trim().lowercase().replace(" ", "_")
+                        val cleanIntentName = intentName.trim().lowercase().replace(Regex("[^\\p{L}\\p{N}_]"), "_")
                         val fileName = "template_${activeId}_${cleanIntentName}_${recordedSamplesCount}.pcm"
-                        val filePath = AudioFileHelper.savePcmFile(context, trimmedPcm, fileName)
+                        val filePath = AudioFileHelper.savePcmFile(context, processedPcm, fileName)
                         
                         savedFilePaths.add(filePath)
                         savedFilePathsStr = savedFilePaths.joinToString(",")
@@ -177,13 +192,13 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                         }
 
                         Toast.makeText(context, "Sample $recordedSamplesCount saved successfully!", Toast.LENGTH_SHORT).show()
-                        if (recordedSamplesCount == 3) {
+                        if (recordedSamplesCount == 15) {
                             showSaveDialog = true
                         } else {
                             // Auto-advance: launch a coroutine to start next sample recording after 1.5 seconds
                             scope.launch {
                                 delay(1500)
-                                if (recordedSamplesCount < 3) {
+                                if (recordedSamplesCount < 15) {
                                     isRecordingSample = true
                                 }
                             }
@@ -212,7 +227,7 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(
-                onClick = onBack,
+                onClick = { viewModel.clearBifurcationWarning(); onBack() },
                 modifier = Modifier.padding(end = 8.dp)
             ) {
                 Icon(
@@ -222,14 +237,14 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                 )
             }
             Text(
-                text = "Enroll Custom Sound",
+                text = stringResource(id = R.string.enroll_title),
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White
             )
         }
         Text(
-            text = "Record 3 speech samples to train the sound dictionary.",
+            text = stringResource(id = R.string.enroll_subtitle),
             fontSize = 13.sp,
             color = Slate400,
             modifier = Modifier.padding(bottom = 16.dp)
@@ -243,7 +258,7 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "Please create and activate a child profile first\nto enroll new vocalizations.",
+                    text = stringResource(id = R.string.enroll_no_profile),
                     color = Slate400,
                     textAlign = TextAlign.Center
                 )
@@ -270,13 +285,13 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "Vocalization Details",
+                                text = stringResource(id = R.string.enroll_card_title),
                                 color = Color.White,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 13.sp
                             )
                             Text(
-                                text = "💡 View Suggestions",
+                                text = stringResource(id = R.string.btn_suggestions),
                                 color = Sky400,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 12.sp,
@@ -287,7 +302,7 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                         OutlinedTextField(
                             value = intentName,
                             onValueChange = { intentName = it },
-                            label = { Text("Meaning of Sound / Word (e.g. Water)", color = Slate400) },
+                            label = { Text(stringResource(id = R.string.field_meaning), color = Slate400) },
                             singleLine = true,
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedTextColor = Color.White,
@@ -301,7 +316,7 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                         OutlinedTextField(
                             value = outputPhrase,
                             onValueChange = { outputPhrase = it },
-                            label = { Text("Egyptian Arabic Voice Translation (e.g. أنا عايز ميّه)", color = Slate400) },
+                            label = { Text(stringResource(id = R.string.field_translation), color = Slate400) },
                             singleLine = false,
                             minLines = 2,
                             maxLines = 3,
@@ -313,6 +328,41 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                             ),
                             modifier = Modifier.fillMaxWidth()
                         )
+                    }
+                }
+
+                // ── BIFURCATION WARNING BANNER ──
+                if (bifurcationWarning != null) {
+                    Card(
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = WarningAmberDark.copy(alpha = 0.2f)),
+                        border = BorderStroke(1.dp, WarningAmber),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 12.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = "⚠️ Notice: High Vocal Variation Detected",
+                                color = WarningAmber,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = bifurcationWarning!!,
+                                color = Color.White,
+                                fontSize = 13.sp
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Button(
+                                onClick = { viewModel.clearBifurcationWarning() },
+                                colors = ButtonDefaults.buttonColors(containerColor = WarningAmber),
+                                modifier = Modifier.align(Alignment.End)
+                            ) {
+                                Text("Dismiss", color = Color.White, fontWeight = FontWeight.Bold)
+                            }
+                        }
                     }
                 }
 
@@ -331,41 +381,41 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text(
-                            text = "Sample Enrollment Progress",
+                            text = stringResource(id = R.string.enroll_progress_title),
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
                         )
-                        Spacer(modifier = Modifier.height(10.dp))
+                        Spacer(modifier = Modifier.height(6.dp))
 
-                        // Progress Step Indicators (dots)
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.padding(bottom = 6.dp)
-                        ) {
-                            for (i in 1..3) {
-                                val isRecorded = i <= recordedSamplesCount
-                                Box(
-                                    modifier = Modifier
-                                        .size(16.dp)
-                                        .clip(CircleShape)
-                                        .background(
-                                            when {
-                                                isRecorded -> SuccessGreen // Green for recorded
-                                                isRecordingSample && i == recordedSamplesCount + 1 -> Sky400 // Cyan for current
-                                                else -> Slate600 // Grey
-                                            }
-                                        )
-                                )
-                            }
-                        }
-
-                        Text(
-                            text = "Collected: $recordedSamplesCount / 3 Samples",
-                            color = Color.White,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Medium
+                        // Progress Step Indicators (Linear Progress)
+                        LinearProgressIndicator(
+                            progress = recordedSamplesCount / 15f,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(8.dp)
+                                .clip(RoundedCornerShape(4.dp)),
+                            color = SuccessGreen,
+                            trackColor = Slate600
                         )
+
+                        Row(
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = stringResource(id = R.string.enroll_collected_count, recordedSamplesCount),
+                                color = Color.White,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = "Min: 10 / Target: 15",
+                                color = if (recordedSamplesCount >= 10) SuccessGreen else Slate400,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
 
                         Spacer(modifier = Modifier.height(6.dp))
 
@@ -390,12 +440,12 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                             }
                         } else {
                             Text(
-                                text = if (recordedSamplesCount > 0 && recordedSamplesCount < 3) {
-                                    "Get ready! Next sample starts in 1.5 seconds..."
+                                text = if (recordedSamplesCount > 0 && recordedSamplesCount < 15) {
+                                    stringResource(id = R.string.enroll_timer_progress)
                                 } else {
-                                    "Tap 'Record Sample' to start, tap again to finish."
+                                    stringResource(id = R.string.enroll_guideline_tap)
                                 },
-                                color = if (recordedSamplesCount > 0 && recordedSamplesCount < 3) SuccessGreen else Slate400,
+                                color = if (recordedSamplesCount > 0 && recordedSamplesCount < 15) SuccessGreen else Slate400,
                                 fontSize = 11.sp,
                                 textAlign = TextAlign.Center
                             )
@@ -409,7 +459,7 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                                 if (intentName.isBlank() || outputPhrase.isBlank()) return@Button
                                 isRecordingSample = !isRecordingSample
                             },
-                            enabled = intentName.isNotBlank() && outputPhrase.isNotBlank() && recordedSamplesCount < 3,
+                            enabled = intentName.isNotBlank() && outputPhrase.isNotBlank() && recordedSamplesCount < 15,
                             contentPadding = PaddingValues(0.dp), // Clear default margins for comfy circle text
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = if (isRecordingSample) ErrorRed else Sky500,
@@ -419,7 +469,7 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                             modifier = Modifier.size(90.dp)
                         ) {
                             Text(
-                                text = if (isRecordingSample) "Stop" else "Record\nSample",
+                                text = if (isRecordingSample) stringResource(id = R.string.btn_stop) else stringResource(id = R.string.btn_record),
                                 color = Color.White,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
@@ -432,32 +482,19 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                         // Save Intent Button
                         Button(
                             onClick = {
-                                val cleanFileName = "${intentName.lowercase().replace(" ", "_")}.mp3"
-                                
-                                viewModel.enrollIntent(
-                                    intentName = intentName.trim(),
-                                    outputPhrase = outputPhrase.trim(),
-                                    audioAssetPath = cleanFileName,
-                                    tempFilePaths = savedFilePaths.toList()
-                                )
-                                viewModel.addLogSystemEvent("Enrolled intent '${intentName.trim()}' into database with 3 templates")
-
-                                // Reset screen state
-                                intentName = ""
-                                outputPhrase = ""
-                                recordedSamplesCount = 0
-                                savedFilePaths.clear()
-                                savedFilePathsStr = ""
+                                showSaveDialog = true
                             },
-                            enabled = recordedSamplesCount == 3,
+                            enabled = recordedSamplesCount >= 10,
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = SuccessGreen,
                                 disabledContainerColor = Slate700
                             ),
                             shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier
+                                .width(220.dp)
+                                .align(Alignment.CenterHorizontally)
                         ) {
-                            Text("Save Sound", color = Color.White)
+                            Text(stringResource(id = R.string.btn_save_sound), color = Color.White)
                         }
                     }
                 }
@@ -469,20 +506,20 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
     if (showSaveDialog) {
         AlertDialog(
             onDismissRequest = { showSaveDialog = false },
-            title = { Text("Enrollment Complete") },
-            text = { Text("You have recorded all 3 samples for '$intentName'. Would you like to save this sound now?") },
+            title = { Text(stringResource(id = R.string.dialog_complete_title)) },
+            text = { Text(stringResource(id = R.string.dialog_complete_text, intentName, recordedSamplesCount)) },
             confirmButton = {
                 Button(
                     onClick = {
                         showSaveDialog = false
-                        val cleanFileName = "${intentName.lowercase().replace(" ", "_")}.mp3"
+                        val cleanFileName = "${intentName.lowercase().trim().replace(Regex("[^\\p{L}\\p{N}_]"), "_")}.mp3"
                         viewModel.enrollIntent(
                             intentName = intentName.trim(),
                             outputPhrase = outputPhrase.trim(),
                             audioAssetPath = cleanFileName,
                             tempFilePaths = savedFilePaths.toList()
                         )
-                        viewModel.addLogSystemEvent("Enrolled intent '${intentName.trim()}' into database with 3 templates")
+                        viewModel.addLogSystemEvent("Enrolled intent '${intentName.trim()}' into database with $recordedSamplesCount templates")
 
                         // Reset screen state
                         intentName = ""
@@ -494,7 +531,7 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = SuccessGreen)
                 ) {
-                    Text("Save Sound", color = Color.White)
+                    Text(stringResource(id = R.string.btn_save_sound), color = Color.White)
                 }
             },
             dismissButton = {
@@ -503,7 +540,7 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                     border = BorderStroke(1.dp, Slate600),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = Slate300)
                 ) {
-                    Text("Cancel")
+                    Text(stringResource(id = R.string.dialog_cancel))
                 }
             },
             containerColor = Slate800,
@@ -516,7 +553,7 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
     if (showSuggestionsDialog) {
         AlertDialog(
             onDismissRequest = { showSuggestionsDialog = false },
-            title = { Text("💡 Suggested Vocalizations", color = Color.White, fontWeight = FontWeight.Bold) },
+            title = { Text(stringResource(id = R.string.dialog_suggestions_title), color = Color.White, fontWeight = FontWeight.Bold) },
             text = {
                 Column(
                     modifier = Modifier
@@ -524,7 +561,7 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                         .height(350.dp)
                 ) {
                     Text(
-                        text = "Select a commonly used word or phrase to auto-populate the details below:",
+                        text = stringResource(id = R.string.dialog_suggestions_desc),
                         color = Slate300,
                         fontSize = 12.sp,
                         modifier = Modifier.padding(bottom = 12.dp)
@@ -605,7 +642,7 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
             },
             confirmButton = {
                 TextButton(onClick = { showSuggestionsDialog = false }) {
-                    Text("Close", color = Sky400, fontWeight = FontWeight.Bold)
+                    Text(stringResource(id = R.string.dialog_cancel), color = Sky400, fontWeight = FontWeight.Bold)
                 }
             },
             containerColor = Slate800,
@@ -621,6 +658,7 @@ private class MockEnrollmentViewModel : IVoxaViewModel {
     override val allProfiles = kotlinx.coroutines.flow.MutableStateFlow(emptyList<com.example.voxa.data.ChildProfile>())
     override val activeProfile = kotlinx.coroutines.flow.MutableStateFlow(com.example.voxa.data.ChildProfile(name = "Adam", gender = "Male", isActive = true))
     override val enrolledIntents = kotlinx.coroutines.flow.MutableStateFlow(emptyList<com.example.voxa.data.EnrolledIntent>())
+    override val practiceStats = kotlinx.coroutines.flow.MutableStateFlow(emptyList<com.example.voxa.data.PracticeStats>())
     override val isListening = kotlinx.coroutines.flow.MutableStateFlow(false)
     override val recentEvents = kotlinx.coroutines.flow.MutableStateFlow(emptyList<LogEvent>())
     override val volumeLevel = kotlinx.coroutines.flow.MutableStateFlow(0f)

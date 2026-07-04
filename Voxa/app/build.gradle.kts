@@ -62,6 +62,7 @@ dependencies {
     implementation(libs.litert)
 
     // Google Play Services Location
+    implementation(libs.androidx.appcompat)
     implementation(libs.play.services.location)
 
     testImplementation(libs.junit)

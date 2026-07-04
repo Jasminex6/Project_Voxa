@@ -18,6 +18,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import com.example.voxa.R
 import com.example.voxa.data.*
 import com.example.voxa.ui.*
 import com.example.voxa.ui.theme.*
@@ -73,7 +75,7 @@ fun ProfileScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                 )
             }
             Text(
-                text = "Child Profile Settings",
+                text = stringResource(id = R.string.profile_title),
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White
@@ -92,7 +94,7 @@ fun ProfileScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    text = "Add New Child Profile",
+                    text = stringResource(id = R.string.profile_add_title),
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
@@ -101,7 +103,7 @@ fun ProfileScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                 OutlinedTextField(
                     value = newName,
                     onValueChange = { newName = it },
-                    label = { Text("Child's Name", color = Slate400) },
+                    label = { Text(stringResource(id = R.string.profile_name_label), color = Slate400) },
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedTextColor = Color.White,
@@ -131,7 +133,7 @@ fun ProfileScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                text = "Selected Avatar: ",
+                                text = stringResource(id = R.string.profile_avatar_selected),
                                 fontSize = 13.sp,
                                 color = Slate300
                             )
@@ -142,7 +144,7 @@ fun ProfileScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                             )
                         }
                         Text(
-                            text = if (isEmojiSelectorExpanded) "▲ Hide" else "▼ Choose Emoji",
+                            text = if (isEmojiSelectorExpanded) stringResource(id = R.string.profile_emoji_hide) else stringResource(id = R.string.profile_emoji_show),
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             color = Sky400
@@ -160,7 +162,7 @@ fun ProfileScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                                 verticalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
                                 Text(
-                                    text = "Tap an avatar below to select:",
+                                    text = stringResource(id = R.string.profile_emoji_grid_title),
                                     fontSize = 11.sp,
                                     color = Slate400
                                 )
@@ -210,7 +212,7 @@ fun ProfileScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Text(
-                        text = "Arabic Voice Pack Gender:",
+                        text = stringResource(id = R.string.profile_voice_pack_gender),
                         fontSize = 13.sp,
                         color = Slate400
                     )
@@ -221,7 +223,7 @@ fun ProfileScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                         FilterChip(
                             selected = selectedGender == "Male",
                             onClick = { selectedGender = "Male" },
-                            label = { Text("Male") },
+                            label = { Text(stringResource(id = R.string.profile_male)) },
                             leadingIcon = if (selectedGender == "Male") {
                                 { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
                             } else null,
@@ -237,7 +239,7 @@ fun ProfileScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                         FilterChip(
                             selected = selectedGender == "Female",
                             onClick = { selectedGender = "Female" },
-                            label = { Text("Female") },
+                            label = { Text(stringResource(id = R.string.profile_female)) },
                             leadingIcon = if (selectedGender == "Female") {
                                 { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
                             } else null,
@@ -264,7 +266,7 @@ fun ProfileScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(8.dp)
                 ) {
-                    Text("Add Child Profile", color = Slate900, fontWeight = FontWeight.Bold)
+                    Text(stringResource(id = R.string.btn_add_profile), color = Slate900, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -273,7 +275,7 @@ fun ProfileScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
 
         // ── PROFILE LIST ──
         Text(
-            text = "Enrolled Profiles (Tap to activate)",
+            text = stringResource(id = R.string.profile_enrolled_title),
             fontSize = 15.sp,
             fontWeight = FontWeight.Bold,
             color = Color.White
@@ -288,7 +290,7 @@ fun ProfileScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "No child profiles created yet.\nUse the form above to add a profile.",
+                    text = stringResource(id = R.string.profile_empty),
                     color = Slate400,
                     fontSize = 13.sp,
                     lineHeight = 18.sp
@@ -373,7 +375,7 @@ fun ProfileItem(
                                     .padding(horizontal = 6.dp, vertical = 2.dp)
                             ) {
                                 Text(
-                                    text = "ACTIVE",
+                                    text = stringResource(id = R.string.active_tag),
                                     color = Color.White,
                                     fontSize = 9.sp,
                                     fontWeight = FontWeight.Bold
@@ -382,7 +384,7 @@ fun ProfileItem(
                         }
                     }
                     Text(
-                        text = "Voice Pack: ${profile.gender}",
+                        text = stringResource(id = R.string.voice_pack_label, profile.gender),
                         fontSize = 12.sp,
                         color = Slate300
                     )
@@ -397,7 +399,7 @@ fun ProfileItem(
                 IconButton(onClick = onToggleGender) {
                     Icon(
                         imageVector = Icons.Default.SwapHoriz,
-                        contentDescription = "Toggle Voice Pack",
+                        contentDescription = stringResource(id = R.string.btn_toggle_voice_pack),
                         tint = Color.White,
                         modifier = Modifier.size(22.dp)
                     )
@@ -407,7 +409,7 @@ fun ProfileItem(
                 IconButton(onClick = onDelete) {
                     Icon(
                         imageVector = Icons.Default.Delete,
-                        contentDescription = "Delete Profile",
+                        contentDescription = stringResource(id = R.string.btn_delete_profile),
                         tint = ErrorRed,
                         modifier = Modifier.size(20.dp)
                     )
@@ -428,6 +430,7 @@ private class MockProfileViewModel : IVoxaViewModel {
     )
     override val activeProfile = kotlinx.coroutines.flow.MutableStateFlow(ChildProfile(id = 1, name = "Adam", gender = "Male", isActive = true))
     override val enrolledIntents = kotlinx.coroutines.flow.MutableStateFlow(emptyList<com.example.voxa.data.EnrolledIntent>())
+    override val practiceStats = kotlinx.coroutines.flow.MutableStateFlow(emptyList<com.example.voxa.data.PracticeStats>())
     override val isListening = kotlinx.coroutines.flow.MutableStateFlow(false)
     override val recentEvents = kotlinx.coroutines.flow.MutableStateFlow(emptyList<LogEvent>())
     override val volumeLevel = kotlinx.coroutines.flow.MutableStateFlow(0f)

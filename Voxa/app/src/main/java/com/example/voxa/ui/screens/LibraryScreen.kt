@@ -14,6 +14,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import com.example.voxa.R
 import com.example.voxa.data.EnrolledIntent
 import com.example.voxa.ui.*
 import com.example.voxa.ui.theme.*
@@ -43,13 +45,17 @@ fun LibraryScreen(viewModel: IVoxaViewModel, onNavigateToEnrollment: () -> Unit)
                 .padding(16.dp)
         ) {
             Text(
-                text = "📚 Word Dictionary Library",
+                text = stringResource(id = R.string.library_title),
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White
             )
             Text(
-                text = "Manage custom sound meanings for ${activeProfile?.name ?: "the active profile"}.",
+                text = if (activeProfile != null) {
+                    stringResource(id = R.string.library_desc, activeProfile!!.name)
+                } else {
+                    stringResource(id = R.string.library_no_profile)
+                },
                 fontSize = 13.sp,
                 color = Slate400,
                 modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
@@ -63,7 +69,7 @@ fun LibraryScreen(viewModel: IVoxaViewModel, onNavigateToEnrollment: () -> Unit)
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "Please create or activate a child profile first\nto view or manage their dictionary.",
+                        text = stringResource(id = R.string.library_no_profile),
                         color = Slate400,
                         textAlign = TextAlign.Center
                     )
@@ -76,7 +82,7 @@ fun LibraryScreen(viewModel: IVoxaViewModel, onNavigateToEnrollment: () -> Unit)
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "No custom words enrolled yet.\nTap + Add Sound below to record the first word!",
+                        text = stringResource(id = R.string.library_empty),
                         color = Slate400,
                         textAlign = TextAlign.Center,
                         lineHeight = 20.sp
@@ -122,7 +128,7 @@ fun LibraryScreen(viewModel: IVoxaViewModel, onNavigateToEnrollment: () -> Unit)
                     shape = RoundedCornerShape(14.dp),
                     modifier = Modifier.padding(bottom = 20.dp)
                 ) {
-                    Text("+ Add Sound", color = Slate900, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Text(stringResource(id = R.string.btn_add_sound), color = Slate900, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 }
             }
         }
@@ -142,21 +148,21 @@ fun LibraryIntentItem(intent: EnrolledIntent, onPlayPreview: () -> Unit, onDelet
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Intent: ${intent.intentName}",
+                    text = stringResource(id = R.string.label_intent, intent.intentName),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Phrase: ${intent.outputPhrase}",
+                    text = stringResource(id = R.string.label_phrase, intent.outputPhrase),
                     fontSize = 18.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = Sky400 // Highlighting translation phrase in cyan
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Audio: ${intent.audioAssetPath.substringAfterLast("/")}",
+                    text = stringResource(id = R.string.label_audio, intent.audioAssetPath.substringAfterLast("/")),
                     fontSize = 11.sp,
                     color = Slate400
                 )
@@ -196,6 +202,7 @@ private class MockLibraryViewModel : IVoxaViewModel {
             EnrolledIntent(id = 2, profileId = 1, intentName = "Milk", outputPhrase = "أنا عايز لبن", audioAssetPath = "milk.mp3")
         )
     )
+    override val practiceStats = kotlinx.coroutines.flow.MutableStateFlow(emptyList<com.example.voxa.data.PracticeStats>())
     override val isListening = kotlinx.coroutines.flow.MutableStateFlow(false)
     override val recentEvents = kotlinx.coroutines.flow.MutableStateFlow(emptyList<LogEvent>())
     override val volumeLevel = kotlinx.coroutines.flow.MutableStateFlow(0f)

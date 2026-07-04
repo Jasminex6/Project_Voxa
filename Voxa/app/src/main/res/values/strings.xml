@@ -1,3 +1,131 @@
 <resources>
     <string name="app_name">Voxa</string>
+
+    <!-- Navigation Screen Titles -->
+    <string name="title_home">Home</string>
+    <string name="title_enroll">Enroll</string>
+    <string name="title_library">Library</string>
+    <string name="title_emergency">Emergency</string>
+    <string name="title_profile">Profile</string>
+    <string name="title_practice">Practice</string>
+
+    <!-- Onboarding Walkthrough -->
+    <string name="onboarding_title_1">Welcome to Voxa</string>
+    <string name="onboarding_desc_1">Voxa translates your child\'s unique vocalizations into clear Egyptian Arabic voice output, helping them communicate their needs instantly.</string>
+    <string name="onboarding_title_2">Personalized Translation</string>
+    <string name="onboarding_desc_2">Caregivers record custom sound templates (e.g. custom hums or sounds) and pair them with standard meanings. Voxa uses offline similarity matching to recognize them.</string>
+    <string name="onboarding_title_3">System Permissions</string>
+    <string name="onboarding_desc_3">To monitor speech and notify you, Voxa requires Microphone, Notification, and GPS permissions. All audio is processed locally and never leaves this device.</string>
+    <string name="onboarding_title_4">Create First Profile</string>
+    <string name="onboarding_desc_4">Let\'s get started by creating a profile for your child. Enter their name and select a voice pack matching their gender.</string>
+    <string name="btn_next">Next</string>
+    <string name="btn_get_started">Get Started</string>
+    <string name="btn_grant_permissions">Grant Permissions</string>
+    <string name="btn_skip">Skip</string>
+
+    <!-- Dashboard Screen -->
+    <string name="header_live_translation">Live Translation</string>
+    <string name="listening_active">🎙️ Listening...</string>
+    <string name="listening_ready">🎙️ Ready to Translate</string>
+    <string name="listening_waiting">Waiting for child vocalizations...</string>
+    <string name="listening_tap_mic">Tap the microphone to start monitoring</string>
+    <string name="title_activity_log">📋 Activity Log Timeline</string>
+    <string name="log_empty">No recent sounds detected.\nActivate monitoring to start translating.</string>
+    <string name="system_update_label">System Update</string>
+    <string name="vocalization_detected_label">Detected Vocalization</string>
+    <string name="unrecognized_sound">Unrecognized Sound</string>
+    <string name="sidebar_title">Voxa Hub Menu</string>
+    <string name="sidebar_child_info">👦 Child Info</string>
+    <string name="sidebar_caregivers_info">👨‍👩‍👧 Caregivers Info</string>
+    <string name="sidebar_settings">⚙️ Settings</string>
+    <string name="sidebar_data_management">💾 Data Management</string>
+    <string name="btn_manage_profiles">Manage Profiles</string>
+    <string name="btn_edit_caregiver">✏️ Edit Caregiver Details</string>
+    <string name="btn_export_profile">📤 Export Profile &amp; Intents</string>
+    <string name="btn_import_profile">📥 Import Profile &amp; Intents</string>
+    <string name="btn_clear_timeline">🧹 Clear Timeline Logs</string>
+    <string name="toast_timeline_cleared">Timeline cleared!</string>
+    <string name="dialog_edit_caregiver_title">Edit Caregiver Info</string>
+    <string name="dialog_edit_caregiver_name">Name</string>
+    <string name="dialog_edit_caregiver_phone">Phone Number</string>
+    <string name="dialog_save">Save</string>
+    <string name="dialog_cancel">Cancel</string>
+
+    <!-- Library Screen -->
+    <string name="library_title">📚 Word Dictionary Library</string>
+    <string name="library_desc">Manage custom sound meanings for %1$s.</string>
+    <string name="library_no_profile">Please create or activate a child profile first\nto view or manage their dictionary.</string>
+    <string name="library_empty">No custom words enrolled yet.\nTap + Add Sound below to record the first word!</string>
+    <string name="btn_add_sound">+ Add Sound</string>
+    <string name="label_intent">Intent: %1$s</string>
+    <string name="label_phrase">Phrase: %1$s</string>
+    <string name="label_audio">Audio: %1$s</string>
+
+    <!-- Enrollment Screen -->
+    <string name="enroll_title">Enroll Custom Sound</string>
+    <string name="enroll_subtitle">Record 3 speech samples to train the sound dictionary.</string>
+    <string name="enroll_no_profile">Please create and activate a child profile first\nto enroll new vocalizations.</string>
+    <string name="enroll_card_title">Vocalization Details</string>
+    <string name="btn_suggestions">💡 View Suggestions</string>
+    <string name="field_meaning">Meaning of Sound / Word (e.g. Water)</string>
+    <string name="field_translation">Egyptian Arabic Voice Translation (e.g. أنا عايز ميّه)</string>
+    <string name="enroll_progress_title">Sample Enrollment Progress</string>
+    <string name="enroll_collected_count">Collected: %1$d / 15 Samples</string>
+    <string name="enroll_timer_progress">Get ready! Next sample starts in 1.5 seconds...</string>
+    <string name="enroll_guideline_tap">Tap \'Record Sample\' to start, tap again to finish.</string>
+    <string name="btn_record">Record\nSample</string>
+    <string name="btn_stop">Stop</string>
+    <string name="btn_save_sound">Save Sound</string>
+    <string name="dialog_complete_title">Enrollment Complete</string>
+    <string name="dialog_complete_text">You have recorded %2$d samples for \'%1$s\'. Would you like to save this sound now?</string>
+    <string name="dialog_suggestions_title">💡 Suggested Vocalizations</string>
+    <string name="dialog_suggestions_desc">Select a commonly used word or phrase to auto-populate the details below:</string>
+
+    <!-- Emergency Screen -->
+    <string name="emergency_title">Emergency Actions</string>
+    <string name="emergency_desc">Quick access to distress triggers.</string>
+    <string name="emergency_call_services">Call Emergency Services</string>
+    <string name="emergency_call_desc">Instantly dial emergency number (112)</string>
+    <string name="emergency_sms">Emergency SMS</string>
+    <string name="emergency_sms_desc">Send SMS notification to caregivers</string>
+    <string name="emergency_siren">Emergency Siren</string>
+    <string name="emergency_siren_hold">Hold for 2 seconds to play emergency siren</string>
+    <string name="emergency_siren_release">Release to mute siren</string>
+    <string name="emergency_caregiver_alert">Alert Primary Caregiver</string>
+    <string name="emergency_caregiver_desc">Dial caregiver phone number directly</string>
+    <string name="emergency_whatsapp">Send WhatsApp Location</string>
+    <string name="emergency_whatsapp_desc">Send location to caregivers via WhatsApp (Recommended)</string>
+    <string name="caregiver_contacts_title">Caregiver Contact List</string>
+
+    <!-- Profile Screen -->
+    <string name="profile_title">Child Profile Settings</string>
+    <string name="profile_add_title">Add New Child Profile</string>
+    <string name="profile_name_label">Child\'s Name</string>
+    <string name="profile_avatar_selected">Selected Avatar: </string>
+    <string name="profile_emoji_show">▼ Choose Emoji</string>
+    <string name="profile_emoji_hide">▲ Hide</string>
+    <string name="profile_emoji_grid_title">Tap an avatar below to select:</string>
+    <string name="profile_voice_pack_gender">Arabic Voice Pack Gender:</string>
+    <string name="profile_male">Male</string>
+    <string name="profile_female">Female</string>
+    <string name="btn_add_profile">Add Child Profile</string>
+    <string name="profile_enrolled_title">Enrolled Profiles (Tap to activate)</string>
+    <string name="profile_empty">No child profiles created yet.\nUse the form above to add a profile.</string>
+    <string name="active_tag">ACTIVE</string>
+    <string name="voice_pack_label">Voice Pack: %1$s</string>
+    <string name="btn_toggle_voice_pack">Toggle Voice Pack</string>
+    <string name="btn_delete_profile">Delete Profile</string>
+
+    <!-- Practice Screen -->
+    <string name="practice_title">🎯 Speech Practice Game</string>
+    <string name="practice_desc">Practice speaking common words to improve your pronunciation!</string>
+    <string name="practice_word_card">Word to Say</string>
+    <string name="practice_speak_btn">Hold &amp; Speak</string>
+    <string name="practice_speak_recording">Listening... Release when done</string>
+    <string name="score_label">Pronunciation Match Score</string>
+    <string name="feedback_perfect">Perfect! Excellent Pronunciation! 🌟🌟🌟</string>
+    <string name="feedback_good">Good job! Keep going! 🌟🌟</string>
+    <string name="feedback_try_again">Nice attempt! Let\'s try again. 🌟</string>
+    <string name="history_title">Recent Game Attempts</string>
+    <string name="history_empty">No practice attempts recorded yet.</string>
 </resources>
