@@ -1,81 +1,68 @@
 package com.example.voxa.ai
 
 import android.content.Context
+import com.example.voxa.utils.AudioDebugUtils
 import com.example.voxa.utils.SafeLog as Log
 import com.example.voxa.utils.TFLiteModelLoader
 import org.tensorflow.lite.Interpreter
+import kotlin.math.ceil
 import kotlin.math.sqrt
 
 /**
  * 🧠 YamnetEncoder — YAMNet-based Audio Feature Extractor
  *
- * Loads the frozen YAMNet TFLite model from assets and extracts a 2048-D temporal-halved
- * feature vector from a 1.44-second (23040 sample) audio window.
+ * Loads the frozen YAMNet TFLite model from assets and extracts a 2048-D Temporal-Halved
+ * feature vector from an audio window normalized to exactly 1.44s (23040 samples at 16kHz).
  *
- * Pipeline position:  VAD → [Tile/Crop to 1.44s] → [YamnetEncoder] → Prototypical Matcher
- *
- * Architecture v4 specifies:
- *   - Input: 23040 float32 samples (1.44s at 16kHz)
- *   - YAMNet outputs 2 frames of 1024-D embeddings → shape [2, 1024]
- *   - Concatenate frame[0] ++ frame[1] → 2048-D vector
- *   - L2-normalize the concatenated vector
- *
- * Reference: proposed_arch_v4.md (Layer 2: Neural Feature Extraction)
+ * Pipeline position:  VAD → [Trim + Pad/Crop to 1.44s] → [YamnetEncoder] → Prototypical Matcher
  */
-class YamnetEncoder(context: Context, modelName: String = "yamnet.tflite") {
+class YamnetEncoder(private val context: Context, modelName: String = "yamnet.tflite") {
 
     companion object {
         private const val TAG = "YamnetEncoder"
 
-        /** Target number of samples for a 1.44s window at 16kHz */
-        const val TARGET_SAMPLES = 23_040
-
         /** Each YAMNet frame produces a 1024-D embedding */
         private const val EMBEDDING_DIM = 1024
 
-        /** We expect exactly 2 frames for a 1.44s input → 2048-D output */
+        /** Output is a 2048-D Temporal-Halved vector (first 2 YAMNet frames concatenated) */
         const val OUTPUT_DIM = 2048
 
+        /** Target audio length: 1.44s at 16kHz (guarantees exactly 2 YAMNet frames) */
+        private const val TARGET_SAMPLES = 23040
+
+        /** Minimum samples for YAMNet to produce at least 1 frame (0.975s at 16kHz) */
+        private const val MIN_SAMPLES = 15600
+
         /**
-         * Prepares a raw PCM speech segment for YAMNet by tiling (if short) or center-cropping
-         * (if long) to exactly [TARGET_SAMPLES] float32 samples.
+         * Prepares a raw PCM speech segment for YAMNet by converting to Float
+         * and normalizing to exactly [TARGET_SAMPLES] (1.44s) via center-pad or center-crop.
          *
-         * This mirrors the `load_and_vad_pad` function from voxa.ipynb:
-         *   - Normalize Int16 → Float32 [-1.0, 1.0]
-         *   - If shorter than target: repeat-tile, then center-crop
-         *   - If longer than target: center-crop
+         * This matches the notebook's `load_and_pad()` behavior, ensuring enrollment
+         * and live inference produce comparable embeddings.
          *
          * @param pcmInt16 Raw 16-bit PCM speech segment at 16kHz
          * @return FloatArray of exactly [TARGET_SAMPLES] values in [-1.0, 1.0]
          */
         fun prepareAudioWindow(pcmInt16: ShortArray): FloatArray {
-            // Normalize to float [-1.0, 1.0]
-            val floats = FloatArray(pcmInt16.size) { pcmInt16[it].toFloat() / 32768.0f }
-
-            val target = TARGET_SAMPLES
-            val result: FloatArray
-
-            if (floats.size >= target) {
-                // Center-crop: take the middle `target` samples
-                val start = (floats.size - target) / 2
-                result = floats.copyOfRange(start, start + target)
-            } else {
-                // Repeat-tile until >= target, then center-crop
-                val repeats = (target + floats.size - 1) / floats.size // ceil division
-                val tiled = FloatArray(floats.size * repeats)
-                for (r in 0 until repeats) {
-                    System.arraycopy(floats, 0, tiled, r * floats.size, floats.size)
+            val floats = FloatArray(TARGET_SAMPLES)
+            if (pcmInt16.size <= TARGET_SAMPLES) {
+                // Center-pad: place audio in the middle of the 1.44s window
+                val offset = (TARGET_SAMPLES - pcmInt16.size) / 2
+                for (i in pcmInt16.indices) {
+                    floats[offset + i] = pcmInt16[i] / 32768.0f
                 }
-                val start = (tiled.size - target) / 2
-                result = tiled.copyOfRange(start, start + target)
+            } else {
+                // Center-crop: take the middle 1.44s from longer audio
+                val start = (pcmInt16.size - TARGET_SAMPLES) / 2
+                for (i in 0 until TARGET_SAMPLES) {
+                    floats[i] = pcmInt16[start + i] / 32768.0f
+                }
             }
-
-            return result
+            return floats
         }
 
         /**
          * L2-normalizes a float vector in-place and returns it.
-         * After normalization, cosine similarity simplifies to the dot product.
          */
         fun l2Normalize(vector: FloatArray): FloatArray {
             var sumSq = 0.0f
@@ -97,53 +84,33 @@ class YamnetEncoder(context: Context, modelName: String = "yamnet.tflite") {
                 numThreads = 2 // Use 2 CPU threads for inference
             }
             interpreter = Interpreter(modelBuffer, options)
-
-            // Resize input tensor to accept exactly TARGET_SAMPLES floats
-            interpreter?.resizeInput(0, intArrayOf(TARGET_SAMPLES))
-            interpreter?.allocateTensors()
-
-            Log.d(TAG, "YAMNet interpreter loaded. Input shape: ${interpreter?.getInputTensor(0)?.shape()?.contentToString()}")
-
-            // Log output tensor shapes for debugging
-            val numOutputs = interpreter?.outputTensorCount ?: 0
-            for (i in 0 until numOutputs) {
-                val shape = interpreter?.getOutputTensor(i)?.shape()
-                Log.d(TAG, "Output[$i] shape: ${shape?.contentToString()}")
-            }
+            Log.d(TAG, "YAMNet interpreter loaded.")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to initialize YAMNet interpreter: ${e.message}", e)
         }
     }
 
-    /**
-     * Returns true if the TFLite interpreter is loaded and ready.
-     */
     fun isValid(): Boolean = interpreter != null
 
     /**
-     * Extracts a 2048-D L2-normalized embedding vector from a pre-prepared audio window.
+     * Extracts a 2048-D Temporal-Halved, L2-normalized embedding vector.
+     * Concatenates the first two YAMNet frame embeddings (each 1024-D).
      *
-     * @param audioWindow FloatArray of exactly [TARGET_SAMPLES] values (call [prepareAudioWindow] first)
+     * @param audioWindow FloatArray of exactly [TARGET_SAMPLES] values
      * @return L2-normalized 2048-D FloatArray
-     * @throws IllegalStateException if the interpreter is not loaded
-     * @throws IllegalArgumentException if audio window size is wrong
      */
     fun extractEmbedding(audioWindow: FloatArray): FloatArray {
         val interp = interpreter
             ?: throw IllegalStateException("YAMNet interpreter is not loaded")
 
-        require(audioWindow.size == TARGET_SAMPLES) {
-            "Audio window must be exactly $TARGET_SAMPLES samples, got ${audioWindow.size}"
+        require(audioWindow.size >= MIN_SAMPLES) {
+            "Audio window must be at least $MIN_SAMPLES samples, got ${audioWindow.size}"
         }
 
-        // YAMNet has 3 output tensors:
-        //   [0] scores  — shape [N, 521]    (AudioSet class scores per frame)
-        //   [1] embeddings — shape [N, 1024] (the feature vectors we need)
-        //   [2] spectrogram — shape [M, 64]  (log-mel spectrogram)
-        //
-        // With 23040 input samples (1.44s), N=2 frames.
+        // Resize input tensor dynamically
+        interp.resizeInput(0, intArrayOf(audioWindow.size))
+        interp.allocateTensors()
 
-        // Query output shapes dynamically to prevent shape mismatch exceptions on static models
         val scoresShape = interp.getOutputTensor(0).shape()
         val embShape = interp.getOutputTensor(1).shape()
         val specShape = interp.getOutputTensor(2).shape()
@@ -154,7 +121,6 @@ class YamnetEncoder(context: Context, modelName: String = "yamnet.tflite") {
         val specFrames = if (specShape.isNotEmpty()) specShape[0] else 141
         val specDim = if (specShape.size > 1) specShape[1] else 64
 
-        // Allocate output containers based on dynamic shapes
         val scores = Array(numFrames) { FloatArray(scoresDim) }
         val embeddings = Array(numFrames) { FloatArray(embDim) }
         val spectrogram = Array(specFrames) { FloatArray(specDim) }
@@ -164,37 +130,43 @@ class YamnetEncoder(context: Context, modelName: String = "yamnet.tflite") {
         outputs[1] = embeddings
         outputs[2] = spectrogram
 
-        // Run inference with a flat 1-D input (no batch dimension for YAMNet)
         interp.runForMultipleInputsOutputs(arrayOf(audioWindow), outputs)
 
-        // Temporal Halving / Padding: Concatenate emb[0] (1024-D) ++ emb[1] (1024-D) = 2048-D
-        val combined = FloatArray(OUTPUT_DIM)
-        if (numFrames >= 2) {
-            System.arraycopy(embeddings[0], 0, combined, 0, EMBEDDING_DIM)
-            System.arraycopy(embeddings[1], 0, combined, EMBEDDING_DIM, EMBEDDING_DIM)
-        } else if (numFrames == 1) {
-            System.arraycopy(embeddings[0], 0, combined, 0, EMBEDDING_DIM)
-            // The remaining 1024 elements remain 0.0f (zero-padded, matching voxa.ipynb fallback)
+        // Temporal Halving: concatenate first 2 YAMNet frames into a 2048-D vector
+        // This matches the notebook's extract_2048d() function
+        val temporalHalved = FloatArray(OUTPUT_DIM)
+        // Frame 0 → positions [0, 1024)
+        if (numFrames > 0) {
+            for (j in 0 until EMBEDDING_DIM) {
+                temporalHalved[j] = embeddings[0][j]
+            }
+        }
+        // Frame 1 → positions [1024, 2048)
+        if (numFrames > 1) {
+            for (j in 0 until EMBEDDING_DIM) {
+                temporalHalved[EMBEDDING_DIM + j] = embeddings[1][j]
+            }
         }
 
-        // L2-normalize for cosine similarity via dot product
-        return l2Normalize(combined)
+        return l2Normalize(temporalHalved)
     }
 
     /**
-     * Convenience method: takes raw PCM, prepares the window, and extracts the embedding.
-     *
-     * @param pcmInt16 Raw 16-bit PCM speech segment at 16kHz (any length ≥ 200ms)
-     * @return L2-normalized 2048-D FloatArray
+     * Convenience method: prepares the window, saves debug wav, and extracts the embedding.
      */
     fun extractFromPcm(pcmInt16: ShortArray): FloatArray {
-        val window = prepareAudioWindow(pcmInt16)
-        return extractEmbedding(window)
+        android.util.Log.e("VoxaDebug", "YamnetEncoder.extractFromPcm called! pcm size: ${pcmInt16.size}")
+        try {
+            val window = prepareAudioWindow(pcmInt16)
+            AudioDebugUtils.saveDebugWav(window, context, "debug_audio")
+            android.util.Log.e("VoxaDebug", "saveDebugWav finished, about to extractEmbedding")
+            return extractEmbedding(window)
+        } catch (e: Throwable) {
+            android.util.Log.e("VoxaDebug", "CRASH in extractFromPcm: ${e.javaClass.simpleName} - ${e.message}", e)
+            throw e
+        }
     }
 
-    /**
-     * Releases the interpreter resources.
-     */
     fun close() {
         interpreter?.close()
         interpreter = null

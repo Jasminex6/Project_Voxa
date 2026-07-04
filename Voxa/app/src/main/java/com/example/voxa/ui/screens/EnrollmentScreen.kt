@@ -154,17 +154,29 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                 }
 
                 val rawPcm = pcmBufferList.toShortArray()
-                val trimmedPcm = AudioFileHelper.trimSilence(rawPcm)
+                
+                // Use the exact same VAD engine as live listening to extract the segment, 
+                // preserving the natural trailing room noise required for YAMNet matching.
+                val vad = com.example.voxa.ai.VoxaVAD()
+                val segments = vad.processAudio(rawPcm)
                 
                 withContext(Dispatchers.Main) {
                     isRecordingSample = false
                     volumeLevel = 0f
+                    
+                    if (segments.isEmpty()) {
+                        Toast.makeText(context, "No speech detected. Please speak louder.", Toast.LENGTH_SHORT).show()
+                        return@withContext
+                    }
+                    
+                    val processedPcm = segments[0]
+                    
                     try {
-                        AudioFileHelper.validateDuration(trimmedPcm)
+                        AudioFileHelper.validateDuration(processedPcm)
                         val activeId = activeProfile?.id ?: 0L
                         val cleanIntentName = intentName.trim().lowercase().replace(Regex("[^\\p{L}\\p{N}_]"), "_")
                         val fileName = "template_${activeId}_${cleanIntentName}_${recordedSamplesCount}.pcm"
-                        val filePath = AudioFileHelper.savePcmFile(context, trimmedPcm, fileName)
+                        val filePath = AudioFileHelper.savePcmFile(context, processedPcm, fileName)
                         
                         savedFilePaths.add(filePath)
                         savedFilePathsStr = savedFilePaths.joinToString(",")

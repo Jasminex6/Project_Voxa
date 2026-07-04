@@ -5,17 +5,19 @@ import android.util.Log
 import com.example.voxa.data.ChildProfile
 import com.example.voxa.data.EnrolledIntent
 import com.example.voxa.data.AcousticTemplate
+import com.example.voxa.utils.AudioFileHelper
 
 /**
  * 🧠 VoxaClassifierEngine — Full Pipeline Orchestrator (Architecture v4)
  *
  * Coordinates the complete audio classification pipeline:
- *   1. VAD → Extract speech segments from continuous audio
- *   2. Tile/Crop → Normalize segment to 1.44s (23040 samples)
- *   3. YAMNet → Extract 2048-D temporal-halved embedding
- *   4. Cosine Similarity + CCP → Score against enrolled intent centroids
- *   5. OOD Gate → Reject if similarity is below intent-specific threshold
- *   6. Margin Gate → Reject if best and second-best are too close
+ *   1. VAD → Extract speech segments (persistent state across audio blocks)
+ *   2. Silence Trim → Normalize pre-processing to match enrollment conditions
+ *   3. Pad/Crop → Normalize to exactly 1.44s (23040 samples)
+ *   4. YAMNet → Extract 2048-D temporal-halved embedding
+ *   5. Cosine Similarity + CCP → Score against enrolled intent centroids
+ *   6. OOD Gate → Reject if similarity is below intent-specific threshold
+ *   7. Margin Gate → Reject if best and second-best are too close
  *
  * Instantiated once in VoxaListenerService and reused for all audio blocks.
  *
@@ -88,17 +90,36 @@ class VoxaClassifierEngine(
     }
 
     override fun processAudioBlock(pcmData: ShortArray): ClassificationResult? {
-        // ── Step 1: VAD — Extract speech segments from continuous audio ──
-        val segments = vad.processAudio(pcmData)
-        if (segments.isEmpty()) {
-            return null // No speech detected — continue listening silently
+        // ── Step 1: Feed audio frames to persistent VAD (state preserved across blocks) ──
+        val frameSize = 320 // 20ms at 16kHz
+        val completedSegments = mutableListOf<ShortArray>()
+
+        var offset = 0
+        while (offset + frameSize <= pcmData.size) {
+            val frame = pcmData.copyOfRange(offset, offset + frameSize)
+            val (_, segment) = vad.processFrame(frame)
+            if (segment != null) {
+                completedSegments.add(segment)
+            }
+            offset += frameSize
         }
 
-        // Process the first valid speech segment
-        val segment = segments[0]
-        Log.d(TAG, "VAD extracted segment: ${segment.size} samples (${segment.size / 16000.0}s)")
+        if (completedSegments.isEmpty()) {
+            return null // No complete speech segment yet — continue listening
+        }
 
-        // ── Step 2: Check encoder readiness ──
+        // Process the first completed speech segment
+        val rawSegment = completedSegments[0]
+        Log.d(TAG, "VAD completed segment: ${rawSegment.size} samples (${rawSegment.size / 16000.0}s)")
+
+        // ── Step 2: Silence trim to match enrollment pre-processing ──
+        val trimmedSegment = AudioFileHelper.trimSilence(rawSegment)
+        if (trimmedSegment.size < 1600) { // Less than 100ms of actual speech
+            Log.d(TAG, "Segment too short after trimming (${trimmedSegment.size} samples) — skipping")
+            return null
+        }
+
+        // ── Step 3: Check encoder readiness ──
         if (!yamnetEncoder.isValid()) {
             return ClassificationResult(
                 isMatch = false, intentName = null, outputPhrase = null,
@@ -107,11 +128,10 @@ class VoxaClassifierEngine(
             )
         }
 
-        // ── Step 3: Extract 2048-D embedding via YAMNet ──
-        // YamnetEncoder.extractFromPcm handles tile/crop to 1.44s internally
+        // ── Step 4: Extract 2048-D embedding via YAMNet temporal halving ──
         val liveEmbedding: FloatArray
         try {
-            liveEmbedding = yamnetEncoder.extractFromPcm(segment)
+            liveEmbedding = yamnetEncoder.extractFromPcm(trimmedSegment)
         } catch (e: Exception) {
             Log.e(TAG, "YAMNet embedding extraction failed: ${e.message}")
             return ClassificationResult(
@@ -121,7 +141,7 @@ class VoxaClassifierEngine(
             )
         }
 
-        // ── Step 4: Check enrolled intents ──
+        // ── Step 5: Check enrolled intents ──
         if (parsedIntentData.isEmpty()) {
             return ClassificationResult(
                 isMatch = false, intentName = null, outputPhrase = null,
@@ -130,7 +150,7 @@ class VoxaClassifierEngine(
             )
         }
 
-        // ── Step 5: Score live embedding against all enrolled intents ──
+        // ── Step 6: Score live embedding against all enrolled intents ──
         val scores = parsedIntentData.map { intentData ->
             PrototypicalMatcher.scoreIntent(
                 liveEmbedding = liveEmbedding,
@@ -149,7 +169,7 @@ class VoxaClassifierEngine(
                     "centroids=${score.centroidCount}, OOD=${String.format("%.3f", score.oodThreshold)}")
         }
 
-        // ── Step 6: Evaluate OOD Gate + Margin Gate ──
+        // ── Step 7: Evaluate OOD Gate + Margin Gate ──
         return PrototypicalMatcher.evaluateGates(scores)
     }
 }

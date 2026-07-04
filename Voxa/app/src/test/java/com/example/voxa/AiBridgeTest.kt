@@ -2,6 +2,7 @@ package com.example.voxa
 
 import com.example.voxa.ai.PrototypicalMatcher
 import com.example.voxa.ai.YamnetEncoder
+import com.example.voxa.logic.MarginGate
 import org.junit.Assert.*
 import org.junit.Test
 import kotlin.math.sqrt
@@ -39,36 +40,29 @@ class AiBridgeTest {
     }
 
     @Test
-    fun testYamnetEncoder_prepareAudioWindow_tilesShortSignal() {
-        // 1000 samples is short (< 23040)
+    fun testYamnetEncoder_prepareAudioWindow_padsShortSignal() {
+        // 1000 samples is short (< 15360)
         val pcm = ShortArray(1000) { it.toShort() }
         val prepared = YamnetEncoder.prepareAudioWindow(pcm)
-        assertEquals(23040, prepared.size)
-        // Verify tiling by checking repeated pattern
-        val scale = 1.0f / 32768.0f
-        assertEquals(pcm[480].toFloat() * scale, prepared[0], 0.0001f)
-        // Element at index 1000 should be equal to index 0 due to tiling
+        assertEquals(15360, prepared.size)
+        
+        // Element at index 1000 should be equal to index 0 due to repeat padding
         assertEquals(prepared[0], prepared[1000], 0.0001f)
     }
 
     @Test
-    fun testYamnetEncoder_prepareAudioWindow_centerCropsLongSignal() {
-        // 30000 samples is long (> 23040)
-        val pcm = ShortArray(30000) { (it - 15000).toShort() }
+    fun testYamnetEncoder_prepareAudioWindow_leavesLongSignal() {
+        // 30000 samples is long (>= 15360)
+        val pcm = ShortArray(30000) { it.toShort() }
         val prepared = YamnetEncoder.prepareAudioWindow(pcm)
-        assertEquals(23040, prepared.size)
-        
-        // Check center crop alignment
-        val startOffsetInOriginal = (30000 - 23040) / 2 // 3480
-        val scale = 1.0f / 32768.0f
-        assertEquals(pcm[startOffsetInOriginal].toFloat() * scale, prepared[0], 0.0001f)
+        assertEquals(30000, prepared.size) // No cropping!
     }
 
     @Test
     fun testPrototypicalMatcher_qcOutlierRejection() {
         // Create 5 identical vectors and 1 outlier vector
-        val baseVec = FloatArray(2048) { 0.0f }.apply { this[0] = 1.0f } // L2 normalized
-        val outlierVec = FloatArray(2048) { 0.0f }.apply { this[1] = 1.0f } // Orthogonal outlier
+        val baseVec = FloatArray(1024) { 0.0f }.apply { this[0] = 1.0f } // L2 normalized
+        val outlierVec = FloatArray(1024) { 0.0f }.apply { this[1] = 1.0f } // Orthogonal outlier
 
         val samples = listOf(
             baseVec,
@@ -90,8 +84,8 @@ class AiBridgeTest {
     @Test
     fun testPrototypicalMatcher_kMeans2() {
         // Create two clearly separated clusters
-        val baseVec1 = FloatArray(2048) { 0.0f }.apply { this[0] = 1.0f }
-        val baseVec2 = FloatArray(2048) { 0.0f }.apply { this[1] = 1.0f }
+        val baseVec1 = FloatArray(1024) { 0.0f }.apply { this[0] = 1.0f }
+        val baseVec2 = FloatArray(1024) { 0.0f }.apply { this[1] = 1.0f }
 
         val samples = listOf(
             baseVec1, baseVec1, baseVec1,
@@ -113,8 +107,8 @@ class AiBridgeTest {
 
     @Test
     fun testPrototypicalMatcher_ccpPenalty() {
-        val liveVec = FloatArray(2048) { 0.0f }.apply { this[0] = 1.0f }
-        val centroid = FloatArray(2048) { 0.0f }.apply { this[0] = 0.9f; this[1] = 0.435f } // L2 normalized
+        val liveVec = FloatArray(1024) { 0.0f }.apply { this[0] = 1.0f }
+        val centroid = FloatArray(1024) { 0.0f }.apply { this[0] = 0.9f; this[1] = 0.435f } // L2 normalized
 
         // Intent with 1 centroid
         val score1 = PrototypicalMatcher.scoreIntent(
@@ -144,7 +138,7 @@ class AiBridgeTest {
 
     @Test
     fun testPrototypicalMatcher_gates_validMatch() {
-        val liveVec = FloatArray(2048) { 0.0f }.apply { this[0] = 1.0f }
+        val liveVec = FloatArray(1024) { 0.0f }.apply { this[0] = 1.0f }
         
         val scores = listOf(
             PrototypicalMatcher.IntentScore(
@@ -223,5 +217,79 @@ class AiBridgeTest {
         assertFalse(result.isMatch)
         assertNull(result.intentName)
         assertTrue(result.reason.contains("Ambiguous"))
+    }
+
+    // ── MARGIN GATE TESTS ──
+
+    @Test
+    fun testMarginGate_validMatch() {
+        val candidates = listOf(
+            MarginGate.CandidateMatch("Water", 0.90f),
+            MarginGate.CandidateMatch("More", 0.82f)
+        )
+        val result = MarginGate.evaluate(
+            candidates = candidates,
+            absoluteThreshold = 0.82f,
+            marginThreshold = 0.04f
+        )
+        assertTrue(result.isMatch)
+        assertEquals("Water", result.matchedWord)
+    }
+
+    @Test
+    fun testMarginGate_failsAbsoluteThreshold() {
+        val candidates = listOf(
+            MarginGate.CandidateMatch("Water", 0.80f),
+            MarginGate.CandidateMatch("More", 0.75f)
+        )
+        val result = MarginGate.evaluate(
+            candidates = candidates,
+            absoluteThreshold = 0.82f,
+            marginThreshold = 0.04f
+        )
+        assertFalse(result.isMatch)
+        assertNull(result.matchedWord)
+        assertTrue(result.reason.contains("below absolute threshold"))
+    }
+
+    @Test
+    fun testMarginGate_failsMarginCheck() {
+        val candidates = listOf(
+            MarginGate.CandidateMatch("Water", 0.85f),
+            MarginGate.CandidateMatch("More", 0.83f)
+        )
+        val result = MarginGate.evaluate(
+            candidates = candidates,
+            absoluteThreshold = 0.82f,
+            marginThreshold = 0.04f
+        )
+        assertFalse(result.isMatch)
+        assertNull(result.matchedWord)
+        assertTrue(result.reason.contains("Ambiguous match"))
+    }
+
+    @Test
+    fun testMarginGate_singleCandidate() {
+        val candidates = listOf(
+            MarginGate.CandidateMatch("Water", 0.85f)
+        )
+        val result = MarginGate.evaluate(
+            candidates = candidates,
+            absoluteThreshold = 0.82f,
+            marginThreshold = 0.04f
+        )
+        assertTrue(result.isMatch)
+        assertEquals("Water", result.matchedWord)
+    }
+
+    @Test
+    fun testMarginGate_emptyCandidates() {
+        val result = MarginGate.evaluate(
+            candidates = emptyList(),
+            absoluteThreshold = 0.82f,
+            marginThreshold = 0.04f
+        )
+        assertFalse(result.isMatch)
+        assertNull(result.matchedWord)
     }
 }

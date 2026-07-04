@@ -18,7 +18,7 @@ import androidx.room.RoomDatabase
  */
 @Database(
     entities = [ChildProfile::class, EnrolledIntent::class, AcousticTemplate::class, PracticeStats::class],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 abstract class VoxaDatabase : RoomDatabase() {

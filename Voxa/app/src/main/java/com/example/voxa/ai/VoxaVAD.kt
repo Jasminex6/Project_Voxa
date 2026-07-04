@@ -146,6 +146,14 @@ class VoxaVAD(private val config: VADConfig = VADConfig()) {
             start += frameSize
         }
 
+        // Flush any remaining collected speech
+        if (state == VADState.SPEECH_COLLECTING) {
+            val segment = concatenateBuffers(segmentBuffer)
+            if (segment.size >= config.minSamples) {
+                segments.add(segment)
+            }
+        }
+
         return segments
     }
 

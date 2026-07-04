@@ -22,7 +22,7 @@ interface IVoxaClassifierEngine {
      * Processes a block of raw PCM audio and returns a classification result.
      *
      * Architecture v4 pipeline:
-     * VAD → Tile/Crop 1.44s → YAMNet 2048-D → Cosine + CCP → OOD Gate → Margin Gate
+     * VAD → Trim → Pad/Crop 1.44s → YAMNet 2048-D → Cosine + CCP → OOD Gate → Margin Gate
      *
      * @param pcmData Raw 16-bit PCM samples at 16kHz
      * @return ClassificationResult with match details, or a rejection reason

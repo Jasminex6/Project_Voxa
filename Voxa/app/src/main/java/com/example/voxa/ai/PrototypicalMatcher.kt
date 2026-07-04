@@ -270,7 +270,8 @@ object PrototypicalMatcher {
         val meanSim = similarities.average().toFloat()
         val simVariance = similarities.map { (it - meanSim) * (it - meanSim) }.average().toFloat()
         val simStdDev = sqrt(simVariance)
-        val oodThreshold = (meanSim - 2.0f * simStdDev).coerceAtLeast(0.50f)
+        // Per-intent OOD threshold: μ - 2σ of enrollment similarities, floored at 0.50
+        val oodThreshold = maxOf(0.50f, meanSim - 2.0f * simStdDev)
 
         Log.d(TAG, "Enrollment complete: ${centroids.size} centroid(s), OOD=$oodThreshold, " +
                 "bifurcated=$bifurcated, valid=${validEmbeddings.size}/${embeddings.size}")
@@ -329,6 +330,8 @@ object PrototypicalMatcher {
         val maxSim = centroids.maxOf { cosineSimilarity(liveEmbedding, it) }
         val ccpPenalty = (centroids.size - 1) * CCP_PENALTY
         val effectiveSim = maxSim - ccpPenalty
+
+        android.util.Log.e("VoxaMatch", "Intent: $intentName | Similarity: $effectiveSim (raw: $maxSim, threshold: $oodThreshold)")
 
         return IntentScore(
             intentName = intentName,

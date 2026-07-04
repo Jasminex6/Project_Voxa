@@ -209,10 +209,16 @@ class VoxaViewModel(application: Application) : AndroidViewModel(application), I
         audioAssetPath: String,
         tempFilePaths: List<String>
     ) {
-        val profile = _activeProfile.value ?: return
+        android.util.Log.e("VoxaDebug", "enrollIntent called! tempFilePaths size: ${tempFilePaths.size}")
+        val profile = _activeProfile.value
+        if (profile == null) {
+            android.util.Log.e("VoxaDebug", "enrollIntent aborted: _activeProfile.value is null!")
+            return
+        }
 
         viewModelScope.launch {
             try {
+                android.util.Log.e("VoxaDebug", "Starting enrollment coroutine for ${intentName.trim()}")
                 // Clear any previous warning
                 _bifurcationWarningTriggered.value = null
 
@@ -221,7 +227,7 @@ class VoxaViewModel(application: Application) : AndroidViewModel(application), I
                 for (path in tempFilePaths) {
                     try {
                         val pcmData = com.example.voxa.utils.AudioFileHelper.readPcmFile(java.io.File(path))
-                        // Extract embedding using the YamnetEncoder helper
+                        // Extract embedding using the YamnetEncoder helper directly (pcmData is already VAD-extracted)
                         val emb = yamnetEncoder.extractFromPcm(pcmData)
                         embeddings.add(emb)
                     } catch (e: Exception) {

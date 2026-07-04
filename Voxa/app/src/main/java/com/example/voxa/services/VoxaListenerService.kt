@@ -183,13 +183,9 @@ class VoxaListenerService : Service() {
                 // Create a temporary buffer array to hold each read audio block in memory
                 val audioData = ShortArray(minBufferSize)
 
-                // Accumulation buffer: collect ~2 seconds of audio before processing
-                // This gives the VAD enough context to extract speech segments
-                val accumulationTarget = sampleRate * 2  // 32000 samples = 2 seconds
-                val accBuffer = mutableListOf<Short>()
-
                 // ── THE PERPETUAL RECORDING LOOP ──
-                // This loop runs continuously on our background thread.
+                // Audio is fed directly to the classifier engine on each read.
+                // The engine's persistent VAD handles speech segmentation across reads.
                 while (isRecording) {
                     // audioRecord.read() is a blocking call. It halts the thread right here until the microphone
                     // gathers enough sound waves to completely fill our minBufferSize array.
@@ -212,30 +208,17 @@ class VoxaListenerService : Service() {
                         }
                         sendBroadcast(volIntent)
 
-                        // Accumulate audio data
-                        for (i in 0 until readResult) {
-                            accBuffer.add(audioData[i])
-                        }
-
-                        // Process accumulated audio when we have enough
-                        if (accBuffer.size >= accumulationTarget) {
-                            val engine = classifierEngine
-                            if (engine != null) {
-                                val pcmBlock = accBuffer.toShortArray()
-                                accBuffer.clear()
-
-                                try {
-                                    val result = engine.processAudioBlock(pcmBlock)
-                                    if (result != null) {
-                                        handleClassificationResult(result)
-                                    }
-                                } catch (e: Exception) {
-                                    Log.e("VoxaService", "Classification error: ${e.message}")
+                        // Feed audio directly to classifier — VAD segments internally
+                        val engine = classifierEngine
+                        if (engine != null) {
+                            try {
+                                val pcmBlock = audioData.copyOfRange(0, readResult)
+                                val result = engine.processAudioBlock(pcmBlock)
+                                if (result != null) {
+                                    handleClassificationResult(result)
                                 }
-                            } else {
-                                // No classifier — just clear and continue
-                                accBuffer.clear()
-                                Log.d("VoxaService", "Captured buffer frame (no classifier active)")
+                            } catch (e: Exception) {
+                                Log.e("VoxaService", "Classification error: ${e.message}")
                             }
                         }
                     }
