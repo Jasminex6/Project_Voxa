@@ -15,9 +15,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Mail
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Phone
@@ -36,6 +39,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.voxa.ui.IVoxaViewModel
 import com.example.voxa.ui.theme.*
+import com.example.voxa.data.EmergencyContactPrefs
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
+import com.google.android.gms.tasks.CancellationTokenSource
 import kotlinx.coroutines.delay
 
 /**
@@ -50,6 +57,15 @@ fun EmergencyScreen(viewModel: IVoxaViewModel) {
     var alarmProgress by remember { mutableStateOf(0f) }
     var isAlarmActive by remember { mutableStateOf(false) }
     var ringtonePlayer: MediaPlayer? by remember { mutableStateOf(null) }
+
+    // Load saved emergency contact data
+    val emergencyPhone = "+2" + remember { EmergencyContactPrefs.getContactPhone(context) }
+    val emergencyMessage = remember { EmergencyContactPrefs.getEmergencyMessage(context) }
+    val emergencyContactName = remember { EmergencyContactPrefs.getContactName(context) }
+
+    // Location services for current location sharing
+    val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
+    var isFetchingLocation by remember { mutableStateOf(false) }
 
     // Siren alarm holder coroutine loop
     LaunchedEffect(isHoldingAlarm) {
@@ -133,16 +149,22 @@ fun EmergencyScreen(viewModel: IVoxaViewModel) {
             text = "Quick access to distress triggers.",
             fontSize = 13.sp,
             color = Slate400,
-            modifier = Modifier.padding(top = 6.dp, bottom = 32.dp)
+            modifier = Modifier.padding(top = 6.dp, bottom = 24.dp)
         )
 
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .weight(1f)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // 🚨 Emergency Call Card
+            // ══════════════════════════════════════
+            // 📱 SECTION 1: PHONE
+            // ══════════════════════════════════════
+            EmergencySectionHeader(emoji = "📱", title = "Phone", textColor = Sky400)
+
+            // 📞 Phone Call Card
             Card(
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = Slate800),
@@ -150,14 +172,14 @@ fun EmergencyScreen(viewModel: IVoxaViewModel) {
                     .fillMaxWidth()
                     .clickable {
                         try {
-                            val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:112"))
+                            val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$emergencyPhone"))
                             context.startActivity(intent)
                             viewModel.addLogSystemEvent("🆘 Launched emergency dialer.")
                         } catch (e: Exception) {
                             Toast.makeText(context, "Failed to launch phone dialer", Toast.LENGTH_SHORT).show()
                         }
                     }
-                    .border(1.dp, Color(0xFFBB0112).copy(alpha = 0.3f), RoundedCornerShape(16.dp))
+                    .border(1.dp, Sky400.copy(alpha = 0.3f), RoundedCornerShape(16.dp))
             ) {
                 Row(
                     modifier = Modifier
@@ -174,26 +196,26 @@ fun EmergencyScreen(viewModel: IVoxaViewModel) {
                             modifier = Modifier
                                 .size(44.dp)
                                 .clip(RoundedCornerShape(8.dp))
-                                .background(Color(0xFFBB0112).copy(alpha = 0.2f)),
+                                .background(Sky400.copy(alpha = 0.15f)),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Phone,
                                 contentDescription = null,
-                                tint = Color(0xFFFFB4AB),
+                                tint = Sky400,
                                 modifier = Modifier.size(24.dp)
                             )
                         }
                         Spacer(modifier = Modifier.width(16.dp))
                         Column {
                             Text(
-                                text = "Call Emergency Services",
+                                text = "Call Emergency Contact",
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFFFFB4AB)
+                                color = Color.White
                             )
                             Text(
-                                text = "Instantly dial emergency number (112)",
+                                text = "Instantly dial ${emergencyContactName.ifBlank { emergencyPhone }}",
                                 fontSize = 12.sp,
                                 color = Slate400
                             )
@@ -207,7 +229,7 @@ fun EmergencyScreen(viewModel: IVoxaViewModel) {
                 }
             }
 
-            // ✉️ Emergency SMS Card
+            // ✉️ Phone SMS Card
             Card(
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = Slate800),
@@ -215,16 +237,18 @@ fun EmergencyScreen(viewModel: IVoxaViewModel) {
                     .fillMaxWidth()
                     .clickable {
                         try {
-                            val intent = Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:112")).apply {
-                                putExtra("sms_body", "Emergency alert: Please assist immediately.")
+                            val smsPhone = emergencyPhone.ifBlank { "112" }
+                            val smsBody = emergencyMessage.ifBlank { "Emergency alert: Please assist immediately." }
+                            val intent = Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:$smsPhone")).apply {
+                                putExtra("sms_body", smsBody)
                             }
                             context.startActivity(intent)
-                            viewModel.addLogSystemEvent("🆘 Launched emergency SMS.")
+                            viewModel.addLogSystemEvent("\uD83C\uDD98 Launched emergency SMS to ${emergencyContactName.ifBlank { smsPhone }}.")
                         } catch (e: Exception) {
                             Toast.makeText(context, "Failed to launch SMS app", Toast.LENGTH_SHORT).show()
                         }
                     }
-                    .border(1.dp, Slate700, RoundedCornerShape(16.dp))
+                    .border(1.dp, Sky400.copy(alpha = 0.3f), RoundedCornerShape(16.dp))
             ) {
                 Row(
                     modifier = Modifier
@@ -241,13 +265,13 @@ fun EmergencyScreen(viewModel: IVoxaViewModel) {
                             modifier = Modifier
                                 .size(44.dp)
                                 .clip(RoundedCornerShape(8.dp))
-                                .background(Slate700),
+                                .background(Sky400.copy(alpha = 0.15f)),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Mail,
                                 contentDescription = null,
-                                tint = Color.White,
+                                tint = Sky400,
                                 modifier = Modifier.size(24.dp)
                             )
                         }
@@ -260,7 +284,7 @@ fun EmergencyScreen(viewModel: IVoxaViewModel) {
                                 color = Color.White
                             )
                             Text(
-                                text = "Send SMS notification to caregivers",
+                                text = "Send SMS to ${emergencyContactName.ifBlank { "emergency contact" }}",
                                 fontSize = 12.sp,
                                 color = Slate400
                             )
@@ -274,7 +298,287 @@ fun EmergencyScreen(viewModel: IVoxaViewModel) {
                 }
             }
 
-            // 🚨 Emergency Alarm (Hold to Activate) Card
+            Spacer(modifier = Modifier.height(4.dp))
+
+            // ══════════════════════════════════════
+            // 💬 SECTION 2: WHATSAPP
+            // ══════════════════════════════════════
+            EmergencySectionHeader(emoji = "💬", title = "WhatsApp", textColor = Color(0xFF25D366))
+
+            // 📞 WhatsApp Call Card
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Slate800),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        try {
+                            val cleanPhone = emergencyPhone.replace(Regex("[^+\\d]"), "")
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/$cleanPhone"))
+                            intent.setPackage("com.whatsapp")
+                            context.startActivity(intent)
+                            viewModel.addLogSystemEvent("🆘 Launched WhatsApp call to ${emergencyContactName.ifBlank { cleanPhone }}.")
+                        } catch (e: Exception) {
+                            // Fallback if WhatsApp not installed — open without package restriction
+                            try {
+                                val cleanPhone = emergencyPhone.replace(Regex("[^+\\d]"), "")
+                                val fallback = Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/$cleanPhone"))
+                                context.startActivity(fallback)
+                            } catch (e2: Exception) {
+                                Toast.makeText(context, "WhatsApp is not installed", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                    .border(1.dp, Color(0xFF25D366).copy(alpha = 0.3f), RoundedCornerShape(16.dp))
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(44.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Color(0xFF25D366).copy(alpha = 0.15f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Phone,
+                                contentDescription = null,
+                                tint = Color(0xFF25D366),
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column {
+                            Text(
+                                text = "WhatsApp Call",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                            Text(
+                                text = "Call ${emergencyContactName.ifBlank { "emergency contact" }} via WhatsApp",
+                                fontSize = 12.sp,
+                                color = Slate400
+                            )
+                        }
+                    }
+                    Icon(
+                        imageVector = Icons.Default.ChevronRight,
+                        contentDescription = null,
+                        tint = Slate400.copy(alpha = 0.5f)
+                    )
+                }
+            }
+
+            // 💬 WhatsApp Message Card
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Slate800),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        try {
+                            val cleanPhone = emergencyPhone.replace(Regex("[^+\\d]"), "")
+                            val waMessage = emergencyMessage.ifBlank { "Emergency alert: Please assist immediately." }
+                            val encodedMsg = Uri.encode(waMessage)
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/$cleanPhone?text=$encodedMsg"))
+                            intent.setPackage("com.whatsapp")
+                            context.startActivity(intent)
+                            viewModel.addLogSystemEvent("🆘 Launched WhatsApp message to ${emergencyContactName.ifBlank { cleanPhone }}.")
+                        } catch (e: Exception) {
+                            try {
+                                val cleanPhone = emergencyPhone.replace(Regex("[^+\\d]"), "")
+                                val waMessage = emergencyMessage.ifBlank { "Emergency alert: Please assist immediately." }
+                                val encodedMsg = Uri.encode(waMessage)
+                                val fallback = Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/$cleanPhone?text=$encodedMsg"))
+                                context.startActivity(fallback)
+                            } catch (e2: Exception) {
+                                Toast.makeText(context, "WhatsApp is not installed", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                    .border(1.dp, Color(0xFF25D366).copy(alpha = 0.3f), RoundedCornerShape(16.dp))
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(44.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Color(0xFF25D366).copy(alpha = 0.15f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Mail,
+                                contentDescription = null,
+                                tint = Color(0xFF25D366),
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column {
+                            Text(
+                                text = "WhatsApp Message",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                            Text(
+                                text = "Send message to ${emergencyContactName.ifBlank { "emergency contact" }}",
+                                fontSize = 12.sp,
+                                color = Slate400
+                            )
+                        }
+                    }
+                    Icon(
+                        imageVector = Icons.Default.ChevronRight,
+                        contentDescription = null,
+                        tint = Slate400.copy(alpha = 0.5f)
+                    )
+                }
+            }
+
+            // 📍 Send Current Location Card
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Slate800),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        if (isFetchingLocation) return@clickable
+                        isFetchingLocation = true
+                        try {
+                            fusedLocationClient
+                                .getCurrentLocation(
+                                    Priority.PRIORITY_HIGH_ACCURACY,
+                                    CancellationTokenSource().token
+                                )
+                                .addOnSuccessListener { location ->
+                                    isFetchingLocation = false
+                                    if (location != null) {
+                                        val lat = location.latitude
+                                        val lng = location.longitude
+                                        val mapsLink = "https://maps.google.com/?q=$lat,$lng"
+                                        val cleanPhone = emergencyPhone.replace(Regex("[^+\\d]"), "")
+                                        val locationMsg = Uri.encode(
+                                            "Here is my current location:\n$mapsLink"
+                                        )
+                                        try {
+                                            val intent = Intent(
+                                                Intent.ACTION_VIEW,
+                                                Uri.parse("https://wa.me/$cleanPhone?text=$locationMsg")
+                                            )
+                                            intent.setPackage("com.whatsapp")
+                                            context.startActivity(intent)
+                                            viewModel.addLogSystemEvent("\uD83C\uDD98 Sent current location via WhatsApp.")
+                                        } catch (e: Exception) {
+                                            try {
+                                                val fallback = Intent(
+                                                    Intent.ACTION_VIEW,
+                                                    Uri.parse("https://wa.me/$cleanPhone?text=$locationMsg")
+                                                )
+                                                context.startActivity(fallback)
+                                            } catch (e2: Exception) {
+                                                Toast.makeText(context, "WhatsApp is not installed", Toast.LENGTH_SHORT).show()
+                                            }
+                                        }
+                                    } else {
+                                        Toast.makeText(context, "Could not get location. Try again.", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                                .addOnFailureListener {
+                                    isFetchingLocation = false
+                                    Toast.makeText(context, "Location error: ${it.message}", Toast.LENGTH_SHORT).show()
+                                }
+                        } catch (e: SecurityException) {
+                            isFetchingLocation = false
+                            Toast.makeText(context, "Location permission not granted", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    .border(1.dp, Color(0xFF25D366).copy(alpha = 0.3f), RoundedCornerShape(16.dp))
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(44.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Color(0xFF25D366).copy(alpha = 0.15f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.LocationOn,
+                                contentDescription = null,
+                                tint = Color(0xFF25D366),
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column {
+                            Text(
+                                text = "Send Current Location",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                            Text(
+                                text = if (isFetchingLocation) "Getting location..." else "Send GPS pin via WhatsApp",
+                                fontSize = 12.sp,
+                                color = if (isFetchingLocation) Color(0xFF25D366) else Slate400
+                            )
+                        }
+                    }
+                    if (isFetchingLocation) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = Color(0xFF25D366),
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.ChevronRight,
+                            contentDescription = null,
+                            tint = Slate400.copy(alpha = 0.5f)
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            // ══════════════════════════════════════
+            // 🚨 SECTION 3: EMERGENCY SIREN
+            // ══════════════════════════════════════
+            EmergencySectionHeader(emoji = "🚨", title = "Emergency Siren", ErrorRed)
+
+            // 🔊 Hold-to-Activate Siren Card
             Card(
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = Slate800),
@@ -292,7 +596,7 @@ fun EmergencyScreen(viewModel: IVoxaViewModel) {
                     }
                     .border(
                         1.dp,
-                        if (isAlarmActive) Color(0xFFF59E0B) else Slate700,
+                        if (isAlarmActive) Color(0xFFF59E0B) else ErrorRed.copy(alpha = 0.2f),
                         RoundedCornerShape(16.dp)
                     )
             ) {
@@ -320,14 +624,14 @@ fun EmergencyScreen(viewModel: IVoxaViewModel) {
                                 .clip(RoundedCornerShape(8.dp))
                                 .background(
                                     if (isAlarmActive) Color(0xFFF59E0B).copy(alpha = 0.2f)
-                                    else Slate700
+                                    else ErrorRed.copy(alpha = 0.2f)
                                 ),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Default.NotificationsActive,
                                 contentDescription = null,
-                                tint = if (isAlarmActive) Color(0xFFF59E0B) else Color.White,
+                                tint = if (isAlarmActive) Color(0xFFF59E0B) else ErrorRed,
                                 modifier = Modifier.size(24.dp)
                             )
                         }
@@ -348,7 +652,29 @@ fun EmergencyScreen(viewModel: IVoxaViewModel) {
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(8.dp))
         }
+    }
+}
+
+/**
+ * Reusable section header for the Emergency Screen categories.
+ */
+@Composable
+private fun EmergencySectionHeader(emoji: String, title: String, textColor: Color = Color.White) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.padding(bottom = 2.dp)
+    ) {
+        Text(text = emoji, fontSize = 16.sp)
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = title,
+            fontSize = 15.sp,
+            fontWeight = FontWeight.Bold,
+            color = textColor
+        )
     }
 }
 

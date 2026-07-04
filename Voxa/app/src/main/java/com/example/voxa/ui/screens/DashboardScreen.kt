@@ -33,6 +33,7 @@ import androidx.compose.material.icons.filled.Close
 
 import com.example.voxa.ui.*
 import com.example.voxa.ui.theme.*
+import com.example.voxa.data.EmergencyContactPrefs
 import java.text.SimpleDateFormat
 import java.util.*
 import android.net.Uri
@@ -104,9 +105,16 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
 
     var isSidebarOpen by remember { mutableStateOf(false) }
     var showCaregiverEditDialog by remember { mutableStateOf(false) }
+    var showEmergencyContactEditDialog by remember { mutableStateOf(false) }
     var caregiverName by remember { mutableStateOf("Parent / Caregiver") }
     var caregiverPhone by remember { mutableStateOf("+1 234 567 890") }
     val context = LocalContext.current
+
+    // Emergency contact data from SharedPreferences
+    var ecName by remember { mutableStateOf(EmergencyContactPrefs.getContactName(context)) }
+    var ecRelation by remember { mutableStateOf(EmergencyContactPrefs.getContactRelation(context)) }
+    var ecPhone by remember { mutableStateOf(EmergencyContactPrefs.getContactPhone(context)) }
+    var ecMessage by remember { mutableStateOf(EmergencyContactPrefs.getEmergencyMessage(context)) }
 
     val importLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -514,6 +522,66 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
 
                         Spacer(modifier = Modifier.height(20.dp))
 
+                        // 🆘 Emergency Contact Section
+                        Text(
+                            text = "🆘 Emergency Contact",
+                            color = Sky400,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(bottom = 6.dp)
+                        )
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = Slate900),
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(10.dp)) {
+                                if (ecName.isNotBlank()) {
+                                    Text(
+                                        text = ecName,
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.sp
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = "Relation: $ecRelation",
+                                        color = Slate300,
+                                        fontSize = 11.sp
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = "Phone: $ecPhone",
+                                        color = Slate300,
+                                        fontSize = 11.sp
+                                    )
+                                    if (ecMessage.isNotBlank()) {
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = "Message: ${ecMessage.take(60)}${if (ecMessage.length > 60) "..." else ""}",
+                                            color = Slate400,
+                                            fontSize = 10.sp
+                                        )
+                                    }
+                                } else {
+                                    Text(
+                                        text = "No emergency contact set",
+                                        color = Slate400,
+                                        fontSize = 11.sp
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = "✏️ Edit Emergency Contact",
+                                    color = Sky400,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.clickable { showEmergencyContactEditDialog = true }
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(20.dp))
+
                         // ⚙️ Settings Section
                         Text(
                             text = "⚙️ Settings",
@@ -654,6 +722,98 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
                 },
                 dismissButton = {
                     TextButton(onClick = { showCaregiverEditDialog = false }) {
+                        Text("Cancel", color = Slate400)
+                    }
+                }
+            )
+        }
+
+        // Emergency Contact Edit Dialog
+        if (showEmergencyContactEditDialog) {
+            var tempEcName by remember { mutableStateOf(ecName) }
+            var tempEcRelation by remember { mutableStateOf(ecRelation) }
+            var tempEcPhone by remember { mutableStateOf(ecPhone) }
+            var tempEcMessage by remember { mutableStateOf(ecMessage) }
+            AlertDialog(
+                onDismissRequest = { showEmergencyContactEditDialog = false },
+                title = { Text("Edit Emergency Contact", color = Color.White, fontWeight = FontWeight.Bold) },
+                containerColor = Slate800,
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedTextField(
+                            value = tempEcName,
+                            onValueChange = { tempEcName = it },
+                            label = { Text("Contact Name", color = Slate400) },
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = Color.White,
+                                unfocusedTextColor = Color.White,
+                                focusedBorderColor = Sky400,
+                                unfocusedBorderColor = Slate600
+                            ),
+                            singleLine = true
+                        )
+                        OutlinedTextField(
+                            value = tempEcRelation,
+                            onValueChange = { tempEcRelation = it },
+                            label = { Text("Relation with Child", color = Slate400) },
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = Color.White,
+                                unfocusedTextColor = Color.White,
+                                focusedBorderColor = Sky400,
+                                unfocusedBorderColor = Slate600
+                            ),
+                            singleLine = true
+                        )
+                        OutlinedTextField(
+                            value = tempEcPhone,
+                            onValueChange = { tempEcPhone = it },
+                            label = { Text("Phone Number", color = Slate400) },
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = Color.White,
+                                unfocusedTextColor = Color.White,
+                                focusedBorderColor = Sky400,
+                                unfocusedBorderColor = Slate600
+                            ),
+                            singleLine = true
+                        )
+                        OutlinedTextField(
+                            value = tempEcMessage,
+                            onValueChange = { tempEcMessage = it },
+                            label = { Text("Emergency Message", color = Slate400) },
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = Color.White,
+                                unfocusedTextColor = Color.White,
+                                focusedBorderColor = Sky400,
+                                unfocusedBorderColor = Slate600
+                            ),
+                            minLines = 2,
+                            maxLines = 4
+                        )
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            if (tempEcName.isNotBlank() && tempEcRelation.isNotBlank() &&
+                                tempEcPhone.isNotBlank() && tempEcMessage.isNotBlank()) {
+                                ecName = tempEcName
+                                ecRelation = tempEcRelation
+                                ecPhone = tempEcPhone
+                                ecMessage = tempEcMessage
+                                EmergencyContactPrefs.saveEmergencyContact(
+                                    context, tempEcName.trim(), tempEcRelation.trim(),
+                                    tempEcPhone.trim(), tempEcMessage.trim()
+                                )
+                            }
+                            showEmergencyContactEditDialog = false
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Sky400)
+                    ) {
+                        Text("Save", color = Slate900, fontWeight = FontWeight.Bold)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showEmergencyContactEditDialog = false }) {
                         Text("Cancel", color = Slate400)
                     }
                 }

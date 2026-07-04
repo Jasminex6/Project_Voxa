@@ -6,7 +6,12 @@ import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.AudioTrack
 import android.media.AudioManager
+import android.media.MediaCodec
+import android.media.MediaExtractor
+import android.media.MediaFormat
+import android.media.MediaPlayer
 import android.media.MediaRecorder
+import android.content.res.AssetFileDescriptor
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -55,17 +60,17 @@ data class PracticeWord(
     val english: String,
     val arabic: String,
     val emoji: String,
-    val assetFileName: String // e.g. "practice/water_ref.pcm"
+    val assetFileName: String // e.g. "practice/water_ref.wav" (supports .wav and .mp3)
 )
 
 /** Hardcoded practice vocabulary — ships with the app */
 val PRACTICE_WORDS = listOf(
-    PracticeWord("Water", "ماء", "💧", "practice/water_ref.pcm"),
-    PracticeWord("Milk", "حليب", "🥛", "practice/milk_ref.pcm"),
-    PracticeWord("Bread", "خبز", "🍞", "practice/bread_ref.pcm"),
-    PracticeWord("Help", "مساعدة", "🆘", "practice/help_ref.pcm"),
-    PracticeWord("Mom", "ماما", "👩", "practice/mama_ref.pcm"),
-    PracticeWord("Dad", "بابا", "👨", "practice/baba_ref.pcm")
+    PracticeWord("Water", "مايه", "💧", "practice/water_ref.wav"),
+    PracticeWord("Milk", "لبن", "🥛", "practice/milk_ref.wav"),
+    PracticeWord("Bread", "عيش", "🍞", "practice/bread_ref.wav"),
+    PracticeWord("Help", "مساعدة", "🆘", "practice/help_ref.wav"),
+    PracticeWord("Mom", "ماما", "👩", "practice/mama_ref.wav"),
+    PracticeWord("Dad", "بابا", "👨", "practice/baba_ref.wav")
 )
 
 // ── Accent color for the Practice tab ──
@@ -747,35 +752,124 @@ private fun PracticeHistoryItem(stat: PracticeStats) {
 // ═══════════════════════════════════════════════════════════════
 
 /**
- * Loads a reference MFCC template from assets, falling back to a synthetic
- * tone-based template if the actual PCM file is not found.
+ * Loads a reference MFCC template from assets (.wav or .mp3), falling back to a
+ * synthetic tone-based template if the audio file is not found.
+ *
+ * Uses Android's MediaExtractor + MediaCodec pipeline to decode any supported
+ * audio format (WAV, MP3, OGG, etc.) into raw 16-bit PCM for MFCC extraction.
  */
 private fun loadReferenceTemplate(
     context: android.content.Context,
     word: PracticeWord,
     mfccExtractor: MfccExtractor
 ): Array<FloatArray> {
-    // Try loading from assets first
+    // Try decoding from assets first
     try {
-        val inputStream = context.assets.open(word.assetFileName)
-        val bytes = inputStream.readBytes()
-        inputStream.close()
-
-        val shortBuffer = java.nio.ByteBuffer.wrap(bytes)
-            .order(java.nio.ByteOrder.LITTLE_ENDIAN)
-            .asShortBuffer()
-        val pcmData = ShortArray(shortBuffer.limit())
-        shortBuffer.get(pcmData)
-
-        val features = mfccExtractor.extract(pcmData)
-        if (features.isNotEmpty()) return features
+        val pcmData = decodeAudioAssetToPcm(context, word.assetFileName)
+        if (pcmData != null && pcmData.isNotEmpty()) {
+            val features = mfccExtractor.extract(pcmData)
+            if (features.isNotEmpty()) return features
+        }
     } catch (_: Exception) {
-        // Asset not found — fall through to synthetic template
+        // Asset not found or decode failed — fall through to synthetic template
     }
 
     // Generate a synthetic reference template (deterministic per word)
-    // Uses a sine wave with frequency based on word hash for consistency
     return generateSyntheticTemplate(word, mfccExtractor)
+}
+
+/**
+ * Decodes an audio asset file (.wav, .mp3, .ogg, etc.) into a raw 16kHz mono
+ * PCM ShortArray using Android's MediaExtractor + MediaCodec pipeline.
+ *
+ * @param context Application context for accessing assets
+ * @param assetPath Path within assets folder (e.g. "practice/water_ref.wav")
+ * @return Decoded PCM ShortArray at the file's native sample rate, or null on failure
+ */
+private fun decodeAudioAssetToPcm(
+    context: android.content.Context,
+    assetPath: String
+): ShortArray? {
+    var extractor: MediaExtractor? = null
+    var codec: MediaCodec? = null
+    var afd: AssetFileDescriptor? = null
+
+    try {
+        afd = context.assets.openFd(assetPath)
+        extractor = MediaExtractor()
+        extractor.setDataSource(afd.fileDescriptor, afd.startOffset, afd.declaredLength)
+
+        // Find the audio track
+        var audioTrackIndex = -1
+        var audioFormat: MediaFormat? = null
+        for (i in 0 until extractor.trackCount) {
+            val format = extractor.getTrackFormat(i)
+            val mime = format.getString(MediaFormat.KEY_MIME) ?: ""
+            if (mime.startsWith("audio/")) {
+                audioTrackIndex = i
+                audioFormat = format
+                break
+            }
+        }
+        if (audioTrackIndex == -1 || audioFormat == null) return null
+
+        extractor.selectTrack(audioTrackIndex)
+        val mime = audioFormat.getString(MediaFormat.KEY_MIME) ?: return null
+
+        codec = MediaCodec.createDecoderByType(mime)
+        codec.configure(audioFormat, null, null, 0)
+        codec.start()
+
+        val pcmSamples = mutableListOf<Short>()
+        val bufferInfo = MediaCodec.BufferInfo()
+        var isEos = false
+
+        while (!isEos) {
+            // Feed input buffers
+            val inputIndex = codec.dequeueInputBuffer(10_000)
+            if (inputIndex >= 0) {
+                val inputBuffer = codec.getInputBuffer(inputIndex) ?: continue
+                val sampleSize = extractor.readSampleData(inputBuffer, 0)
+                if (sampleSize < 0) {
+                    codec.queueInputBuffer(inputIndex, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
+                    isEos = true
+                } else {
+                    codec.queueInputBuffer(inputIndex, 0, sampleSize, extractor.sampleTime, 0)
+                    extractor.advance()
+                }
+            }
+
+            // Drain output buffers
+            var outputIndex = codec.dequeueOutputBuffer(bufferInfo, 10_000)
+            while (outputIndex >= 0) {
+                val outputBuffer = codec.getOutputBuffer(outputIndex)
+                if (outputBuffer != null && bufferInfo.size > 0) {
+                    outputBuffer.position(bufferInfo.offset)
+                    outputBuffer.limit(bufferInfo.offset + bufferInfo.size)
+                    val shortBuf = outputBuffer.order(java.nio.ByteOrder.LITTLE_ENDIAN).asShortBuffer()
+                    val shorts = ShortArray(shortBuf.remaining())
+                    shortBuf.get(shorts)
+                    for (s in shorts) pcmSamples.add(s)
+                }
+                codec.releaseOutputBuffer(outputIndex, false)
+                if (bufferInfo.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0) {
+                    isEos = true
+                    break
+                }
+                outputIndex = codec.dequeueOutputBuffer(bufferInfo, 0)
+            }
+        }
+
+        return pcmSamples.toShortArray()
+    } catch (e: Exception) {
+        android.util.Log.e("SpeechPractice", "Failed to decode audio asset '$assetPath': ${e.message}")
+        return null
+    } finally {
+        try { codec?.stop() } catch (_: Exception) {}
+        try { codec?.release() } catch (_: Exception) {}
+        try { extractor?.release() } catch (_: Exception) {}
+        try { afd?.close() } catch (_: Exception) {}
+    }
 }
 
 /**
@@ -804,62 +898,50 @@ private fun generateSyntheticTemplate(
 }
 
 /**
- * Plays the reference audio for a practice word so the child can hear the correct pronunciation.
- * Falls back to a short TTS-like beep if the asset PCM is not found.
+ * Plays the reference audio for a practice word using Android's MediaPlayer.
+ * MediaPlayer natively supports .wav, .mp3, .ogg, and other common formats.
+ * Falls back to a short sine tone if the asset file is not found.
  */
 private fun playReferenceAudio(context: android.content.Context, word: PracticeWord) {
     try {
-        // Try loading from assets
-        val inputStream = context.assets.open(word.assetFileName)
-        val bytes = inputStream.readBytes()
-        inputStream.close()
-
-        val shortBuffer = java.nio.ByteBuffer.wrap(bytes)
-            .order(java.nio.ByteOrder.LITTLE_ENDIAN)
-            .asShortBuffer()
-        val pcmData = ShortArray(shortBuffer.limit())
-        shortBuffer.get(pcmData)
-
-        playPcmAudio(pcmData)
+        val afd = context.assets.openFd(word.assetFileName)
+        val mediaPlayer = MediaPlayer()
+        mediaPlayer.setDataSource(afd.fileDescriptor, afd.startOffset, afd.declaredLength)
+        afd.close()
+        mediaPlayer.setOnCompletionListener { it.release() }
+        mediaPlayer.prepare()
+        mediaPlayer.start()
     } catch (_: Exception) {
-        // Generate and play a short tone as placeholder
-        val sampleRate = 16000
-        val duration = sampleRate / 2 // 0.5 seconds
-        val freq = 440.0
-        val pcm = ShortArray(duration) { i ->
-            val t = i.toDouble() / sampleRate
-            val envelope = if (i < 800) i.toFloat() / 800f
-            else if (i > duration - 800) (duration - i).toFloat() / 800f
-            else 1f
-            (sin(2.0 * Math.PI * freq * t) * 12000 * envelope).toInt().coerceIn(-32768, 32767).toShort()
+        // Asset not found — generate and play a short placeholder tone via AudioTrack
+        try {
+            val sampleRate = 16000
+            val duration = sampleRate / 2 // 0.5 seconds
+            val freq = 440.0
+            val pcm = ShortArray(duration) { i ->
+                val t = i.toDouble() / sampleRate
+                val envelope = if (i < 800) i.toFloat() / 800f
+                else if (i > duration - 800) (duration - i).toFloat() / 800f
+                else 1f
+                (sin(2.0 * Math.PI * freq * t) * 12000 * envelope).toInt().coerceIn(-32768, 32767).toShort()
+            }
+            val minBufSize = AudioTrack.getMinBufferSize(
+                sampleRate,
+                AudioFormat.CHANNEL_OUT_MONO,
+                AudioFormat.ENCODING_PCM_16BIT
+            )
+            val audioTrack = AudioTrack(
+                AudioManager.STREAM_MUSIC,
+                sampleRate,
+                AudioFormat.CHANNEL_OUT_MONO,
+                AudioFormat.ENCODING_PCM_16BIT,
+                maxOf(minBufSize, pcm.size * 2),
+                AudioTrack.MODE_STATIC
+            )
+            audioTrack.write(pcm, 0, pcm.size)
+            audioTrack.play()
+        } catch (e: Exception) {
+            android.util.Log.e("SpeechPractice", "Failed to play fallback tone: ${e.message}")
         }
-        playPcmAudio(pcm)
-    }
-}
-
-/**
- * Plays raw PCM ShortArray through AudioTrack.
- */
-private fun playPcmAudio(pcmData: ShortArray) {
-    try {
-        val sampleRate = 16000
-        val minBufSize = AudioTrack.getMinBufferSize(
-            sampleRate,
-            AudioFormat.CHANNEL_OUT_MONO,
-            AudioFormat.ENCODING_PCM_16BIT
-        )
-        val audioTrack = AudioTrack(
-            AudioManager.STREAM_MUSIC,
-            sampleRate,
-            AudioFormat.CHANNEL_OUT_MONO,
-            AudioFormat.ENCODING_PCM_16BIT,
-            maxOf(minBufSize, pcmData.size * 2),
-            AudioTrack.MODE_STATIC
-        )
-        audioTrack.write(pcmData, 0, pcmData.size)
-        audioTrack.play()
-    } catch (e: Exception) {
-        android.util.Log.e("SpeechPractice", "Failed to play audio: ${e.message}")
     }
 }
 

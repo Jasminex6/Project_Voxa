@@ -36,7 +36,9 @@ import com.example.voxa.ui.screens.LibraryScreen
 import com.example.voxa.ui.screens.ProfileScreen
 import com.example.voxa.ui.screens.EmergencyScreen
 import com.example.voxa.ui.screens.SpeechPracticeScreen
+import com.example.voxa.ui.screens.SetupScreen
 import com.example.voxa.ui.screens.PracticeViolet
+import com.example.voxa.data.EmergencyContactPrefs
 import com.example.voxa.ui.theme.*
 
 class MainActivity : ComponentActivity() {
@@ -106,9 +108,17 @@ fun VoxaAppEntry(viewModel: IVoxaViewModel, modifier: Modifier = Modifier) {
         }
     }
 
+    fun hasLocationPermission(): Boolean {
+        return ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+    }
+
     // Track permission states in Compose
     var isMicGranted by remember { mutableStateOf(hasMicPermission()) }
     var isNotificationGranted by remember { mutableStateOf(hasNotificationPermission()) }
+    var isLocationGranted by remember { mutableStateOf(hasLocationPermission()) }
 
     // Register a launcher for multiple permissions
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -118,16 +128,30 @@ fun VoxaAppEntry(viewModel: IVoxaViewModel, modifier: Modifier = Modifier) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 isNotificationGranted = permissions[Manifest.permission.POST_NOTIFICATIONS] ?: isNotificationGranted
             }
+            isLocationGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] ?: isLocationGranted
         }
     )
 
-    // Decide which screen to show based on our permission states
-    if (isMicGranted && isNotificationGranted) {
-        VoxaAppContent(viewModel = viewModel, modifier = modifier)
+    // Track whether first-time setup has been completed
+    var isSetupDone by remember { mutableStateOf(EmergencyContactPrefs.isSetupComplete(context)) }
+
+    // Decide which screen to show based on our permission states and setup completion
+    if (isMicGranted && isNotificationGranted && isLocationGranted) {
+        if (isSetupDone) {
+            VoxaAppContent(viewModel = viewModel, modifier = modifier)
+        } else {
+            SetupScreen(
+                viewModel = viewModel,
+                onSetupComplete = { isSetupDone = true }
+            )
+        }
     } else {
         PermissionRequiredScreen(
             onRequestPermission = {
-                val list = mutableListOf(Manifest.permission.RECORD_AUDIO)
+                val list = mutableListOf(
+                    Manifest.permission.RECORD_AUDIO,
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                )
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     list.add(Manifest.permission.POST_NOTIFICATIONS)
                 }
@@ -253,22 +277,26 @@ fun CustomBottomBar(
                 val activeBgColor = when (screen) {
                     Screen.Emergency -> ErrorRed.copy(alpha = 0.15f)
                     Screen.Practice -> PracticeViolet.copy(alpha = 0.15f)
+                    Screen.Library -> WarningAmber.copy(alpha = 0.15f)
                     else -> Sky400.copy(alpha = 0.15f)
                 }
                 val activeContentColor = when (screen) {
                     Screen.Emergency -> ErrorRed
                     Screen.Practice -> PracticeViolet
+                    Screen.Library -> WarningAmber
                     else -> Sky400
                 }
                 val activeBorderColor = when (screen) {
                     Screen.Emergency -> ErrorRed.copy(alpha = 0.3f)
                     Screen.Practice -> PracticeViolet.copy(alpha = 0.3f)
+                    Screen.Library -> WarningAmber.copy(alpha = 0.3f)
                     else -> Sky400.copy(alpha = 0.3f)
                 }
                 val inactiveContentColor = when (screen) {
                     Screen.Emergency -> ErrorRed.copy(alpha = 0.6f)
                     Screen.Practice -> PracticeViolet.copy(alpha = 0.6f)
-                    else -> Slate400
+                    Screen.Library -> WarningAmber.copy(alpha = 0.6f)
+                    else -> Sky400
                 }
                 
                 Column(
