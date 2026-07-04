@@ -218,8 +218,6 @@ private class MockLibraryViewModel : IVoxaViewModel {
     override fun simulateVoiceMatch(word: String, phrase: String, confidence: Float, isMatch: Boolean, reason: String) {}
     override fun clearLogs() {}
     override fun playRecordedSample(intent: EnrolledIntent) {}
-    override val practiceStats = kotlinx.coroutines.flow.MutableStateFlow(emptyList<com.example.voxa.data.PracticeStats>())
-    override fun savePracticeResult(word: String, dtwDistance: Float, score: Int, stars: Int) {}
 }
 
 @androidx.compose.ui.tooling.preview.Preview(showBackground = true, showSystemUi = true, name = "Library Screen Preview")

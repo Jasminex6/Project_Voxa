@@ -96,8 +96,7 @@ enum class Screen(val title: String, val icon: String) {
     Library("Library", "📚"),
     Practice("Practice", "🎮"),
     Emergency("Emergency", "🆘"),
-    Profile("Profile", "👤"),
-    Practice("Practice", "🎮")
+    Profile("Profile", "👤")
 }
 
 // Security gate (night club analogy)
@@ -143,8 +142,7 @@ fun VoxaAppContent(viewModel: IVoxaViewModel, modifier: Modifier = Modifier) {
             when (currentScreen) {
                 Screen.Dashboard -> DashboardScreen(
                     viewModel = viewModel,
-                    onNavigateToProfile = { currentScreen = Screen.Profile },
-                    onNavigateToPractice = { currentScreen = Screen.Practice }
+                    onNavigateToProfile = { currentScreen = Screen.Profile }
                 )
                 Screen.Enrollment -> EnrollmentScreen(
                     viewModel = viewModel,
@@ -157,10 +155,6 @@ fun VoxaAppContent(viewModel: IVoxaViewModel, modifier: Modifier = Modifier) {
                 Screen.Emergency -> EmergencyScreen(viewModel = viewModel)
                 Screen.Practice -> SpeechPracticeScreen(viewModel = viewModel)
                 Screen.Profile -> ProfileScreen(
-                    viewModel = viewModel,
-                    onBack = { currentScreen = Screen.Dashboard }
-                )
-                Screen.Practice -> SpeechPracticeScreen(
                     viewModel = viewModel,
                     onBack = { currentScreen = Screen.Dashboard }
                 )

@@ -38,8 +38,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
-import com.example.voxa.ai.DtwMatcher
-import com.example.voxa.ai.MfccExtractor
+import com.example.voxa.ai.archive.DtwMatcher
+import com.example.voxa.ai.archive.MfccExtractor
 import com.example.voxa.data.PracticeStats
 import com.example.voxa.ui.*
 import com.example.voxa.ui.theme.*
@@ -296,12 +296,7 @@ fun SpeechPracticeScreen(viewModel: IVoxaViewModel) {
                     showResult = true
 
                     // Persist to database
-                    viewModel.savePracticeResult(
-                        word = selectedWord.english,
-                        dtwDistance = dtwDistance.toFloat(),
-                        score = score,
-                        stars = stars
-                    )
+                    viewModel.recordPracticeAttempt(word = selectedWord.english, score = score, stars = stars)
                 }
             } catch (e: Exception) {
                 android.util.Log.e("SpeechPractice", "Recording/scoring failed: ${e.message}", e)
@@ -974,9 +969,9 @@ private class MockPracticeViewModel : IVoxaViewModel {
     override val volumeLevel = kotlinx.coroutines.flow.MutableStateFlow(0f)
     override val practiceStats = kotlinx.coroutines.flow.MutableStateFlow(
         listOf(
-            PracticeStats(id = 1, profileId = 1, word = "Water", dtwDistance = 3.2f, score = 100, stars = 3),
-            PracticeStats(id = 2, profileId = 1, word = "Milk", dtwDistance = 5.0f, score = 80, stars = 2),
-            PracticeStats(id = 3, profileId = 1, word = "Help", dtwDistance = 6.5f, score = 60, stars = 1)
+            PracticeStats(id = 1, profileId = 1, word = "Water", score = 100, stars = 3),
+            PracticeStats(id = 2, profileId = 1, word = "Milk", score = 80, stars = 2),
+            PracticeStats(id = 3, profileId = 1, word = "Help", score = 60, stars = 1)
         )
     )
 
@@ -992,7 +987,6 @@ private class MockPracticeViewModel : IVoxaViewModel {
     override fun simulateVoiceMatch(word: String, phrase: String, confidence: Float, isMatch: Boolean, reason: String) {}
     override fun clearLogs() {}
     override fun playRecordedSample(intent: com.example.voxa.data.EnrolledIntent) {}
-    override fun savePracticeResult(word: String, dtwDistance: Float, score: Int, stars: Int) {}
 }
 
 @androidx.compose.ui.tooling.preview.Preview(showBackground = true, showSystemUi = true, name = "Speech Practice Screen")
