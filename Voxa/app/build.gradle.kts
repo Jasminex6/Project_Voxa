@@ -52,6 +52,9 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     
+    // AppCompat
+    implementation("androidx.appcompat:appcompat:1.7.0")
+    
     // Room Database
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
@@ -60,6 +63,9 @@ dependencies {
 
     // TensorFlow Lite (LiteRT with 16KB support)
     implementation(libs.litert)
+
+    // Google Play Services Location
+    implementation(libs.play.services.location)
 
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))

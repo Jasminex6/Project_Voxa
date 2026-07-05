@@ -11,6 +11,7 @@ composeBom = "2026.02.01"
 room = "2.8.4"
 litert = "1.4.0"
 ksp = "2.2.10-2.0.2"
+playServicesLocation = "21.3.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -37,6 +38,9 @@ androidx-room-compiler = { group = "androidx.room", name = "room-compiler", vers
 
 # LiteRT (TensorFlow Lite replacement with 16KB page size alignment)
 litert = { group = "com.google.ai.edge.litert", name = "litert", version.ref = "litert" }
+
+# Google Play Services Location
+play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "playServicesLocation" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

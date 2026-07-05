@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 
 /**
  * 🏛️ VoxaDatabase
@@ -13,12 +15,12 @@ import androidx.room.RoomDatabase
  *
  * - @Database: Marks this class as a Room Database holder.
  * - entities: Registers our three table classes (ChildProfile, EnrolledIntent, AcousticTemplate).
- * - version = 1: The schema version. If we add or change tables in the future, we must increment this.
+ * - version = 4: The schema version. Upgraded from 3 to add caregiverContactsJson column.
  * - exportSchema = false: Prevents Room from exporting the DB schema design to a JSON file during builds.
  */
 @Database(
     entities = [ChildProfile::class, EnrolledIntent::class, AcousticTemplate::class],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class VoxaDatabase : RoomDatabase() {
@@ -30,6 +32,16 @@ abstract class VoxaDatabase : RoomDatabase() {
     abstract fun voxaDao(): VoxaDao
 
     companion object {
+        /**
+         * Database migration statement to upgrade schema from version 3 to version 4 by
+         * adding caregiverContactsJson column to child_profiles.
+         */
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE child_profiles ADD COLUMN caregiverContactsJson TEXT DEFAULT NULL")
+            }
+        }
+
         /**
          * @Volatile: This is a concurrency safety keyword.
          *
@@ -60,6 +72,7 @@ abstract class VoxaDatabase : RoomDatabase() {
                     VoxaDatabase::class.java,
                     "voxa_database"
                 )
+                .addMigrations(MIGRATION_3_4)
                 /**
                  * fallbackToDestructiveMigration:
                  * During early hackathon development, you might change a column in your tables. 

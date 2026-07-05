@@ -64,10 +64,10 @@ object AudioFileHelper {
     fun validateDuration(pcmData: ShortArray) {
         val durationMs = (pcmData.size.toFloat() / SAMPLE_RATE) * 1000f
         if (durationMs < 200) {
-            throw IllegalArgumentException("Audio too short (${durationMs.toInt()}ms). Vocalization must be at least 200ms.")
+            throw IllegalArgumentException("too_short|${durationMs.toInt()}")
         }
         if (durationMs > 2500) {
-            throw IllegalArgumentException("Audio too long (${durationMs.toInt()}ms). Vocalization must be under 2500ms.")
+            throw IllegalArgumentException("too_long|${durationMs.toInt()}")
         }
     }
 

@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.StateFlow
 // Exposing LogEvent at the package level for clean modular boundaries.
 data class LogEvent(
     val id: Long = System.nanoTime(),
+    val profileId: Long = 0L,
     val timestamp: Long = System.currentTimeMillis(),
     val word: String,
     val phrase: String,
@@ -29,6 +30,8 @@ interface IVoxaViewModel {
     val isListening: StateFlow<Boolean>
     val recentEvents: StateFlow<List<LogEvent>>
     val volumeLevel: StateFlow<Float>
+    val appLanguage: StateFlow<String>
+        get() = kotlinx.coroutines.flow.MutableStateFlow("en")
 
     fun createProfile(name: String, gender: String, avatarEmoji: String)
     fun selectActiveProfile(profileId: Long)
@@ -43,6 +46,9 @@ interface IVoxaViewModel {
     fun simulateVoiceMatch(word: String, phrase: String, confidence: Float, isMatch: Boolean, reason: String)
     fun clearLogs()
     fun playRecordedSample(intent: EnrolledIntent)
+    fun testTtsVoice(gender: String) {}
     fun deleteProfile(profile: ChildProfile) {}
     fun updateProfileGender(profile: ChildProfile, newGender: String) {}
+    fun setAppLanguage(lang: String) {}
+    fun updateCaregivers(profile: ChildProfile, caregiversJson: String) {}
 }

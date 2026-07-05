@@ -11,5 +11,6 @@ data class ChildProfile(
     val gender: String, // "Male" or "Female" (swaps child-like voice packs)
     val isActive: Boolean = false,
     val avatarEmoji: String = "👦",
-    val speakerEmbedding: String? = null // JSON-serialized FloatArray(192) — ECAPA-TDNN voice fingerprint
+    val speakerEmbedding: String? = null, // JSON-serialized FloatArray(192) — ECAPA-TDNN voice fingerprint
+    val caregiverContactsJson: String? = null // JSON-serialized list of CaregiverContact models
 )

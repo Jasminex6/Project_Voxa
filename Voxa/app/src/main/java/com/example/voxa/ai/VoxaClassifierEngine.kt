@@ -34,15 +34,12 @@ class VoxaClassifierEngine(
         
         // --- 📊 MATCHING THRESHOLDS ---
         // Analogy: ABSOLUTE_THRESHOLD is the maximum distance budget. If the DTW distance exceeds this,
-        // we reject the sound. We set it to 7.80f (up from 6.50f) to be more forgiving of child speech variations 
-        // and mispronunciations (like saying "ءااء" instead of "سماء").
-        private const val ABSOLUTE_THRESHOLD = 7.80f
+        // we reject the sound. Set to 8.20f for balanced flexibility.
+        private const val ABSOLUTE_THRESHOLD = 8.20f
         
-        // Analogy: MARGIN_THRESHOLD prevents false positives. If two candidate words have very close distances,
-        // it marks it as "Ambiguous" to avoid choosing the wrong one. We lower it to 0.15f (down from 0.32f) 
-        // to be less strict and choose the best candidate more decisively unless they are extremely close.
+        // Analogy: MARGIN_THRESHOLD prevents false positives. Reverted to 0.15f.
         private const val MARGIN_THRESHOLD = 0.15f
-        private const val SPEAKER_THRESHOLD = 0.25f
+        private const val SPEAKER_THRESHOLD = 0.10f
     }
 
     private val vad = VoxaVAD()
@@ -125,38 +122,10 @@ class VoxaClassifierEngine(
 
         // Process the first valid segment
         val segment = segments[0]
+        val segmentDurationMs = (segment.size.toFloat() / 16000f) * 1000f
+        Log.d(TAG, "Speech segment captured: duration = ${segmentDurationMs.toInt()}ms, samples = ${segment.size}")
 
-        // Step 2: Speaker Verification (if enrolled embedding exists and model initialized successfully)
-        if (enrolledEmbedding != null) {
-            if (speakerVerifier.isValid()) {
-                val melFeatures = computeLogMelSpectrogram(segment)
-                if (melFeatures.isEmpty()) {
-                    return ClassificationResult(
-                        isMatch = false, intentName = null, outputPhrase = null,
-                        audioAssetPath = null, confidence = 0f,
-                        reason = "Mel spectrogram computation failed"
-                    )
-                }
-
-                val testEmbedding = speakerVerifier.extractEmbedding(melFeatures)
-                val similarity = SpeakerVerifier.computeCosineSimilarity(testEmbedding, enrolledEmbedding)
-
-                if (similarity < SPEAKER_THRESHOLD) {
-                    Log.d(TAG, "Speaker rejected (similarity=$similarity)")
-                    return ClassificationResult(
-                        isMatch = false, intentName = null, outputPhrase = null,
-                        audioAssetPath = null, confidence = similarity,
-                        reason = "Speaker rejected (similarity=${String.format("%.2f", similarity)})",
-                        speakerSimilarity = similarity
-                    )
-                }
-                Log.d(TAG, "Speaker verified (similarity=$similarity)")
-            } else {
-                Log.w(TAG, "Speaker verifier model is not active — bypassing speaker check")
-            }
-        }
-
-        // Step 3: MFCC extraction (40-dim features for DTW)
+        // Step 2: MFCC extraction (40-dim features for DTW)
         val mfccFeatures = mfccExtractor.extract(segment)
         if (mfccFeatures.isEmpty()) {
             return ClassificationResult(
@@ -166,7 +135,7 @@ class VoxaClassifierEngine(
             )
         }
 
-        // Step 4: DTW consensus matching
+        // Step 3: DTW consensus matching
         if (parsedTemplates.isEmpty()) {
             return ClassificationResult(
                 isMatch = false, intentName = null, outputPhrase = null,
@@ -184,9 +153,55 @@ class VoxaClassifierEngine(
             )
         }
 
+        // Diagnostic log: Print DTW distances to all enrolled candidates
+        Log.d(TAG, "DTW distance results for all enrolled candidates:")
+        dtwResults.forEach { result ->
+            Log.d(TAG, "  - Candidate: '${result.intentName}' -> Average DTW Distance = ${String.format("%.3f", result.distance)}")
+        }
+
+        val bestResult = dtwResults.firstOrNull()
+        val bestDistance = bestResult?.distance ?: Double.POSITIVE_INFINITY
+
+        // Step 4: Speaker Verification (conditional on DTW distance quality)
+        var speakerSimilarity = 1.0f
+        if (enrolledEmbedding != null) {
+            if (speakerVerifier.isValid()) {
+                val melFeatures = computeLogMelSpectrogram(segment)
+                if (melFeatures.isNotEmpty()) {
+                    val testEmbedding = speakerVerifier.extractEmbedding(melFeatures)
+                    speakerSimilarity = SpeakerVerifier.computeCosineSimilarity(testEmbedding, enrolledEmbedding)
+                    Log.d(TAG, "Speaker verification similarity: $speakerSimilarity (best DTW distance: ${String.format("%.3f", bestDistance)})")
+
+                    // Only enforce speaker verification rejection if the match is marginal (distance >= 6.80f)
+                    if (bestDistance >= 6.80f && speakerSimilarity < SPEAKER_THRESHOLD) {
+                        Log.d(TAG, "Speaker rejected (similarity=$speakerSimilarity, distance=${String.format("%.3f", bestDistance)})")
+                        return ClassificationResult(
+                            isMatch = false, intentName = null, outputPhrase = null,
+                            audioAssetPath = null, confidence = speakerSimilarity,
+                            reason = "Speaker rejected (similarity=${String.format("%.2f", speakerSimilarity)})",
+                            speakerSimilarity = speakerSimilarity
+                        )
+                    }
+                } else {
+                    Log.w(TAG, "Mel spectrogram computation failed — bypassing speaker check")
+                }
+            } else {
+                Log.w(TAG, "Speaker verifier model is not active — bypassing speaker check")
+            }
+        }
+
         // Step 5: Margin Gate evaluation
         val candidates = dtwResults.map { result ->
             MarginGate.CandidateMatch(result.intentName, result.distance.toFloat())
+        }
+
+        // Log the confidence margin details
+        val secondResult = if (dtwResults.size > 1) dtwResults[1] else null
+        if (bestResult != null && secondResult != null) {
+            val margin = secondResult.distance - bestResult.distance
+            Log.d(TAG, "  - Current Margin: ${String.format("%.3f", margin)} (threshold: $MARGIN_THRESHOLD). Best: '${bestResult.intentName}' (${String.format("%.3f", bestResult.distance)}), Second: '${secondResult.intentName}' (${String.format("%.3f", secondResult.distance)})")
+        } else if (bestResult != null) {
+            Log.d(TAG, "  - Single Candidate: '${bestResult.intentName}' (${String.format("%.3f", bestResult.distance)})")
         }
 
         val gateResult = MarginGate.evaluate(
@@ -194,10 +209,11 @@ class VoxaClassifierEngine(
             absoluteThreshold = ABSOLUTE_THRESHOLD,
             marginThreshold = MARGIN_THRESHOLD
         )
+        
+        Log.d(TAG, "MarginGate outcome: isMatch = ${gateResult.isMatch}, winning candidate = '${gateResult.matchedWord}', reason = '${gateResult.reason}'")
 
         // Look up the matched intent's output phrase and audio path
         val matchedIntent = enrolledIntents.find { it.intentName == gateResult.matchedWord }
-        val bestDistance = dtwResults.firstOrNull()?.distance ?: Double.POSITIVE_INFINITY
         // Map distance [0.0, ABSOLUTE_THRESHOLD] to user-friendly confidence [1.0, 0.60] (60% to 100%)
         // Only return confidence > 0 for a confirmed match; otherwise return 0f to prevent misleading high confidence in ambiguity/rejections.
         val confidence = if (gateResult.isMatch && bestDistance < ABSOLUTE_THRESHOLD) {
@@ -211,7 +227,8 @@ class VoxaClassifierEngine(
             outputPhrase = matchedIntent?.outputPhrase,
             audioAssetPath = matchedIntent?.audioAssetPath,
             confidence = confidence,
-            reason = gateResult.reason
+            reason = gateResult.reason,
+            speakerSimilarity = speakerSimilarity
         )
     }
 

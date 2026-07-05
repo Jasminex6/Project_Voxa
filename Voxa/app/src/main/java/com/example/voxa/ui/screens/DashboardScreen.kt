@@ -1,15 +1,26 @@
 package com.example.voxa.ui.screens
 
+import android.content.Context
+import android.net.Uri
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.MicOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,47 +29,31 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.MicOff
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Close
-
-import com.example.voxa.ui.*
+import com.example.voxa.R
+import com.example.voxa.ui.LogEvent
+import com.example.voxa.ui.IVoxaViewModel
 import com.example.voxa.ui.theme.*
+import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.*
-import android.net.Uri
-import android.widget.Toast
-import android.content.Context
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 
-// The dance floor (The main monitoring screen where the action happens)
-/**
- * 🏠 DashboardScreen
- * The main monitoring cockpit for caregivers.
- * Displays:
- * 1. Active child profile info card.
- * 2. Large pulsing Microphone controller to toggle listening.
- * 3. Match Simulation card for live demos.
- * 4. Recent vocalization log events timeline.
- */
 @Composable
 fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) {
-    // Observing state flows from the ViewModel. Think of these as subscribing to digital notice boards.
-    // Compose automatically recomposes (re-renders) this screen whenever these values change.
     val isListening by viewModel.isListening.collectAsState()
     val activeProfile by viewModel.activeProfile.collectAsState()
     val recentEvents by viewModel.recentEvents.collectAsState()
     val volumeLevel by viewModel.volumeLevel.collectAsState()
+    val appLanguage by viewModel.appLanguage.collectAsState()
+
+    val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
 
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
     
@@ -104,7 +99,13 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
 
     var isSidebarOpen by remember { mutableStateOf(false) }
     var showCaregiverEditDialog by remember { mutableStateOf(false) }
-    var caregiverName by remember { mutableStateOf("Parent / Caregiver") }
+    val defaultCaregiverName = stringResource(R.string.dashboard_default_caregiver_name)
+    var caregiverName by remember { mutableStateOf("") }
+    LaunchedEffect(defaultCaregiverName) {
+        if (caregiverName.isEmpty() || caregiverName == "Parent / Caregiver" || caregiverName == "ولي الأمر / مقدم الرعاية") {
+            caregiverName = defaultCaregiverName
+        }
+    }
     var caregiverPhone by remember { mutableStateOf("+1 234 567 890") }
     val context = LocalContext.current
 
@@ -116,10 +117,12 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
                 context = context,
                 uri = uri,
                 onSuccess = {
-                    Toast.makeText(context, "Profile imported successfully!", Toast.LENGTH_SHORT).show()
+                    val msg = context.getString(R.string.dashboard_profile_imported)
+                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                 },
                 onError = { error ->
-                    Toast.makeText(context, "Import failed: $error", Toast.LENGTH_LONG).show()
+                    val msg = context.getString(R.string.dashboard_profile_import_failed, error)
+                    Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
                 }
             )
         }
@@ -145,14 +148,13 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    // Profile emoji placeholder
                     Text(
                         text = activeProfile?.avatarEmoji ?: "👦",
                         fontSize = 28.sp
                     )
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
-                        text = activeProfile?.name ?: "No Profile",
+                        text = activeProfile?.name ?: stringResource(R.string.dashboard_active_profile_none),
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
@@ -172,7 +174,7 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // ── PULSING LISTENING CONTROL ──
+            // ── PULSING LISTENING CONTROL (Remains Centered) ──
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -180,7 +182,6 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
                 contentAlignment = Alignment.Center
             ) {
                 if (isListening) {
-                    // Pulsing ripple 1
                     Box(
                         modifier = Modifier
                             .size(100.dp)
@@ -188,7 +189,6 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
                             .clip(CircleShape)
                             .background(Color(0xFF00F2FE).copy(alpha = rippleAlpha1))
                     )
-                    // Pulsing ripple 2
                     Box(
                         modifier = Modifier
                             .size(100.dp)
@@ -224,11 +224,14 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
 
             // ── LIVE TRANSLATION TRANSCRIPT CARD ──
             Text(
-                text = "Live Translation",
+                text = stringResource(R.string.dashboard_live_translation),
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
                 color = Sky400,
-                modifier = Modifier.padding(bottom = 8.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp),
+                textAlign = if (isRtl) TextAlign.End else TextAlign.Start
             )
             Card(
                 shape = RoundedCornerShape(16.dp),
@@ -245,16 +248,17 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(20.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
+                    horizontalAlignment = if (isRtl) Alignment.End else Alignment.Start,
                     verticalArrangement = Arrangement.Center
                 ) {
                     if (lastVocalEvent == null || !isListening) {
                         Text(
-                            text = if (isListening) "🎙️ Listening..." else "🎙️ Ready to Translate",
+                            text = if (isListening) stringResource(R.string.dashboard_listening) else stringResource(R.string.dashboard_ready),
                             color = Slate300,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
-                            textAlign = TextAlign.Center
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = if (isRtl) TextAlign.End else TextAlign.Start
                         )
                         
                         if (isListening) {
@@ -281,47 +285,54 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
 
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = if (isListening) "Waiting for child vocalizations..." else "Tap the microphone to start monitoring",
+                            text = if (isListening) stringResource(R.string.dashboard_waiting) else stringResource(R.string.dashboard_tap_to_start),
                             color = Slate400,
                             fontSize = 12.sp,
-                            textAlign = TextAlign.Center
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = if (isRtl) TextAlign.End else TextAlign.Start
                         )
                     } else if (lastVocalEvent.isMatch) {
                         Text(
-                            text = lastVocalEvent.phrase, // Arabic phrase
+                            text = lastVocalEvent.phrase,
                             color = SuccessGreen,
                             fontSize = 28.sp,
                             fontWeight = FontWeight.Bold,
-                            textAlign = TextAlign.Center
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = if (isRtl) TextAlign.End else TextAlign.Start
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "Translated: ${lastVocalEvent.word}", // English meaning
+                            text = stringResource(R.string.dashboard_translated_label, lastVocalEvent.word),
                             color = Color.White,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Medium,
-                            textAlign = TextAlign.Center
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = if (isRtl) TextAlign.End else TextAlign.Start
                         )
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            text = "Confidence: ${(lastVocalEvent.confidence * 100).toInt()}%",
+                            text = stringResource(R.string.dashboard_confidence_label, (lastVocalEvent.confidence * 100).toInt()),
                             color = Slate300,
-                            fontSize = 11.sp
+                            fontSize = 11.sp,
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = if (isRtl) TextAlign.End else TextAlign.Start
                         )
                     } else {
                         Text(
-                            text = "Unrecognized Sound",
+                            text = stringResource(R.string.dashboard_unrecognized),
                             color = ErrorRed,
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
-                            textAlign = TextAlign.Center
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = if (isRtl) TextAlign.End else TextAlign.Start
                         )
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            text = lastVocalEvent.detail, // Reason
+                            text = lastVocalEvent.detail,
                             color = Slate300,
                             fontSize = 12.sp,
-                            textAlign = TextAlign.Center
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = if (isRtl) TextAlign.End else TextAlign.Start
                         )
                     }
                 }
@@ -337,10 +348,12 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "📋 Activity Log Timeline",
+                    text = stringResource(R.string.dashboard_activity_timeline),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = Color.White,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = if (isRtl) TextAlign.End else TextAlign.Start
                 )
             }
 
@@ -352,7 +365,7 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "No recent sounds detected.\nActivate monitoring to start translating.",
+                        text = stringResource(R.string.dashboard_no_logs),
                         color = Slate300,
                         textAlign = TextAlign.Center,
                         fontSize = 14.sp
@@ -377,9 +390,8 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
             }
         }
 
-        // ── RIGHT SIDEBAR DRAWER OVERLAY ──
+        // ── SIDEBAR DRAWER OVERLAY (Aligns dynamically for LTR/RTL) ──
         if (isSidebarOpen) {
-            // Dim backdrop
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -387,12 +399,11 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
                     .clickable { isSidebarOpen = false }
             )
 
-            // Right Slide Panel
             Box(
                 modifier = Modifier
                     .fillMaxHeight()
                     .width(280.dp)
-                    .align(Alignment.CenterEnd)
+                    .align(if (isRtl) Alignment.CenterStart else Alignment.CenterEnd)
                     .background(Slate800)
                     .clickable(enabled = false) {}
                     .padding(16.dp)
@@ -402,14 +413,13 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
                     verticalArrangement = Arrangement.SpaceBetween
                 ) {
                     Column {
-                        // Title & Close Button
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "Voxa Hub Menu",
+                                text = stringResource(R.string.dashboard_menu_title),
                                 color = Color.White,
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold
@@ -427,7 +437,7 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
 
                         // 👦 Child Info Section
                         Text(
-                            text = "👦 Child Info",
+                            text = "👦 " + stringResource(R.string.dashboard_child_info),
                             color = Sky400,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
@@ -446,17 +456,29 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
                                     fontSize = 24.sp
                                 )
                                 Spacer(modifier = Modifier.width(10.dp))
-                                Column {
+                                Column(
+                                    modifier = Modifier.weight(1f),
+                                    horizontalAlignment = if (isRtl) Alignment.End else Alignment.Start
+                                ) {
                                     Text(
-                                        text = activeProfile?.name ?: "No profile active",
+                                        text = activeProfile?.name ?: stringResource(R.string.dashboard_active_profile_none),
                                         color = Color.White,
                                         fontWeight = FontWeight.Bold,
-                                        fontSize = 13.sp
+                                        fontSize = 13.sp,
+                                        modifier = Modifier.fillMaxWidth(),
+                                        textAlign = if (isRtl) TextAlign.End else TextAlign.Start
                                     )
+                                    val genderText = when (activeProfile?.gender) {
+                                        "Male" -> stringResource(R.string.male)
+                                        "Female" -> stringResource(R.string.female)
+                                        else -> activeProfile?.gender ?: ""
+                                    }
                                     Text(
-                                        text = "Voice Pack: ${activeProfile?.gender ?: "None"}",
+                                        text = if (activeProfile != null) stringResource(R.string.voice_pack_format, genderText) else "",
                                         color = Slate400,
-                                        fontSize = 11.sp
+                                        fontSize = 11.sp,
+                                        modifier = Modifier.fillMaxWidth(),
+                                        textAlign = if (isRtl) TextAlign.End else TextAlign.Start
                                     )
                                 }
                             }
@@ -471,14 +493,14 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
                             modifier = Modifier.fillMaxWidth().height(32.dp),
                             contentPadding = PaddingValues(0.dp)
                         ) {
-                            Text("Manage Profiles", color = Slate900, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            Text(stringResource(R.string.dashboard_manage_profiles), color = Slate900, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                         }
 
                         Spacer(modifier = Modifier.height(20.dp))
 
                         // 👨‍👩‍👧 Caregivers Info Section
                         Text(
-                            text = "👨‍👩‍👧 Caregivers Info",
+                            text = "👨‍👩‍👧 " + stringResource(R.string.dashboard_caregivers_info),
                             color = Sky400,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
@@ -488,22 +510,29 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
                             colors = CardDefaults.cardColors(containerColor = Slate900),
                             modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
                         ) {
-                            Column(modifier = Modifier.padding(10.dp)) {
+                            Column(
+                                modifier = Modifier.padding(10.dp).fillMaxWidth(),
+                                horizontalAlignment = if (isRtl) Alignment.End else Alignment.Start
+                            ) {
                                 Text(
                                     text = caregiverName,
                                     color = Color.White,
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 12.sp
+                                    fontSize = 12.sp,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    textAlign = if (isRtl) TextAlign.End else TextAlign.Start
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
-                                    text = "Phone: $caregiverPhone",
+                                    text = stringResource(R.string.caregiver_phone_label) + ": $caregiverPhone",
                                     color = Slate300,
-                                    fontSize = 11.sp
+                                    fontSize = 11.sp,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    textAlign = if (isRtl) TextAlign.End else TextAlign.Start
                                 )
                                 Spacer(modifier = Modifier.height(6.dp))
                                 Text(
-                                    text = "✏️ Edit Caregiver Details",
+                                    text = stringResource(R.string.dashboard_edit_caregiver),
                                     color = Sky400,
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
@@ -516,7 +545,7 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
 
                         // ⚙️ Settings Section
                         Text(
-                            text = "⚙️ Settings",
+                            text = stringResource(R.string.dashboard_settings),
                             color = Sky400,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
@@ -526,17 +555,59 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
                             colors = CardDefaults.cardColors(containerColor = Slate900),
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Column(modifier = Modifier.padding(10.dp)) {
+                            Column(
+                                modifier = Modifier.padding(10.dp).fillMaxWidth(),
+                                horizontalAlignment = if (isRtl) Alignment.End else Alignment.Start
+                            ) {
                                 Text(
-                                    text = "App Language: English",
+                                    text = stringResource(R.string.dashboard_app_lang, ""),
                                     color = Color.White,
-                                    fontSize = 11.sp
+                                    fontSize = 11.sp,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    textAlign = if (isRtl) TextAlign.End else TextAlign.Start
                                 )
-                                Spacer(modifier = Modifier.height(6.dp))
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    val isEn = appLanguage == "en"
+                                    FilterChip(
+                                        selected = isEn,
+                                        onClick = {
+                                            viewModel.setAppLanguage("en")
+                                            (context as? android.app.Activity)?.recreate()
+                                        },
+                                        label = { Text("English", fontSize = 11.sp) },
+                                        colors = FilterChipDefaults.filterChipColors(
+                                            selectedContainerColor = Sky400,
+                                            selectedLabelColor = Slate900,
+                                            containerColor = Slate800,
+                                            labelColor = Slate400
+                                        )
+                                    )
+                                    FilterChip(
+                                        selected = !isEn,
+                                        onClick = {
+                                            viewModel.setAppLanguage("ar")
+                                            (context as? android.app.Activity)?.recreate()
+                                        },
+                                        label = { Text("العربية", fontSize = 11.sp) },
+                                        colors = FilterChipDefaults.filterChipColors(
+                                            selectedContainerColor = Sky400,
+                                            selectedLabelColor = Slate900,
+                                            containerColor = Slate800,
+                                            labelColor = Slate400
+                                        )
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(8.dp))
                                 Text(
-                                    text = "Continuous Listening: ON",
+                                    text = stringResource(R.string.dashboard_listening_status, if (isListening) stringResource(R.string.status_on) else stringResource(R.string.status_off)),
                                     color = Color.White,
-                                    fontSize = 11.sp
+                                    fontSize = 11.sp,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    textAlign = if (isRtl) TextAlign.End else TextAlign.Start
                                 )
                             }
                         }
@@ -545,7 +616,7 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
 
                         // 💾 Data Management Section
                         Text(
-                            text = "💾 Data Management",
+                            text = stringResource(R.string.dashboard_data_mgmt),
                             color = Sky400,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
@@ -560,7 +631,7 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 Text(
-                                    text = "📤 Export Profile & Intents",
+                                    text = stringResource(R.string.dashboard_export),
                                     color = Sky400,
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
@@ -569,7 +640,7 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
                                     }
                                 )
                                 Text(
-                                    text = "📥 Import Profile & Intents",
+                                    text = stringResource(R.string.dashboard_import),
                                     color = SuccessGreen,
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
@@ -578,13 +649,14 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
                                     }
                                 )
                                 Text(
-                                    text = "🧹 Clear Timeline Logs",
+                                    text = stringResource(R.string.dashboard_clear_logs),
                                     color = ErrorRed,
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
                                     modifier = Modifier.clickable {
                                         viewModel.clearLogs()
-                                        Toast.makeText(context, "Timeline cleared!", Toast.LENGTH_SHORT).show()
+                                        val msg = context.getString(R.string.dashboard_timeline_cleared)
+                                        Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                                     }
                                 )
                             }
@@ -593,7 +665,7 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
 
                     // Version Tag
                     Text(
-                        text = "Voxa Version v1.12.0",
+                        text = stringResource(R.string.dashboard_version, "v1.12.0"),
                         color = Slate400,
                         fontSize = 10.sp,
                         modifier = Modifier.align(Alignment.CenterHorizontally)
@@ -608,14 +680,14 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
             var tempPhone by remember { mutableStateOf(caregiverPhone) }
             AlertDialog(
                 onDismissRequest = { showCaregiverEditDialog = false },
-                title = { Text("Edit Caregiver Info", color = Color.White, fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(R.string.dashboard_edit_caregiver_title), color = Color.White, fontWeight = FontWeight.Bold) },
                 containerColor = Slate800,
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedTextField(
                             value = tempName,
                             onValueChange = { tempName = it },
-                            label = { Text("Name", color = Slate400) },
+                            label = { Text(stringResource(R.string.dashboard_name), color = Slate400) },
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedTextColor = Color.White,
                                 unfocusedTextColor = Color.White,
@@ -627,7 +699,7 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
                         OutlinedTextField(
                             value = tempPhone,
                             onValueChange = { tempPhone = it },
-                            label = { Text("Phone Number", color = Slate400) },
+                            label = { Text(stringResource(R.string.dashboard_phone), color = Slate400) },
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedTextColor = Color.White,
                                 unfocusedTextColor = Color.White,
@@ -649,12 +721,12 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = Sky400)
                     ) {
-                        Text("Save", color = Slate900, fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.save_btn), color = Slate900, fontWeight = FontWeight.Bold)
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { showCaregiverEditDialog = false }) {
-                        Text("Cancel", color = Slate400)
+                        Text(stringResource(R.string.cancel_btn), color = Slate400)
                     }
                 }
             )
@@ -662,8 +734,43 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
     }
 }
 
+private val systemEventResourceMap = mapOf(
+    "log_listening_paused" to R.string.log_listening_paused,
+    "log_listening_active" to R.string.log_listening_active,
+    "log_profile_imported" to R.string.log_profile_imported,
+    "log_siren_activated" to R.string.log_siren_activated,
+    "log_siren_paused" to R.string.log_siren_paused,
+    "log_sms_sent" to R.string.log_sms_sent,
+    "log_whatsapp_shared" to R.string.log_whatsapp_shared,
+    "log_dialer_launched" to R.string.log_dialer_launched,
+    "log_intent_enrolled" to R.string.log_intent_enrolled
+)
+
+fun resolveSystemEventText(context: Context, rawPhrase: String): String {
+    val parts = rawPhrase.split("|")
+    if (parts.isEmpty()) return rawPhrase
+    val key = parts[0]
+    val resId = systemEventResourceMap[key] ?: 0
+    if (resId == 0) return rawPhrase
+
+    return try {
+        when (parts.size) {
+            1 -> context.getString(resId)
+            2 -> context.getString(resId, parts[1])
+            3 -> {
+                val arg2 = parts[2].toIntOrNull() ?: parts[2]
+                context.getString(resId, parts[1], arg2)
+            }
+            else -> context.getString(resId)
+        }
+    } catch (e: Exception) {
+        rawPhrase
+    }
+}
+
 @Composable
 fun TimelineItem(event: LogEvent) {
+    val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     val formatter = remember { SimpleDateFormat("HH:mm:ss", Locale.getDefault()) }
     val timeStr = formatter.format(Date(event.timestamp))
 
@@ -674,7 +781,7 @@ fun TimelineItem(event: LogEvent) {
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(modifier = Modifier.height(IntrinsicSize.Min)) {
-            // High-end vertical accent status bar on the left edge
+            // High-end vertical accent status bar
             Box(
                 modifier = Modifier
                     .fillMaxHeight()
@@ -695,10 +802,17 @@ fun TimelineItem(event: LogEvent) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    horizontalAlignment = if (isRtl) Alignment.End else Alignment.Start
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = if (isRtl) Arrangement.End else Arrangement.Start,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
                         Text(
-                            text = if (event.word == "SYSTEM") "System Update" else "Detected Vocalization",
+                            text = if (event.word == "SYSTEM") stringResource(R.string.dashboard_system_update) else stringResource(R.string.dashboard_detected_vocal),
                             fontWeight = FontWeight.Bold,
                             color = Color.White,
                             fontSize = 12.sp
@@ -715,7 +829,7 @@ fun TimelineItem(event: LogEvent) {
                                     .padding(horizontal = 6.dp, vertical = 2.dp)
                             ) {
                                 Text(
-                                    text = "${(event.confidence * 100).toInt()}% Conf",
+                                    text = stringResource(R.string.dashboard_confidence_label, (event.confidence * 100).toInt()),
                                     fontSize = 10.sp,
                                     color = if (event.isMatch) SuccessGreen else WarningAmber,
                                     fontWeight = FontWeight.Bold
@@ -725,17 +839,25 @@ fun TimelineItem(event: LogEvent) {
                     }
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = if (event.word == "SYSTEM") event.detail else event.phrase,
+                        text = if (event.word == "SYSTEM") {
+                            resolveSystemEventText(androidx.compose.ui.platform.LocalContext.current, event.phrase)
+                        } else {
+                            event.phrase
+                        },
                         color = Color.White,
                         fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = if (isRtl) TextAlign.End else TextAlign.Start
                     )
                     if (event.word != "SYSTEM") {
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = "Sound: '${event.word}' • ${event.detail}",
+                            text = stringResource(R.string.dashboard_log_format, event.word, event.detail),
                             color = Slate400,
-                            fontSize = 11.sp
+                            fontSize = 11.sp,
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = if (isRtl) TextAlign.End else TextAlign.Start
                         )
                     }
                 }
@@ -751,8 +873,6 @@ fun TimelineItem(event: LogEvent) {
     }
 }
 
-// ── PREVIEWS FOR ANDROID STUDIO DESIGN PANEL ──
-
 private class MockDashboardViewModel : IVoxaViewModel {
     override val allProfiles = kotlinx.coroutines.flow.MutableStateFlow(emptyList<com.example.voxa.data.ChildProfile>())
     override val activeProfile = kotlinx.coroutines.flow.MutableStateFlow(com.example.voxa.data.ChildProfile(name = "Adam", gender = "Male", isActive = true))
@@ -765,6 +885,7 @@ private class MockDashboardViewModel : IVoxaViewModel {
         )
     )
     override val volumeLevel = kotlinx.coroutines.flow.MutableStateFlow(0f)
+    override val appLanguage = kotlinx.coroutines.flow.MutableStateFlow("en")
     override fun createProfile(name: String, gender: String, avatarEmoji: String) {}
     override fun selectActiveProfile(profileId: Long) {}
     override fun enrollIntent(intentName: String, outputPhrase: String, audioAssetPath: String) {}
@@ -786,4 +907,3 @@ fun DashboardScreenPreview() {
         DashboardScreen(viewModel = MockDashboardViewModel(), onNavigateToProfile = {})
     }
 }
-

@@ -15,9 +15,13 @@ import android.os.PowerManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.example.voxa.MainActivity
+import com.example.voxa.R
 import com.example.voxa.ai.VoxaClassifierEngine
 import com.example.voxa.data.VoxaDatabase
 import com.example.voxa.utils.AudioPlayer
+import android.content.res.Configuration
+import android.content.BroadcastReceiver
+import android.content.IntentFilter
 import kotlinx.coroutines.*
 
 /**
@@ -39,6 +43,7 @@ class VoxaListenerService : Service() {
     private var wakeLock: PowerManager.WakeLock? = null
     
     // A control flag used by the background thread to safely start and stop the infinite recording loop.
+    @Volatile
     private var isRecording = false
     
     // The background thread where the blocking microphone reading loop executes.
@@ -48,6 +53,7 @@ class VoxaListenerService : Service() {
     private var audioRecord: AudioRecord? = null
 
     // AI/DSP classifier engine — instantiated from Room data at service start
+    @Volatile
     private var classifierEngine: VoxaClassifierEngine? = null
 
     // Audio playback for matched translation phrases
@@ -55,6 +61,149 @@ class VoxaListenerService : Service() {
 
     // Coroutine scope for database loading
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+
+    // SOS Emergency Dispatch States
+    private var currentSosContacts = listOf<Pair<String, String>>()
+    private var currentSosLink = ""
+
+    // Debounce to prevent TTS audio playback from triggering a secondary feedback match
+    private var lastMatchTimestamp = 0L
+    private val DEBOUNCE_PERIOD_MS = 2500L
+
+    // Tracks the current asynchronous playback/dispatch coroutine job to prevent race conditions
+    private var playbackJob: Job? = null
+
+    private val smsSentReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            val index = intent?.getIntExtra("caregiver_index", -1) ?: -1
+            if (index != -1) {
+                if (resultCode == android.app.Activity.RESULT_OK) {
+                    Log.d("VoxaService", "SMS alert successfully delivered to caregiver at index $index")
+                } else {
+                    Log.w("VoxaService", "SMS alert delivery failed for caregiver at index $index, trying fallback")
+                    triggerNextCaregiverAlert(index + 1)
+                }
+            }
+        }
+    }
+
+    private fun triggerNextCaregiverAlert(index: Int) {
+        if (index >= currentSosContacts.size) {
+            Log.w("VoxaService", "All caregiver SMS alerts failed or no more contacts to notify.")
+            return
+        }
+        val contact = currentSosContacts[index]
+        val name = contact.first
+        val phone = contact.second
+        val localizedContext = getLocalizedContext()
+        val message = localizedContext.getString(R.string.sms_sos_message, currentSosLink)
+
+        try {
+            val smsManager = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                getSystemService(android.telephony.SmsManager::class.java)
+            } else {
+                @Suppress("DEPRECATION")
+                android.telephony.SmsManager.getDefault()
+            }
+
+            val sentIntent = PendingIntent.getBroadcast(
+                this,
+                100 + index,
+                Intent(ACTION_SMS_SENT).apply {
+                    putExtra("caregiver_index", index)
+                    setPackage(packageName)
+                },
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+
+            smsManager.sendTextMessage(phone, null, message, sentIntent, null)
+            Log.d("VoxaService", "Sending emergency SMS to Caregiver $index: $name ($phone)")
+        } catch (e: Exception) {
+            Log.e("VoxaService", "Failed to send SMS to $name: ${e.message}")
+            // Fallback immediately to next caregiver
+            triggerNextCaregiverAlert(index + 1)
+        }
+    }
+
+    private fun triggerSosDispatch(profile: com.example.voxa.data.ChildProfile?) {
+        if (profile == null) {
+            Log.w("VoxaService", "No active profile to pull emergency caregivers from")
+            return
+        }
+
+        serviceScope.launch {
+            val contacts = mutableListOf<Pair<String, String>>()
+            val jsonStr = profile.caregiverContactsJson
+            if (!jsonStr.isNullOrBlank()) {
+                try {
+                    val array = org.json.JSONArray(jsonStr)
+                    for (i in 0 until array.length()) {
+                        val obj = array.getJSONObject(i)
+                        val name = obj.optString("name", "")
+                        val phone = obj.optString("phone", "")
+                        if (phone.isNotBlank()) {
+                            contacts.add(Pair(name, phone))
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e("VoxaService", "Error parsing caregiver JSON: ${e.message}")
+                }
+            }
+
+            if (contacts.isEmpty()) {
+                Log.w("VoxaService", "No emergency contacts registered for SOS")
+                return@launch
+            }
+
+            Log.d("VoxaService", "SOS Triggered! Fetching location...")
+            val location = com.example.voxa.utils.LocationHelper.getFreshLocation(applicationContext)
+            val mapsLink = if (location != null) {
+                "https://maps.google.com/?q=${location.latitude},${location.longitude}"
+            } else {
+                "Location unavailable"
+            }
+
+            currentSosContacts = contacts
+            currentSosLink = mapsLink
+
+            triggerNextCaregiverAlert(0)
+
+            val primary = contacts.first()
+            showSosNotification(primary.first, primary.second)
+        }
+    }
+
+    private fun showSosNotification(caregiverName: String, caregiverPhone: String) {
+        val callIntent = Intent(Intent.ACTION_DIAL).apply {
+            data = android.net.Uri.parse("tel:$caregiverPhone")
+        }
+        val pendingCallIntent = PendingIntent.getActivity(
+            this,
+            99,
+            callIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val localizedContext = getLocalizedContext()
+        val builder = NotificationCompat.Builder(this, "voxa_emergency_channel")
+            .setContentTitle(localizedContext.getString(R.string.notification_sos_title))
+            .setContentText(localizedContext.getString(R.string.notification_sos_text, caregiverName))
+            .setSmallIcon(android.R.drawable.ic_btn_speak_now)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .setContentIntent(pendingCallIntent)
+
+        val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                "voxa_emergency_channel",
+                "Voxa Emergency Alerts",
+                NotificationManager.IMPORTANCE_HIGH
+            )
+            manager.createNotificationChannel(channel)
+        }
+        manager.notify(101, builder.build())
+    }
 
     /**
      * onBind() is a mandatory method of the Service class.
@@ -74,6 +223,10 @@ class VoxaListenerService : Service() {
         // Initialize the notification channel (required by Android 8.0+ before posting notifications)
         createNotificationChannel()
         audioPlayer = AudioPlayer(this)
+
+        // Register SMS sent status receiver
+        val filter = IntentFilter(ACTION_SMS_SENT)
+        registerReceiver(smsSentReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
     }
 
     /**
@@ -92,6 +245,13 @@ class VoxaListenerService : Service() {
         // 2. Acquire a CPU WakeLock.
         // Tells the operating system: "Keep the CPU running even if the screen turns off, because we are actively
         // listening for vocalizations." We set a safety timeout of 10 minutes to prevent battery drain bugs.
+        wakeLock?.let {
+            if (it.isHeld) {
+                try {
+                    it.release()
+                } catch (_: Exception) {}
+            }
+        }
         val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
         wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Voxa::ListenerLock").apply {
             acquire(10 * 60 * 1000L /* 10 minutes safety timeout */)
@@ -163,22 +323,50 @@ class VoxaListenerService : Service() {
             // If the device does not support our audio configuration, log an error and exit the thread.
             if (minBufferSize == AudioRecord.ERROR || minBufferSize == AudioRecord.ERROR_BAD_VALUE) {
                 Log.e("VoxaService", "Invalid buffer size computed")
+                isRecording = false
+                stopSelf()
                 return@Thread
             }
 
             try {
-                // Initialize the AudioRecord interface to access the microphone hardware
-                audioRecord = AudioRecord(
-                    MediaRecorder.AudioSource.MIC, // Capture from physical microphone
-                    sampleRate,
-                    channelConfig,
-                    audioFormat,
-                    minBufferSize
-                )
+                // Initialize the AudioRecord interface to access the microphone hardware.
+                // We retry up to 5 times (300ms delay) to allow the HAL to release the microphone
+                // if transitioning from another recording screen (like the enrollment page).
+                var success = false
+                var attempts = 0
+                while (!success && attempts < 5 && isRecording) {
+                    try {
+                        audioRecord = AudioRecord(
+                            MediaRecorder.AudioSource.MIC,
+                            sampleRate,
+                            channelConfig,
+                            audioFormat,
+                            minBufferSize
+                        )
+                        if (audioRecord?.state == AudioRecord.STATE_INITIALIZED) {
+                            audioRecord?.startRecording()
+                            success = true
+                        } else {
+                            attempts++
+                            Log.w("VoxaService", "Microphone busy, retrying in 300ms... (attempt $attempts)")
+                            stopAudioHardware()
+                            Thread.sleep(300)
+                        }
+                    } catch (e: Exception) {
+                        attempts++
+                        Log.w("VoxaService", "Failed to start recording, retrying in 300ms... (attempt $attempts): ${e.message}")
+                        stopAudioHardware()
+                        Thread.sleep(300)
+                    }
+                }
 
-                // Start streaming data from the physical microphone
-                audioRecord?.startRecording()
-                Log.d("VoxaService", "Microphone recording started successfully")
+                if (!success) {
+                    Log.e("VoxaService", "Could not start microphone after 5 attempts.")
+                    stopSelf()
+                    return@Thread
+                }
+                
+                Log.d("VoxaService", "Microphone recording started successfully after $attempts attempts")
 
                 // Create a temporary buffer array to hold each read audio block in memory
                 val audioData = ShortArray(minBufferSize)
@@ -225,9 +413,17 @@ class VoxaListenerService : Service() {
                                 accBuffer.clear()
 
                                 try {
-                                    val result = engine.processAudioBlock(pcmBlock)
-                                    if (result != null) {
-                                        handleClassificationResult(result)
+                                    val currentTime = System.currentTimeMillis()
+                                    if (currentTime - lastMatchTimestamp < DEBOUNCE_PERIOD_MS) {
+                                        Log.d("VoxaService", "Ignoring audio block: within TTS playback debounce window")
+                                    } else {
+                                        val result = engine.processAudioBlock(pcmBlock)
+                                        if (result != null) {
+                                            if (result.isMatch) {
+                                                lastMatchTimestamp = System.currentTimeMillis()
+                                            }
+                                            handleClassificationResult(result)
+                                        }
                                     }
                                 } catch (e: Exception) {
                                     Log.e("VoxaService", "Classification error: ${e.message}")
@@ -240,11 +436,11 @@ class VoxaListenerService : Service() {
                         }
                     }
                 }
-            } catch (e: SecurityException) {
-                // Triggered if the user revokes microphone permissions in system settings while the service is running.
-                Log.e("VoxaService", "Permission denied for recording audio: ${e.message}")
+            } catch (e: Exception) {
+                Log.e("VoxaService", "Critical error in recording thread: ${e.message}", e)
+                stopSelf()
             } finally {
-                // Always release hardware back to the OS when the loop ends (preventing microphone locking errors)
+                isRecording = false
                 stopAudioHardware()
             }
         }, "VoxaAudioRecordThread").apply {
@@ -277,12 +473,18 @@ class VoxaListenerService : Service() {
 
         // Play translation audio on match
         if (result.isMatch && result.audioAssetPath != null && result.outputPhrase != null) {
-            val dao = VoxaDatabase.getDatabase(applicationContext).voxaDao()
-            serviceScope.launch {
+            playbackJob?.cancel()
+            playbackJob = serviceScope.launch {
+                val dao = VoxaDatabase.getDatabase(applicationContext).voxaDao()
                 val profile = dao.getActiveProfile()
                 val gender = profile?.gender ?: "Male"
                 withContext(Dispatchers.Main) {
                     audioPlayer?.playTranslation(result.audioAssetPath, gender, result.outputPhrase)
+                }
+
+                // If it is an SOS intent, trigger GPS coordinates lookup and caregiver SMS dispatch chain
+                if (result.intentName.equals("SOS", ignoreCase = true)) {
+                    triggerSosDispatch(profile)
                 }
             }
         }
@@ -311,6 +513,11 @@ class VoxaListenerService : Service() {
         Log.d("VoxaService", "Service Destroyed")
         isRunning = false
 
+        // Unregister SMS sent receiver
+        try {
+            unregisterReceiver(smsSentReceiver)
+        } catch (_: Exception) {}
+
         // 1. Flip the loop flag to false, which breaks the background thread's while loop
         isRecording = false
         recordingThread = null
@@ -329,6 +536,26 @@ class VoxaListenerService : Service() {
         audioPlayer?.release()
         audioPlayer = null
         serviceScope.cancel()
+
+        try {
+            val destroyIntent = Intent(ACTION_SERVICE_DESTROYED).apply {
+                setPackage(packageName)
+            }
+            sendBroadcast(destroyIntent)
+        } catch (_: Exception) {}
+    }
+
+    private fun getLocalizedContext(): Context {
+        val prefs = getSharedPreferences("voxa_settings", Context.MODE_PRIVATE)
+        val savedLang = prefs.getString("language", "en") ?: "en"
+        return com.example.voxa.utils.LocaleHelper.wrap(this, savedLang)
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val notification = createNotification()
+        notificationManager.notify(NOTIFICATION_ID, notification)
     }
 
     // ==========================================
@@ -367,9 +594,10 @@ class VoxaListenerService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE // FLAG_IMMUTABLE required on Android 12+
         )
 
+        val localizedContext = getLocalizedContext()
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("🎙️ Voxa Listening Active")
-            .setContentText("Listening for child vocalizations in the background...")
+            .setContentTitle(localizedContext.getString(R.string.notification_active_title))
+            .setContentText(localizedContext.getString(R.string.notification_active_text))
             .setSmallIcon(android.R.drawable.ic_btn_speak_now) // Standard Android system microphone icon
             .setOngoing(true) // Makes the notification persistent (the user cannot swipe it away)
             .setContentIntent(pendingIntent) // ← Tapping notification opens the app
@@ -391,6 +619,12 @@ class VoxaListenerService : Service() {
         // Broadcast action for live mic volume levels
         const val ACTION_VOLUME_UPDATE = "com.example.voxa.VOLUME_UPDATE"
         const val EXTRA_VOLUME = "volume"
+
+        // Broadcast action for SMS alert status tracking
+        const val ACTION_SMS_SENT = "com.example.voxa.SMS_SENT"
+
+        // Broadcast action for service destroyed/stopped state syncing
+        const val ACTION_SERVICE_DESTROYED = "com.example.voxa.SERVICE_DESTROYED"
 
         @Volatile
         var isRunning = false

@@ -13,11 +13,14 @@ import com.example.voxa.data.AcousticTemplate
 import com.example.voxa.data.VoxaDatabase
 import com.example.voxa.services.VoxaListenerService
 import android.widget.Toast
+import com.example.voxa.R
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlin.math.cos
 
 /**
  * 🎓 VoxaViewModel
@@ -75,12 +78,23 @@ class VoxaViewModel(application: Application) : AndroidViewModel(application), I
     // ── 📈 RECENT MATCH LOG EVENTS (In-Memory) ──
 
     private val _recentEvents = MutableStateFlow<List<LogEvent>>(emptyList())
-    override val recentEvents: StateFlow<List<LogEvent>> = _recentEvents.asStateFlow()
+    override val recentEvents: StateFlow<List<LogEvent>> = combine(_recentEvents, activeProfile) { events, profile ->
+        val currentProfileId = profile?.id ?: 0L
+        events.filter { it.profileId == currentProfileId }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
 
     // ── 🎙️ LIVE MICROPHONE VOLUME LEVEL ──
 
     private val _volumeLevel = MutableStateFlow(0f)
     override val volumeLevel: StateFlow<Float> = _volumeLevel.asStateFlow()
+
+    // ── 🌐 APP LANGUAGE STATE ──
+    private val _appLanguage = MutableStateFlow("en")
+    override val appLanguage: StateFlow<String> = _appLanguage.asStateFlow()
 
     // ── BROADCAST RECEIVER FOR REAL-TIME RESULTS & VOLUME ──
 
@@ -89,22 +103,27 @@ class VoxaViewModel(application: Application) : AndroidViewModel(application), I
             when (intent?.action) {
                 VoxaListenerService.ACTION_CLASSIFICATION_RESULT -> {
                     val isMatch = intent.getBooleanExtra(VoxaListenerService.EXTRA_IS_MATCH, false)
-                    val intentName = intent.getStringExtra(VoxaListenerService.EXTRA_INTENT_NAME) ?: "Unknown"
-                    val outputPhrase = intent.getStringExtra(VoxaListenerService.EXTRA_OUTPUT_PHRASE) ?: ""
-                    val confidence = intent.getFloatExtra(VoxaListenerService.EXTRA_CONFIDENCE, 0f)
-                    val reason = intent.getStringExtra(VoxaListenerService.EXTRA_REASON) ?: ""
+                    if (isMatch) {
+                        val intentName = intent.getStringExtra(VoxaListenerService.EXTRA_INTENT_NAME) ?: "Unknown"
+                        val outputPhrase = intent.getStringExtra(VoxaListenerService.EXTRA_OUTPUT_PHRASE) ?: ""
+                        val confidence = intent.getFloatExtra(VoxaListenerService.EXTRA_CONFIDENCE, 0f)
+                        val reason = intent.getStringExtra(VoxaListenerService.EXTRA_REASON) ?: ""
 
-                    simulateVoiceMatch(
-                        word = intentName,
-                        phrase = outputPhrase,
-                        confidence = confidence,
-                        isMatch = isMatch,
-                        reason = reason
-                    )
+                        simulateVoiceMatch(
+                            word = intentName,
+                            phrase = outputPhrase,
+                            confidence = confidence,
+                            isMatch = isMatch,
+                            reason = reason
+                        )
+                    }
                 }
                 VoxaListenerService.ACTION_VOLUME_UPDATE -> {
                     val vol = intent.getFloatExtra(VoxaListenerService.EXTRA_VOLUME, 0f)
                     _volumeLevel.value = vol
+                }
+                VoxaListenerService.ACTION_SERVICE_DESTROYED -> {
+                    _isListening.value = false
                 }
             }
         }
@@ -115,6 +134,11 @@ class VoxaViewModel(application: Application) : AndroidViewModel(application), I
     init {
         // Runs immediately when the app starts, setting up our default active profile
         // and synchronizing the UI status with the actual state of the background service.
+        // Load language from SharedPreferences
+        val prefs = application.getSharedPreferences("voxa_settings", Context.MODE_PRIVATE)
+        val savedLang = prefs.getString("language", "en") ?: "en"
+        _appLanguage.value = savedLang
+
         viewModelScope.launch {
             // Find and set the active profile on startup
             val active = voxaDao.getActiveProfile()
@@ -128,15 +152,20 @@ class VoxaViewModel(application: Application) : AndroidViewModel(application), I
         val filter = IntentFilter().apply {
             addAction(VoxaListenerService.ACTION_CLASSIFICATION_RESULT)
             addAction(VoxaListenerService.ACTION_VOLUME_UPDATE)
+            addAction(VoxaListenerService.ACTION_SERVICE_DESTROYED)
         }
         getApplication<Application>().registerReceiver(classificationReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
     }
+
+    private var testAudioPlayer: com.example.voxa.utils.AudioPlayer? = null
 
     override fun onCleared() {
         super.onCleared()
         try {
             getApplication<Application>().unregisterReceiver(classificationReceiver)
         } catch (_: Exception) { /* already unregistered */ }
+        testAudioPlayer?.release()
+        testAudioPlayer = null
     }
 
     // ── 👤 PROFILE ACTIONS ──
@@ -166,6 +195,13 @@ class VoxaViewModel(application: Application) : AndroidViewModel(application), I
         viewModelScope.launch {
             voxaDao.selectActiveProfile(profileId)
             _activeProfile.value = voxaDao.getActiveProfile()
+            
+            // Re-trigger the listener service to reload templates for the new child if it is active
+            if (VoxaListenerService.isRunning) {
+                val context = getApplication<Application>()
+                val serviceIntent = Intent(context, VoxaListenerService::class.java)
+                context.startForegroundService(serviceIntent)
+            }
         }
     }
 
@@ -244,6 +280,12 @@ class VoxaViewModel(application: Application) : AndroidViewModel(application), I
                     android.util.Log.e("VoxaViewModel", "Speaker embedding extraction failed: ${e.message}")
                 }
             }
+
+            // Re-trigger the listener service to reload templates with the new intent if it is active
+            if (VoxaListenerService.isRunning) {
+                val serviceIntent = Intent(application, VoxaListenerService::class.java)
+                application.startForegroundService(serviceIntent)
+            }
         }
     }
 
@@ -285,7 +327,7 @@ class VoxaViewModel(application: Application) : AndroidViewModel(application), I
         if (numFrames <= 0) return emptyArray()
 
         val hannWindow = FloatArray(nFft) { i ->
-            (0.5 * (1.0 - Math.cos(2.0 * Math.PI * i / (nFft - 1)))).toFloat()
+            (0.5 * (1.0 - cos(2.0 * Math.PI * i / (nFft - 1)))).toFloat()
         }
 
         val melFb = buildMelFilterbank80(nMels, nFft, sampleRate)
@@ -350,6 +392,25 @@ class VoxaViewModel(application: Application) : AndroidViewModel(application), I
     override fun deleteIntent(intent: EnrolledIntent) {
         viewModelScope.launch {
             voxaDao.deleteIntent(intent)
+            
+            // If the dictionary library becomes empty, clear the speaker verification profile
+            val remainingIntents = voxaDao.getIntentsForProfile(intent.profileId)
+            if (remainingIntents.isEmpty()) {
+                val active = voxaDao.getActiveProfile()
+                if (active != null && active.id == intent.profileId) {
+                    val updated = active.copy(speakerEmbedding = null)
+                    voxaDao.updateProfile(updated)
+                    _activeProfile.value = updated
+                    android.util.Log.d("VoxaViewModel", "Library is empty, cleared speaker embedding for ${active.name}")
+                }
+            }
+
+            // Re-trigger the listener service to reload templates if it is active
+            if (VoxaListenerService.isRunning) {
+                val context = getApplication<Application>()
+                val serviceIntent = Intent(context, VoxaListenerService::class.java)
+                context.startForegroundService(serviceIntent)
+            }
         }
     }
 
@@ -359,16 +420,17 @@ class VoxaViewModel(application: Application) : AndroidViewModel(application), I
     // It issues an intent to either build the foreground service or tear it down.
     override fun toggleListening() {
         val context = getApplication<Application>().applicationContext
+        val localizedContext = com.example.voxa.utils.LocaleHelper.wrap(context, _appLanguage.value)
         val serviceIntent = Intent(context, VoxaListenerService::class.java)
 
         if (VoxaListenerService.isRunning) {
             context.stopService(serviceIntent)
             _isListening.value = false
-            addLogSystemEvent("Listening session manually paused")
+            addLogSystemEvent("log_listening_paused")
         } else {
             context.startForegroundService(serviceIntent)
             _isListening.value = true
-            addLogSystemEvent("Listening session active — monitoring background sounds")
+            addLogSystemEvent("log_listening_active")
         }
     }
 
@@ -381,7 +443,9 @@ class VoxaViewModel(application: Application) : AndroidViewModel(application), I
 
     // Appends a system status event to the timeline list.
     override fun addLogSystemEvent(message: String) {
+        val profileId = _activeProfile.value?.id ?: 0L
         val event = LogEvent(
+            profileId = profileId,
             word = "SYSTEM",
             phrase = message,
             confidence = 1.0f,
@@ -395,7 +459,9 @@ class VoxaViewModel(application: Application) : AndroidViewModel(application), I
     // Analogy: This is like a mock injector that injects mock test data into the screen timeline,
     // so we don't have to capture real audio signals to test the UI response.
     override fun simulateVoiceMatch(word: String, phrase: String, confidence: Float, isMatch: Boolean, reason: String) {
+        val profileId = _activeProfile.value?.id ?: 0L
         val event = LogEvent(
+            profileId = profileId,
             word = word,
             phrase = phrase,
             confidence = confidence,
@@ -435,6 +501,24 @@ class VoxaViewModel(application: Application) : AndroidViewModel(application), I
         }
     }
 
+    override fun setAppLanguage(lang: String) {
+        _appLanguage.value = lang
+        val prefs = getApplication<Application>().getSharedPreferences("voxa_settings", Context.MODE_PRIVATE)
+        prefs.edit().putString("language", lang).apply()
+        val appLocale = androidx.core.os.LocaleListCompat.forLanguageTags(lang)
+        androidx.appcompat.app.AppCompatDelegate.setApplicationLocales(appLocale)
+    }
+
+    override fun updateCaregivers(profile: ChildProfile, caregiversJson: String) {
+        viewModelScope.launch {
+            val updated = profile.copy(caregiverContactsJson = caregiversJson)
+            voxaDao.updateProfile(updated)
+            if (_activeProfile.value?.id == profile.id) {
+                _activeProfile.value = updated
+            }
+        }
+    }
+
     override fun exportProfileData(context: Context) {
         val profile = _activeProfile.value ?: return
         viewModelScope.launch {
@@ -447,6 +531,7 @@ class VoxaViewModel(application: Application) : AndroidViewModel(application), I
                     put("gender", profile.gender)
                     put("avatarEmoji", profile.avatarEmoji)
                     put("speakerEmbedding", profile.speakerEmbedding ?: "")
+                    put("caregiverContactsJson", profile.caregiverContactsJson ?: "")
                 }
                 rootJson.put("profile", profileJson)
 
@@ -523,6 +608,8 @@ class VoxaViewModel(application: Application) : AndroidViewModel(application), I
                 val avatarEmoji = profileJson.getString("avatarEmoji")
                 val speakerEmbeddingVal = profileJson.optString("speakerEmbedding", "")
                 val speakerEmbedding = if (speakerEmbeddingVal.isNotBlank()) speakerEmbeddingVal else null
+                val caregiverContactsVal = profileJson.optString("caregiverContactsJson", "")
+                val caregiverContacts = if (caregiverContactsVal.isNotBlank()) caregiverContactsVal else null
 
                 // Insert profile (will be set as active if it's the only one, or we select it)
                 val newProfile = ChildProfile(
@@ -530,6 +617,7 @@ class VoxaViewModel(application: Application) : AndroidViewModel(application), I
                     gender = gender,
                     avatarEmoji = avatarEmoji,
                     speakerEmbedding = speakerEmbedding,
+                    caregiverContactsJson = caregiverContacts,
                     isActive = false
                 )
                 val newProfileId = voxaDao.insertProfile(newProfile)
@@ -563,7 +651,7 @@ class VoxaViewModel(application: Application) : AndroidViewModel(application), I
 
                 // Automatically select the newly imported profile
                 selectActiveProfile(newProfileId)
-                addLogSystemEvent("Successfully imported profile '$name' with ${intentsJsonArray.length()} intents")
+                addLogSystemEvent("log_profile_imported|$name|${intentsJsonArray.length()}")
                 onSuccess()
             } catch (e: Exception) {
                 android.util.Log.e("VoxaViewModel", "Failed to import profile: ${e.message}", e)
@@ -575,36 +663,53 @@ class VoxaViewModel(application: Application) : AndroidViewModel(application), I
     override fun playRecordedSample(intent: EnrolledIntent) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
+                val active = voxaDao.getActiveProfile()
+                val gender = active?.gender ?: "Male"
+                if (testAudioPlayer == null) {
+                    testAudioPlayer = com.example.voxa.utils.AudioPlayer(getApplication())
+                }
+
                 val cleanIntentName = intent.intentName.trim().lowercase().replace(" ", "_")
-                val file = java.io.File(getApplication<Application>().cacheDir, "template_${intent.profileId}_${cleanIntentName}_0.pcm")
-                if (file.exists()) {
-                    val pcmData = com.example.voxa.utils.AudioFileHelper.readPcmFile(file)
-                    
-                    val minBufSize = android.media.AudioTrack.getMinBufferSize(
-                        16000,
-                        android.media.AudioFormat.CHANNEL_OUT_MONO,
-                        android.media.AudioFormat.ENCODING_PCM_16BIT
-                    )
-                    
-                    // AudioTrack static mode allows playing the ShortArray buffer directly
-                    val audioTrack = android.media.AudioTrack(
-                        android.media.AudioManager.STREAM_MUSIC,
-                        16000,
-                        android.media.AudioFormat.CHANNEL_OUT_MONO,
-                        android.media.AudioFormat.ENCODING_PCM_16BIT,
-                        maxOf(minBufSize, pcmData.size * 2),
-                        android.media.AudioTrack.MODE_STATIC
-                    )
-                    audioTrack.write(pcmData, 0, pcmData.size)
-                    audioTrack.play()
-                } else {
+                val file = java.io.File(
+                    getApplication<Application>().cacheDir,
+                    "template_${intent.profileId}_${cleanIntentName}_0.pcm"
+                )
+
+                android.util.Log.d(
+                    "VoxaViewModel",
+                    "Library preview request: intent=${intent.intentName}, file=${file.absolutePath}, exists=${file.exists()}, gender=$gender"
+                )
+
+                val playedRecordedSample = testAudioPlayer?.playPcmFile(file) == true
+
+                if (!playedRecordedSample) {
                     withContext(Dispatchers.Main) {
-                        Toast.makeText(getApplication(), "No local recorded sample file available for preview", Toast.LENGTH_SHORT).show()
+                        val localizedContext = com.example.voxa.utils.LocaleHelper.wrap(getApplication(), _appLanguage.value)
+                        Toast.makeText(
+                            getApplication(),
+                            localizedContext.getString(R.string.toast_no_preview_sample),
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
+
+                    // The spoken output is always the Arabic output phrase, regardless of app UI language.
+                    delay(150)
+                    testAudioPlayer?.speakFallback(intent.outputPhrase, "ar", gender)
                 }
             } catch (e: Exception) {
-                android.util.Log.e("VoxaViewModel", "Failed to play recorded sample preview: ${e.message}", e)
+                android.util.Log.e("VoxaViewModel", "Failed to play library preview: ${e.message}", e)
             }
+        }
+    }
+
+    override fun testTtsVoice(gender: String) {
+        if (testAudioPlayer == null) {
+            testAudioPlayer = com.example.voxa.utils.AudioPlayer(getApplication())
+        }
+        val sampleText = "مرحبا بك في فوكسا"
+        viewModelScope.launch {
+            delay(150)
+            testAudioPlayer?.speakFallback(sampleText, "ar", gender)
         }
     }
 }

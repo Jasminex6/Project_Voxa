@@ -37,7 +37,16 @@ import com.example.voxa.ui.screens.ProfileScreen
 import com.example.voxa.ui.screens.EmergencyScreen
 import com.example.voxa.ui.theme.*
 
+import android.content.Context
+import com.example.voxa.utils.LocaleHelper
+
 class MainActivity : ComponentActivity() {
+
+    override fun attachBaseContext(newBase: Context) {
+        val prefs = newBase.getSharedPreferences("voxa_settings", Context.MODE_PRIVATE)
+        val savedLang = prefs.getString("language", "en") ?: "en"
+        super.attachBaseContext(LocaleHelper.wrap(newBase, savedLang))
+    }
 
     // The ViewModel acts as the central brain/storekeeper for the UI. It retrieves flows
     // from the Room database and keeps them updated in-memory for our Compose screens.
@@ -47,14 +56,25 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            VoxaTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = Slate900
-                ) {
-                    VoxaAppEntry(
-                        viewModel = viewModel
-                    )
+            val appLanguage by viewModel.appLanguage.collectAsState()
+            val layoutDirection = if (appLanguage == "ar") {
+                androidx.compose.ui.unit.LayoutDirection.Rtl
+            } else {
+                androidx.compose.ui.unit.LayoutDirection.Ltr
+            }
+
+            androidx.compose.runtime.CompositionLocalProvider(
+                androidx.compose.ui.platform.LocalLayoutDirection provides layoutDirection
+            ) {
+                VoxaTheme {
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        color = Slate900
+                    ) {
+                        VoxaAppEntry(
+                            viewModel = viewModel
+                        )
+                    }
                 }
             }
         }
@@ -71,18 +91,31 @@ class MainActivity : ComponentActivity() {
 
 // Tabs on a binder analogy: The Screen enum specifies the active pages that the bottom
 // navigation bar can switch between.
-enum class Screen(val title: String, val icon: String) {
-    Dashboard("Home", "🏠"),
-    Enrollment("Enroll", "➕"),
-    Library("Library", "📚"),
-    Emergency("Emergency", "🆘"),
-    Profile("Profile", "👤")
+enum class Screen(val titleRes: Int, val icon: String) {
+    Dashboard(R.string.screen_home, "🏠"),
+    Enrollment(R.string.screen_enroll, "➕"),
+    Library(R.string.screen_library, "📚"),
+    Emergency(R.string.screen_emergency, "🆘"),
+    Profile(R.string.screen_profile, "👤")
 }
 
 // Security gate (night club analogy)
 @Composable
 fun VoxaAppEntry(viewModel: IVoxaViewModel, modifier: Modifier = Modifier) {
     val context = LocalContext.current
+    val sharedPrefs = remember { context.getSharedPreferences("voxa_settings", Context.MODE_PRIVATE) }
+    var isOnboardingCompleted by remember { mutableStateOf(sharedPrefs.getBoolean("is_first_boot_completed", false)) }
+
+    if (!isOnboardingCompleted) {
+        com.example.voxa.ui.screens.OnboardingScreen(
+            viewModel = viewModel,
+            onFinished = {
+                isOnboardingCompleted = true
+            },
+            modifier = modifier
+        )
+        return
+    }
 
     // Helper functions to check if the permissions are already granted
     fun hasMicPermission(): Boolean {
@@ -285,7 +318,7 @@ fun CustomBottomBar(
                     )
                     Spacer(modifier = Modifier.height(1.dp))
                     Text(
-                        text = screen.title,
+                        text = androidx.compose.ui.res.stringResource(id = screen.titleRes),
                         color = if (isSelected) activeContentColor else inactiveContentColor,
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
