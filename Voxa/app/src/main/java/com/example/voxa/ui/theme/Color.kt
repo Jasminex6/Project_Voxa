@@ -30,6 +30,12 @@ val Sky400 = Color(0xFF38BDF8)   // Primary buttons, text links, active tabs
 val Sky500 = Color(0xFF0EA5E9)   // Medium sky blue highlight
 val Sky600 = Color(0xFF0284C7)   // Darker sky blue shading
 
+// Quest Specific Accent Colors
+val QuestTeal = Color(0xFF14B8A6)
+val QuestPurple = Color(0xFFA855F7)
+val QuestOrange = Color(0xFFF97316)
+val QuestGold = Color(0xFFFFD700)
+
 // Status Indicator Colors
 val SuccessGreen = Color(0xFF22C55E)     // Live state / success action
 val SuccessGreenDark = Color(0xFF065F46) // Successful matching timeline event

@@ -17,8 +17,8 @@ import androidx.room.RoomDatabase
  * - exportSchema = false: Prevents Room from exporting the DB schema design to a JSON file during builds.
  */
 @Database(
-    entities = [ChildProfile::class, EnrolledIntent::class, AcousticTemplate::class, PracticeStats::class],
-    version = 6,
+    entities = [ChildProfile::class, EnrolledIntent::class, AcousticTemplate::class, PracticeStats::class, QuestEntity::class, RewardEntity::class, PurchasedRewardEntity::class],
+    version = 8,
     exportSchema = false
 )
 abstract class VoxaDatabase : RoomDatabase() {
@@ -28,6 +28,7 @@ abstract class VoxaDatabase : RoomDatabase() {
      * We leave this abstract because Room will write the code to implement this function.
      */
     abstract fun voxaDao(): VoxaDao
+    abstract fun questDao(): QuestDao
 
     companion object {
         /**

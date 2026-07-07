@@ -41,6 +41,8 @@ import com.example.voxa.ui.screens.OnboardingScreen
 import com.example.voxa.ui.screens.PracticeViolet
 import com.example.voxa.data.EmergencyContactPrefs
 import com.example.voxa.ui.theme.*
+import com.example.voxa.ui.quests.QuestsViewModel
+import com.example.voxa.ui.screens.quests.QuestsMainScreen
 
 class MainActivity : ComponentActivity() {
 
@@ -61,6 +63,7 @@ class MainActivity : ComponentActivity() {
     // The ViewModel acts as the central brain/storekeeper for the UI. It retrieves flows
     // from the Room database and keeps them updated in-memory for our Compose screens.
     private val viewModel: VoxaViewModel by viewModels()
+    private val questsViewModel: QuestsViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -72,7 +75,8 @@ class MainActivity : ComponentActivity() {
                     color = Slate900
                 ) {
                     VoxaAppEntry(
-                        viewModel = viewModel
+                        viewModel = viewModel,
+                        questsViewModel = questsViewModel
                     )
                 }
             }
@@ -96,12 +100,13 @@ enum class Screen(val title: String, val icon: String) {
     Library("Library", "📚"),
     Practice("Practice", "🎮"),
     Emergency("Emergency", "🆘"),
-    Profile("Profile", "👤")
+    Profile("Profile", "👤"),
+    Quests("Quests", "🎯")
 }
 
 // Security gate (night club analogy)
 @Composable
-fun VoxaAppEntry(viewModel: IVoxaViewModel, modifier: Modifier = Modifier) {
+fun VoxaAppEntry(viewModel: IVoxaViewModel, questsViewModel: QuestsViewModel, modifier: Modifier = Modifier) {
     val context = LocalContext.current
 
     // Track whether first-time setup has been completed
@@ -114,7 +119,7 @@ fun VoxaAppEntry(viewModel: IVoxaViewModel, modifier: Modifier = Modifier) {
             onOnboardingCompleted = { isSetupDone = true }
         )
     } else {
-        VoxaAppContent(viewModel = viewModel, modifier = modifier)
+        VoxaAppContent(viewModel = viewModel, questsViewModel = questsViewModel, modifier = modifier)
     }
 }
 
@@ -122,7 +127,7 @@ fun VoxaAppEntry(viewModel: IVoxaViewModel, modifier: Modifier = Modifier) {
 // This acts as a theater stage: a single persistent frame with a bottom tab switcher
 // that dynamically slides different screen contents into focus depending on state.
 @Composable
-fun VoxaAppContent(viewModel: IVoxaViewModel, modifier: Modifier = Modifier) {
+fun VoxaAppContent(viewModel: IVoxaViewModel, questsViewModel: QuestsViewModel, modifier: Modifier = Modifier) {
     var currentScreen by remember { mutableStateOf(Screen.Dashboard) }
 
     Scaffold(
@@ -158,6 +163,10 @@ fun VoxaAppContent(viewModel: IVoxaViewModel, modifier: Modifier = Modifier) {
                     viewModel = viewModel,
                     onBack = { currentScreen = Screen.Dashboard }
                 )
+                Screen.Quests -> QuestsMainScreen(
+                    viewModel = questsViewModel,
+                    onNavigateBack = { currentScreen = Screen.Dashboard }
+                )
             }
         }
     }
@@ -183,7 +192,7 @@ fun CustomBottomBar(
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Center Home (Dashboard) flanked by Library, Practice, and Emergency
-            val tabScreens = listOf(Screen.Library, Screen.Dashboard, Screen.Practice, Screen.Emergency)
+            val tabScreens = listOf(Screen.Library, Screen.Dashboard, Screen.Practice, Screen.Emergency, Screen.Quests)
             
             tabScreens.forEach { screen ->
                 val isSelected = currentScreen == screen
@@ -192,24 +201,28 @@ fun CustomBottomBar(
                     Screen.Emergency -> ErrorRed.copy(alpha = 0.15f)
                     Screen.Practice -> PracticeViolet.copy(alpha = 0.15f)
                     Screen.Library -> WarningAmber.copy(alpha = 0.15f)
+                    Screen.Quests -> Sky400.copy(alpha = 0.15f)
                     else -> Sky400.copy(alpha = 0.15f)
                 }
                 val activeContentColor = when (screen) {
                     Screen.Emergency -> ErrorRed
                     Screen.Practice -> PracticeViolet
                     Screen.Library -> WarningAmber
+                    Screen.Quests -> Sky400
                     else -> Sky400
                 }
                 val activeBorderColor = when (screen) {
                     Screen.Emergency -> ErrorRed.copy(alpha = 0.3f)
                     Screen.Practice -> PracticeViolet.copy(alpha = 0.3f)
                     Screen.Library -> WarningAmber.copy(alpha = 0.3f)
+                    Screen.Quests -> Sky400.copy(alpha = 0.3f)
                     else -> Sky400.copy(alpha = 0.3f)
                 }
                 val inactiveContentColor = when (screen) {
                     Screen.Emergency -> ErrorRed.copy(alpha = 0.6f)
                     Screen.Practice -> PracticeViolet.copy(alpha = 0.6f)
                     Screen.Library -> WarningAmber.copy(alpha = 0.6f)
+                    Screen.Quests -> Sky400.copy(alpha = 0.6f)
                     else -> Sky400
                 }
                 
