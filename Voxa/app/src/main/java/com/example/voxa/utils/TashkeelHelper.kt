@@ -39,7 +39,7 @@ object TashkeelHelper {
         
         var result = clean
         for ((key, value) in tashkeelMap) {
-            result = result.replace(Regex("\\b$key\\b"), value)
+            result = result.replace(Regex("(?<![\\p{L}\\p{N}])$key(?![\\p{L}\\p{N}])"), value)
         }
         return result
     }

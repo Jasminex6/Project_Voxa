@@ -331,7 +331,7 @@ object PrototypicalMatcher {
         val ccpPenalty = (centroids.size - 1) * CCP_PENALTY
         val effectiveSim = maxSim - ccpPenalty
 
-        android.util.Log.e("VoxaMatch", "Intent: $intentName | Similarity: $effectiveSim (raw: $maxSim, threshold: $oodThreshold)")
+        Log.e("VoxaMatch", "Intent: $intentName | Similarity: $effectiveSim (raw: $maxSim, threshold: $oodThreshold)")
 
         return IntentScore(
             intentName = intentName,

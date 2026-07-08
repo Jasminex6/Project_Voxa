@@ -40,21 +40,30 @@ class AiBridgeTest {
 
     @Test
     fun testYamnetEncoder_prepareAudioWindow_padsShortSignal() {
-        // 1000 samples is short (< 15360)
-        val pcm = ShortArray(1000) { it.toShort() }
+        // 1000 samples is short (< 23040)
+        val pcm = ShortArray(1000) { (it + 1).toShort() }
         val prepared = YamnetEncoder.prepareAudioWindow(pcm)
-        assertEquals(15360, prepared.size)
+        assertEquals(23040, prepared.size)
         
-        // Element at index 1000 should be equal to index 0 due to repeat padding
-        assertEquals(prepared[0], prepared[1000], 0.0001f)
+        // The signal should be placed in the center.
+        // offset = (23040 - 1000) / 2 = 11020
+        // So prepared[11020] should be pcm[0] / 32768.0f
+        assertEquals(pcm[0] / 32768.0f, prepared[11020], 0.0001f)
+        // Leading and trailing should be 0.0f
+        assertEquals(0.0f, prepared[0], 0.0001f)
+        assertEquals(0.0f, prepared[23039], 0.0001f)
     }
 
     @Test
     fun testYamnetEncoder_prepareAudioWindow_leavesLongSignal() {
-        // 30000 samples is long (>= 15360)
-        val pcm = ShortArray(30000) { it.toShort() }
+        // 30000 samples is long (>= 23040)
+        val pcm = ShortArray(30000) { (it + 1).toShort() }
         val prepared = YamnetEncoder.prepareAudioWindow(pcm)
-        assertEquals(30000, prepared.size) // No cropping!
+        assertEquals(23040, prepared.size) // Cropped to 23040!
+        
+        // offset = (30000 - 23040) / 2 = 3480
+        // So prepared[0] should be pcm[3480] / 32768.0f
+        assertEquals(pcm[3480] / 32768.0f, prepared[0], 0.0001f)
     }
 
     @Test
