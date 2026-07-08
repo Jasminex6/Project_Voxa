@@ -61,9 +61,10 @@ object AudioFileHelper {
      * Validates that the trimmed PCM data duration is between 200ms (0.2s) and 4000ms (4.0s).
      * Throws IllegalArgumentException if validation fails.
      */
-    fun validateDuration(pcmData: ShortArray) {
+    fun validateDuration(pcmData: ShortArray, isDtw: Boolean = false) {
         val durationMs = (pcmData.size.toFloat() / SAMPLE_RATE) * 1000f
-        if (durationMs < 200) {
+        val minDuration = if (isDtw) 50f else 200f
+        if (durationMs < minDuration) {
             throw IllegalArgumentException("too_short|${durationMs.toInt()}")
         }
         if (durationMs > 2500) {

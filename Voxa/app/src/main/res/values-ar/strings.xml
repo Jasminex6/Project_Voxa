@@ -158,21 +158,21 @@
 
     <!-- Enrollment Screen -->
     <string name="enroll_title">تسجيل صوت مخصص</string>
-    <string name="enroll_desc">سجل 3 عينات لتدريب قاموس أصوات الطفل.</string>
+    <string name="enroll_desc">سجل ١٥ عينة لتدريب قاموس أصوات الطفل.</string>
     <string name="enroll_no_profile">يرجى إنشاء وتفعيل ملف طفل أولاً\nلتسجيل أصوات جديدة.</string>
     <string name="enroll_vocalization_details">تفاصيل الصوت</string>
     <string name="enroll_view_suggestions">عرض المقترحات</string>
     <string name="enroll_meaning_label">معنى الصوت / الكلمة (مثال: ماء)</string>
     <string name="enroll_arabic_translation_label">الترجمة الصوتية باللهجة المصرية (مثال: أنا عايز مية)</string>
     <string name="enroll_progress_title">تقدم تسجيل العينات</string>
-    <string name="enroll_collected_count">تم جمع: %1$d / 3 عينات</string>
+    <string name="enroll_collected_count">تم جمع: %1$d / ١٥ عينة</string>
     <string name="enroll_auto_advance">استعد! التسجيل التالي سيبدأ خلال 1.5 ثانية...</string>
     <string name="enroll_tap_to_start">اضغط على زر التسجيل للبدء، واضغط مجدداً للإنهاء.</string>
     <string name="enroll_record_btn">تسجيل\nعينة</string>
     <string name="enroll_stop_btn">إيقاف</string>
     <string name="enroll_save_sound_btn">حفظ الصوت</string>
     <string name="enroll_complete_title">اكتمل التسجيل</string>
-    <string name="enroll_complete_desc">لقد سجلت جميع العينات الـ 3 لـ \'%1$s\'. هل ترغب في حفظ هذا الصوت الآن؟</string>
+    <string name="enroll_complete_desc">لقد سجلت جميع العينات الـ ١٥ لـ \'%1$s\'. هل ترغب في حفظ هذا الصوت الآن؟</string>
     <string name="enroll_suggestions_title">عناصر مقترحة</string>
     <string name="enroll_suggestions_desc">اختر كلمة أو عبارة شائعة لملء التفاصيل أدناه تلقائياً:</string>
     <string name="enroll_suggestions_loaded">تم تحميل الكلمة المقترحة: %1$s!</string>

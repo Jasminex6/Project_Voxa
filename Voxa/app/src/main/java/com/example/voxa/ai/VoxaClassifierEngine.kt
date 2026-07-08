@@ -40,7 +40,10 @@ class VoxaClassifierEngine(
     // YAMNet neural encoder for 2048-D feature extraction
     private val yamnetEncoder: YamnetEncoder = YamnetEncoder(context)
 
-    // Pre-parsed centroid data for each enrolled intent
+    // MFCC feature extractor for DTW template matching
+    private val mfccExtractor = com.example.voxa.ai.archive.MfccExtractor()
+
+    // Pre-parsed centroid/template data for each enrolled intent
     private val parsedIntentData: List<IntentData> = buildIntentData()
 
     /**
@@ -51,13 +54,51 @@ class VoxaClassifierEngine(
         val outputPhrase: String,
         val audioAssetPath: String,
         val centroids: List<FloatArray>,
+        val dtwTemplates: List<Array<FloatArray>>,
+        val isDtw: Boolean,
         val oodThreshold: Float
     )
 
+    private fun deserializeDtwTemplate(serialized: String): Array<FloatArray> {
+        val trimmed = serialized.trim()
+        if (trimmed.isEmpty() || trimmed == "[]") return emptyArray()
+        return try {
+            val list = mutableListOf<FloatArray>()
+            val inner = trimmed.removePrefix("[").removeSuffix("]")
+            var depth = 0
+            var current = java.lang.StringBuilder()
+            for (ch in inner) {
+                when (ch) {
+                    '[' -> {
+                        depth++
+                        if (depth == 1) current = java.lang.StringBuilder()
+                        else current.append(ch)
+                    }
+                    ']' -> {
+                        depth--
+                        if (depth == 0) {
+                            val row = current.toString().split(",").map { it.trim().toFloat() }.toFloatArray()
+                            list.add(row)
+                        } else {
+                            current.append(ch)
+                        }
+                    }
+                    ',' -> {
+                        if (depth == 0) {}
+                        else current.append(ch)
+                    }
+                    else -> current.append(ch)
+                }
+            }
+            list.toTypedArray()
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to deserialize DTW template features: ${e.message}")
+            emptyArray()
+        }
+    }
+
     /**
-     * Parses enrolled intent templates from the database into centroid vectors.
-     * Each AcousticTemplate's `templateFeatures` field now stores serialized centroid(s)
-     * in the format "[[c0_0,c0_1,...],[c1_0,c1_1,...]]".
+     * Parses enrolled intent templates from the database into centroid vectors or DTW templates.
      */
     private fun buildIntentData(): List<IntentData> {
         val result = mutableListOf<IntentData>()
@@ -66,26 +107,50 @@ class VoxaClassifierEngine(
             val templates = intentTemplates[intent.id] ?: continue
             if (templates.isEmpty()) continue
 
-            // Centroid data is stored in the first template's features field
-            // (all centroid vectors for an intent are serialized together)
-            val serialized = templates[0].templateFeatures
-            val centroids = PrototypicalMatcher.deserializeCentroids(serialized)
+            // Determine if this intent uses DTW or Centroid
+            val firstFeatures = templates[0].templateFeatures
+            val firstMatrix = deserializeDtwTemplate(firstFeatures)
+            val isDtw = templates.size > 1 || (firstMatrix.isNotEmpty() && firstMatrix[0].size == 40)
 
-            if (centroids.isEmpty()) {
-                Log.w(TAG, "No valid centroids for intent '${intent.intentName}' — skipping")
-                continue
+            if (isDtw) {
+                val dtwTemplates = templates.map { t ->
+                    deserializeDtwTemplate(t.templateFeatures)
+                }.filter { it.isNotEmpty() }
+
+                if (dtwTemplates.isEmpty()) {
+                    Log.w(TAG, "No valid DTW templates for intent '${intent.intentName}' — skipping")
+                    continue
+                }
+
+                result.add(IntentData(
+                    intentName = intent.intentName,
+                    outputPhrase = intent.outputPhrase,
+                    audioAssetPath = intent.audioAssetPath,
+                    centroids = emptyList(),
+                    dtwTemplates = dtwTemplates,
+                    isDtw = true,
+                    oodThreshold = maxOf(0.85f, intent.oodThreshold)
+                ))
+            } else {
+                val centroids = PrototypicalMatcher.deserializeCentroids(firstFeatures)
+                if (centroids.isEmpty()) {
+                    Log.w(TAG, "No valid centroids for intent '${intent.intentName}' — skipping")
+                    continue
+                }
+
+                result.add(IntentData(
+                    intentName = intent.intentName,
+                    outputPhrase = intent.outputPhrase,
+                    audioAssetPath = intent.audioAssetPath,
+                    centroids = centroids,
+                    dtwTemplates = emptyList(),
+                    isDtw = false,
+                    oodThreshold = intent.oodThreshold
+                ))
             }
-
-            result.add(IntentData(
-                intentName = intent.intentName,
-                outputPhrase = intent.outputPhrase,
-                audioAssetPath = intent.audioAssetPath,
-                centroids = centroids,
-                oodThreshold = intent.oodThreshold
-            ))
         }
 
-        Log.d(TAG, "Loaded ${result.size} intents with centroids")
+        Log.d(TAG, "Loaded ${result.size} intents (Centroid & DTW)")
         return result
     }
 
@@ -114,34 +179,12 @@ class VoxaClassifierEngine(
 
         // ── Step 2: Silence trim to match enrollment pre-processing ──
         val trimmedSegment = AudioFileHelper.trimSilence(rawSegment)
-        if (trimmedSegment.size < 1600) { // Less than 100ms of actual speech
+        if (trimmedSegment.size < 800) { // Allowed down to 50ms for DTW clicks
             Log.d(TAG, "Segment too short after trimming (${trimmedSegment.size} samples) — skipping")
             return null
         }
 
-        // ── Step 3: Check encoder readiness ──
-        if (!yamnetEncoder.isValid()) {
-            return ClassificationResult(
-                isMatch = false, intentName = null, outputPhrase = null,
-                audioAssetPath = null, confidence = 0f,
-                reason = "YAMNet encoder not loaded"
-            )
-        }
-
-        // ── Step 4: Extract 2048-D embedding via YAMNet temporal halving ──
-        val liveEmbedding: FloatArray
-        try {
-            liveEmbedding = yamnetEncoder.extractFromPcm(trimmedSegment)
-        } catch (e: Exception) {
-            Log.e(TAG, "YAMNet embedding extraction failed: ${e.message}")
-            return ClassificationResult(
-                isMatch = false, intentName = null, outputPhrase = null,
-                audioAssetPath = null, confidence = 0f,
-                reason = "Embedding extraction failed: ${e.message}"
-            )
-        }
-
-        // ── Step 5: Check enrolled intents ──
+        // ── Step 3: Check enrolled intents ──
         if (parsedIntentData.isEmpty()) {
             return ClassificationResult(
                 isMatch = false, intentName = null, outputPhrase = null,
@@ -150,16 +193,82 @@ class VoxaClassifierEngine(
             )
         }
 
-        // ── Step 6: Score live embedding against all enrolled intents ──
+        val hasCentroid = parsedIntentData.any { !it.isDtw }
+        val hasDtw = parsedIntentData.any { it.isDtw }
+
+        // ── Step 4: Extract features conditionally to optimize CPU ──
+        val liveEmbedding = if (hasCentroid && yamnetEncoder.isValid()) {
+            try {
+                yamnetEncoder.extractFromPcm(trimmedSegment)
+            } catch (e: Exception) {
+                Log.e(TAG, "YAMNet embedding extraction failed: ${e.message}")
+                null
+            }
+        } else null
+
+        val liveMfcc = if (hasDtw) {
+            try {
+                mfccExtractor.extract(trimmedSegment)
+            } catch (e: Exception) {
+                Log.e(TAG, "MFCC extraction failed: ${e.message}")
+                null
+            }
+        } else null
+
+        // ── Step 5: Score live input against all enrolled intents ──
         val scores = parsedIntentData.map { intentData ->
-            PrototypicalMatcher.scoreIntent(
-                liveEmbedding = liveEmbedding,
-                centroids = intentData.centroids,
-                intentName = intentData.intentName,
-                outputPhrase = intentData.outputPhrase,
-                audioAssetPath = intentData.audioAssetPath,
-                oodThreshold = intentData.oodThreshold
-            )
+            if (intentData.isDtw) {
+                if (liveMfcc == null || liveMfcc.isEmpty()) {
+                    PrototypicalMatcher.IntentScore(
+                        intentName = intentData.intentName,
+                        outputPhrase = intentData.outputPhrase,
+                        audioAssetPath = intentData.audioAssetPath,
+                        rawSimilarity = 0f,
+                        effectiveSimilarity = 0f,
+                        centroidCount = intentData.dtwTemplates.size,
+                        oodThreshold = intentData.oodThreshold
+                    )
+                } else {
+                    val distances = intentData.dtwTemplates.map { template ->
+                        com.example.voxa.ai.archive.DtwMatcher.dtwDistance(template, liveMfcc)
+                    }
+                    val minDtwDist = distances.minOrNull() ?: 99.0
+                    val similarity = (1.0f - (minDtwDist.toFloat() / 36.6f)).coerceIn(0.0f, 1.0f)
+
+                    Log.d(TAG, "DTW Match [${intentData.intentName}]: dist=$minDtwDist, sim=$similarity, threshold=${intentData.oodThreshold}")
+
+                    PrototypicalMatcher.IntentScore(
+                        intentName = intentData.intentName,
+                        outputPhrase = intentData.outputPhrase,
+                        audioAssetPath = intentData.audioAssetPath,
+                        rawSimilarity = similarity,
+                        effectiveSimilarity = similarity,
+                        centroidCount = 1,
+                        oodThreshold = intentData.oodThreshold
+                    )
+                }
+            } else {
+                if (liveEmbedding == null) {
+                    PrototypicalMatcher.IntentScore(
+                        intentName = intentData.intentName,
+                        outputPhrase = intentData.outputPhrase,
+                        audioAssetPath = intentData.audioAssetPath,
+                        rawSimilarity = 0f,
+                        effectiveSimilarity = 0f,
+                        centroidCount = intentData.centroids.size,
+                        oodThreshold = intentData.oodThreshold
+                    )
+                } else {
+                    PrototypicalMatcher.scoreIntent(
+                        liveEmbedding = liveEmbedding,
+                        centroids = intentData.centroids,
+                        intentName = intentData.intentName,
+                        outputPhrase = intentData.outputPhrase,
+                        audioAssetPath = intentData.audioAssetPath,
+                        oodThreshold = intentData.oodThreshold
+                    )
+                }
+            }
         }
 
         // Log all scores for debugging
@@ -169,7 +278,7 @@ class VoxaClassifierEngine(
                     "centroids=${score.centroidCount}, OOD=${String.format("%.3f", score.oodThreshold)}")
         }
 
-        // ── Step 7: Evaluate OOD Gate + Margin Gate ──
+        // ── Step 6: Evaluate OOD Gate + Margin Gate ──
         return PrototypicalMatcher.evaluateGates(scores)
     }
 }

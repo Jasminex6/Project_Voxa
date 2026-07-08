@@ -43,7 +43,7 @@ fun OnboardingScreen(
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
-    val pagerState = rememberPagerState(pageCount = { 4 })
+    val pagerState = rememberPagerState(pageCount = { 5 })
 
     // Keep track of permission states
     var micGranted by remember {
@@ -102,10 +102,18 @@ fun OnboardingScreen(
                     .weight(1f)
                     .fillMaxWidth()
             ) { page ->
+                val appLanguage by viewModel.appLanguage.collectAsState()
                 when (page) {
-                    0 -> WelcomeSlide()
-                    1 -> ConceptSlide()
-                    2 -> PermissionsSlide(
+                    0 -> LanguageSelectionSlide(
+                        currentLanguage = appLanguage,
+                        onLanguageSelected = { lang ->
+                            viewModel.setAppLanguage(lang)
+                            (context as? android.app.Activity)?.recreate()
+                        }
+                    )
+                    1 -> WelcomeSlide()
+                    2 -> ConceptSlide()
+                    3 -> PermissionsSlide(
                         micGranted = micGranted,
                         notificationGranted = notificationGranted,
                         locationGranted = locationGranted,
@@ -119,7 +127,7 @@ fun OnboardingScreen(
                         onRequestLoc = { locLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION) },
                         onRequestSms = { smsLauncher.launch(Manifest.permission.SEND_SMS) }
                     )
-                    3 -> SetupSlide(
+                    4 -> SetupSlide(
                         name = childName,
                         onNameChange = { childName = it },
                         gender = selectedGender,
@@ -153,7 +161,7 @@ fun OnboardingScreen(
 
                 // Page Indicator Dots
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    repeat(4) { idx ->
+                    repeat(5) { idx ->
                         val isSelected = pagerState.currentPage == idx
                         Box(
                             modifier = Modifier
@@ -165,7 +173,7 @@ fun OnboardingScreen(
                 }
 
                 // Next / Finish Button
-                if (pagerState.currentPage < 3) {
+                if (pagerState.currentPage < 4) {
                     Button(
                         onClick = {
                             coroutineScope.launch {
@@ -541,3 +549,112 @@ fun SetupSlide(
         }
     }
 }
+
+@Composable
+fun LanguageSelectionSlide(
+    currentLanguage: String,
+    onLanguageSelected: (String) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(text = "🌐", fontSize = 72.sp, modifier = Modifier.padding(bottom = 16.dp))
+        Text(
+            text = "Choose Your Language\nاختر اللغة",
+            fontSize = 22.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.White,
+            textAlign = TextAlign.Center,
+            lineHeight = 30.sp
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "You can change this later in settings\nيمكنك تغيير هذا لاحقاً من الإعدادات",
+            fontSize = 13.sp,
+            color = Slate400,
+            textAlign = TextAlign.Center,
+            lineHeight = 20.sp
+        )
+        Spacer(modifier = Modifier.height(32.dp))
+
+        Column(
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp)
+        ) {
+            LanguageButton(
+                title = "English (US)",
+                flag = "🇺🇸",
+                isSelected = currentLanguage == "en",
+                onClick = { onLanguageSelected("en") }
+            )
+            LanguageButton(
+                title = "العربية (مصر)",
+                flag = "🇪🇬",
+                isSelected = currentLanguage == "ar",
+                onClick = { onLanguageSelected("ar") }
+            )
+        }
+    }
+}
+
+@Composable
+fun LanguageButton(
+    title: String,
+    flag: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Card(
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected) SelectedActiveBlue else Slate800
+        ),
+        border = BorderStroke(
+            width = if (isSelected) 2.dp else 1.dp,
+            color = if (isSelected) Sky400 else Slate700
+        ),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(text = flag, fontSize = 28.sp)
+                Spacer(modifier = Modifier.width(16.dp))
+                Text(
+                    text = title,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+            }
+            if (isSelected) {
+                Box(
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clip(CircleShape)
+                        .background(Sky400),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = "Selected",
+                        tint = Slate900,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+

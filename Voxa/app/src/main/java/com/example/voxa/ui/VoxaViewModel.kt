@@ -214,6 +214,18 @@ class VoxaViewModel(application: Application) : AndroidViewModel(application), I
         enrollIntent(intentName, outputPhrase, audioAssetPath, emptyList())
     }
 
+    private fun serializeDtwTemplate(features: Array<FloatArray>): String {
+        val sb = java.lang.StringBuilder("[")
+        for (i in features.indices) {
+            if (i > 0) sb.append(",")
+            sb.append("[")
+            sb.append(features[i].joinToString(","))
+            sb.append("]")
+        }
+        sb.append("]")
+        return sb.toString()
+    }
+
     override fun enrollIntent(
         intentName: String,
         outputPhrase: String,
@@ -232,45 +244,79 @@ class VoxaViewModel(application: Application) : AndroidViewModel(application), I
                 android.util.Log.e("VoxaDebug", "Starting enrollment coroutine for ${intentName.trim()}")
                 _bifurcationWarningTriggered.value = null
 
-                val embeddings = mutableListOf<FloatArray>()
-                for (path in tempFilePaths) {
-                    try {
-                        val pcmData = com.example.voxa.utils.AudioFileHelper.readPcmFile(java.io.File(path))
-                        val emb = yamnetEncoder.extractFromPcm(pcmData)
-                        embeddings.add(emb)
-                    } catch (e: Exception) {
-                        android.util.Log.e("VoxaViewModel", "Embedding extraction failed for $path: ${e.message}")
+                val isDtwMode = tempFilePaths.size <= 5
+
+                if (isDtwMode) {
+                    // ── DTW MODE (1-5 samples) ──
+                    val intent = EnrolledIntent(
+                        profileId = profile.id,
+                        intentName = intentName.trim(),
+                        outputPhrase = outputPhrase.trim(),
+                        audioAssetPath = audioAssetPath,
+                        oodThreshold = 0.85f
+                    )
+                    val intentId = voxaDao.insertIntent(intent)
+
+                    val mfccExtractor = com.example.voxa.ai.archive.MfccExtractor()
+                    for (path in tempFilePaths) {
+                        try {
+                            val pcmData = com.example.voxa.utils.AudioFileHelper.readPcmFile(java.io.File(path))
+                            val mfcc = mfccExtractor.extract(pcmData)
+                            if (mfcc.isNotEmpty()) {
+                                val serialized = serializeDtwTemplate(mfcc)
+                                val template = AcousticTemplate(
+                                    intentId = intentId,
+                                    templateFeatures = serialized
+                                )
+                                voxaDao.insertTemplate(template)
+                            }
+                        } catch (e: Exception) {
+                            android.util.Log.e("VoxaViewModel", "MFCC extraction failed for DTW template $path: ${e.message}")
+                        }
                     }
+                    android.util.Log.d("VoxaViewModel", "Successfully enrolled DTW intent '$intentName' with ${tempFilePaths.size} templates")
+                } else {
+                    // ── CENTROID MODE (15 samples) ──
+                    val embeddings = mutableListOf<FloatArray>()
+                    for (path in tempFilePaths) {
+                        try {
+                            val pcmData = com.example.voxa.utils.AudioFileHelper.readPcmFile(java.io.File(path))
+                            val emb = yamnetEncoder.extractFromPcm(pcmData)
+                            embeddings.add(emb)
+                        } catch (e: Exception) {
+                            android.util.Log.e("VoxaViewModel", "Embedding extraction failed for $path: ${e.message}")
+                        }
+                    }
+
+                    if (embeddings.isEmpty()) {
+                        android.util.Log.e("VoxaViewModel", "No valid audio embeddings extracted for enrollment")
+                        return@launch
+                    }
+
+                    val protoResult = com.example.voxa.ai.PrototypicalMatcher.computeEnrollmentCentroids(embeddings)
+
+                    val intent = EnrolledIntent(
+                        profileId = profile.id,
+                        intentName = intentName.trim(),
+                        outputPhrase = outputPhrase.trim(),
+                        audioAssetPath = audioAssetPath,
+                        oodThreshold = protoResult.oodThreshold
+                    )
+                    val intentId = voxaDao.insertIntent(intent)
+
+                    val serializedCentroids = com.example.voxa.ai.PrototypicalMatcher.serializeCentroids(protoResult.centroids)
+                    val template = AcousticTemplate(
+                        intentId = intentId,
+                        templateFeatures = serializedCentroids
+                    )
+                    voxaDao.insertTemplate(template)
+
+                    if (protoResult.bifurcated) {
+                        _bifurcationWarningTriggered.value = "These recordings sound very different. For best results, try recording when ${profile.name} is calm, or record the stressed version separately."
+                    }
+
+                    android.util.Log.d("VoxaViewModel", "Successfully enrolled intent '$intentName' with ${protoResult.centroids.size} centroids (bifurcated=${protoResult.bifurcated})")
                 }
-
-                if (embeddings.isEmpty()) {
-                    android.util.Log.e("VoxaViewModel", "No valid audio embeddings extracted for enrollment")
-                    return@launch
-                }
-
-                val protoResult = com.example.voxa.ai.PrototypicalMatcher.computeEnrollmentCentroids(embeddings)
-
-                val intent = EnrolledIntent(
-                    profileId = profile.id,
-                    intentName = intentName.trim(),
-                    outputPhrase = outputPhrase.trim(),
-                    audioAssetPath = audioAssetPath,
-                    oodThreshold = protoResult.oodThreshold
-                )
-                val intentId = voxaDao.insertIntent(intent)
-
-                val serializedCentroids = com.example.voxa.ai.PrototypicalMatcher.serializeCentroids(protoResult.centroids)
-                val template = AcousticTemplate(
-                    intentId = intentId,
-                    templateFeatures = serializedCentroids
-                )
-                voxaDao.insertTemplate(template)
-
-                if (protoResult.bifurcated) {
-                    _bifurcationWarningTriggered.value = "These recordings sound very different. For best results, try recording when ${profile.name} is calm, or record the stressed version separately."
-                }
-
-                android.util.Log.d("VoxaViewModel", "Successfully enrolled intent '$intentName' with ${protoResult.centroids.size} centroids (bifurcated=${protoResult.bifurcated})")
             } catch (e: Exception) {
                 android.util.Log.e("VoxaViewModel", "Failed to enroll intent: ${e.message}", e)
             }

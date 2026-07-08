@@ -68,7 +68,7 @@ class VoxaListenerService : Service() {
 
     // Debounce to prevent TTS audio playback from triggering a secondary feedback match
     private var lastMatchTimestamp = 0L
-    private val DEBOUNCE_PERIOD_MS = 2500L
+    private val DEBOUNCE_PERIOD_MS = 1000L
 
     // Tracks the current asynchronous playback/dispatch coroutine job to prevent race conditions
     private var playbackJob: Job? = null

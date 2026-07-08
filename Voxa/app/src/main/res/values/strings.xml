@@ -158,21 +158,21 @@
 
     <!-- Enrollment Screen -->
     <string name="enroll_title">Enroll Custom Sound</string>
-    <string name="enroll_desc">Record 3 speech samples to train the sound dictionary.</string>
+    <string name="enroll_desc">Record 15 speech samples to train the sound dictionary.</string>
     <string name="enroll_no_profile">Please create and activate a child profile first\nto enroll new vocalizations.</string>
     <string name="enroll_vocalization_details">Vocalization Details</string>
     <string name="enroll_view_suggestions">💡 View Suggestions</string>
     <string name="enroll_meaning_label">Meaning of Sound / Word (e.g. Water)</string>
     <string name="enroll_arabic_translation_label">Egyptian Arabic Voice Translation (e.g. أنا عايز ميّه)</string>
     <string name="enroll_progress_title">Sample Enrollment Progress</string>
-    <string name="enroll_collected_count">Collected: %1$d / 3 Samples</string>
+    <string name="enroll_collected_count">Collected: %1$d / 15 Samples</string>
     <string name="enroll_auto_advance">Get ready! Next sample starts in 1.5 seconds...</string>
     <string name="enroll_tap_to_start">Tap \'Record Sample\' to start, tap again to finish.</string>
     <string name="enroll_record_btn">Record\nSample</string>
     <string name="enroll_stop_btn">Stop</string>
     <string name="enroll_save_sound_btn">Save Sound</string>
     <string name="enroll_complete_title">Enrollment Complete</string>
-    <string name="enroll_complete_desc">You have recorded all 3 samples for \'%1$s\'. Would you like to save this sound now?</string>
+    <string name="enroll_complete_desc">You have recorded all 15 samples for \'%1$s\'. Would you like to save this sound now?</string>
     <string name="enroll_suggestions_title">💡 Suggested Vocalizations</string>
     <string name="enroll_suggestions_desc">Select a commonly used word or phrase to auto-populate the details below:</string>
     <string name="enroll_suggestions_loaded">Loaded suggested word: %1$s!</string>
@@ -253,7 +253,7 @@
     <string name="quests_new_quest_title">New Quest 🎯</string>
 
     <!-- Enrollment Screen (Team Version) -->
-    <string name="enroll_subtitle">Record 3 speech samples to train the sound dictionary.</string>
+    <string name="enroll_subtitle">Record 15 speech samples to train the sound dictionary.</string>
     <string name="enroll_card_title">Vocalization Details</string>
     <string name="btn_suggestions">💡 View Suggestions</string>
     <string name="field_meaning">Meaning of Sound / Word (e.g. Water)</string>

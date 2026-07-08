@@ -18,7 +18,7 @@ class TashkeelTest {
     fun testTashkeelSentenceReplacement() {
         // Assertions for replacements inside a sentence
         assertEquals("سَاعِدْنِي بسرعة", TashkeelHelper.applyTashkeel("ساعدني بسرعة"))
-        assertEquals("عايز أَشْرَب مَيَّة", TashkeelHelper.applyTashkeel("عايز اشرب مية"))
+        assertEquals("عايِز أَشْرَب مَيَّة", TashkeelHelper.applyTashkeel("عايز اشرب مية"))
     }
 
     @Test

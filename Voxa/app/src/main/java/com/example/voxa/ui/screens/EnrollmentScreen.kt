@@ -54,6 +54,9 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
     val bifurcationWarning by viewModel.bifurcationWarningTriggered.collectAsState()
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    var enrollmentMode by rememberSaveable { mutableStateOf("Centroid") } // "Centroid" or "Dtw"
+    val targetSamples = if (enrollmentMode == "Dtw") 3 else 15
+    val minSamples = if (enrollmentMode == "Dtw") 3 else 10
 
     // UI state inputs tracking the name of the sound (e.g. "Water") and the Arabic meaning translation.
     var intentName by rememberSaveable { mutableStateOf("") }
@@ -172,7 +175,7 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                     val processedPcm = segments[0]
                     
                     try {
-                        AudioFileHelper.validateDuration(processedPcm)
+                        AudioFileHelper.validateDuration(processedPcm, isDtw = enrollmentMode == "Dtw")
                         val activeId = activeProfile?.id ?: 0L
                         val cleanIntentName = intentName.trim().lowercase().replace(Regex("[^\\p{L}\\p{N}_]"), "_")
                         val fileName = "template_${activeId}_${cleanIntentName}_${recordedSamplesCount}.pcm"
@@ -192,13 +195,13 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                         }
 
                         Toast.makeText(context, "Sample $recordedSamplesCount saved successfully!", Toast.LENGTH_SHORT).show()
-                        if (recordedSamplesCount == 15) {
+                        if (recordedSamplesCount == targetSamples) {
                             showSaveDialog = true
                         } else {
                             // Auto-advance: launch a coroutine to start next sample recording after 1.5 seconds
                             scope.launch {
                                 delay(1500)
-                                if (recordedSamplesCount < 15) {
+                                if (recordedSamplesCount < targetSamples) {
                                     isRecordingSample = true
                                 }
                             }
@@ -268,6 +271,78 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                // ── MATCHING MODE SELECTION ──
+                Card(
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Slate800,
+                        contentColor = Color.White
+                    ),
+                    border = BorderStroke(1.dp, Slate700),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = "Matching Pipeline Engine",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            FilterChip(
+                                selected = enrollmentMode == "Centroid",
+                                onClick = {
+                                    enrollmentMode = "Centroid"
+                                    recordedSamplesCount = 0
+                                    savedFilePaths.clear()
+                                    savedFilePathsStr = ""
+                                },
+                                label = { Text("Voice Word (YAMNet)") },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = Sky400,
+                                    selectedLabelColor = Slate900,
+                                    containerColor = Slate900,
+                                    labelColor = Slate400
+                                ),
+                                modifier = Modifier.weight(1f)
+                            )
+                            FilterChip(
+                                selected = enrollmentMode == "Dtw",
+                                onClick = {
+                                    enrollmentMode = "Dtw"
+                                    recordedSamplesCount = 0
+                                    savedFilePaths.clear()
+                                    savedFilePathsStr = ""
+                                },
+                                label = { Text("Custom Sound (DTW)") },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = Sky400,
+                                    selectedLabelColor = Slate900,
+                                    containerColor = Slate900,
+                                    labelColor = Slate400
+                                ),
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                        Text(
+                            text = if (enrollmentMode == "Centroid") {
+                                "Best for vocalized words (e.g. 'water', 'help'). Requires 15 samples to build robust centroids and outlier thresholds."
+                            } else {
+                                "Best for short, non-verbal sounds (e.g. clicks, grunts, whistles). Requires only 3 templates and uses DTW alignment matching."
+                            },
+                            color = Slate400,
+                            fontSize = 11.sp,
+                            lineHeight = 16.sp
+                        )
+                    }
+                }
+
                 // ── TEXT INPUTS ──
                 Card(
                     shape = RoundedCornerShape(12.dp),
@@ -390,7 +465,7 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
 
                         // Progress Step Indicators (Linear Progress)
                         LinearProgressIndicator(
-                            progress = recordedSamplesCount / 15f,
+                            progress = recordedSamplesCount.toFloat() / targetSamples,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(8.dp)
@@ -410,8 +485,8 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                                 fontWeight = FontWeight.Medium
                             )
                             Text(
-                                text = "Min: 10 / Target: 15",
-                                color = if (recordedSamplesCount >= 10) SuccessGreen else Slate400,
+                                text = "Min: $minSamples / Target: $targetSamples",
+                                color = if (recordedSamplesCount >= minSamples) SuccessGreen else Slate400,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -436,16 +511,16 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                                         .fillMaxHeight(0.7f)
                                         .clip(RoundedCornerShape(4.dp))
                                         .background(Sky400)
-                                )
+                                  )
                             }
                         } else {
                             Text(
-                                text = if (recordedSamplesCount > 0 && recordedSamplesCount < 15) {
+                                text = if (recordedSamplesCount > 0 && recordedSamplesCount < targetSamples) {
                                     stringResource(id = R.string.enroll_timer_progress)
                                 } else {
                                     stringResource(id = R.string.enroll_guideline_tap)
                                 },
-                                color = if (recordedSamplesCount > 0 && recordedSamplesCount < 15) SuccessGreen else Slate400,
+                                color = if (recordedSamplesCount > 0 && recordedSamplesCount < targetSamples) SuccessGreen else Slate400,
                                 fontSize = 11.sp,
                                 textAlign = TextAlign.Center
                             )
@@ -459,7 +534,7 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                                 if (intentName.isBlank() || outputPhrase.isBlank()) return@Button
                                 isRecordingSample = !isRecordingSample
                             },
-                            enabled = intentName.isNotBlank() && outputPhrase.isNotBlank() && recordedSamplesCount < 15,
+                            enabled = intentName.isNotBlank() && outputPhrase.isNotBlank() && recordedSamplesCount < targetSamples,
                             contentPadding = PaddingValues(0.dp), // Clear default margins for comfy circle text
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = if (isRecordingSample) ErrorRed else Sky500,
@@ -484,7 +559,7 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                             onClick = {
                                 showSaveDialog = true
                             },
-                            enabled = recordedSamplesCount >= 10,
+                            enabled = recordedSamplesCount >= minSamples,
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = SuccessGreen,
                                 disabledContainerColor = Slate700
