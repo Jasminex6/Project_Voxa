@@ -877,6 +877,7 @@ private class MockDashboardViewModel : IVoxaViewModel {
     override val allProfiles = kotlinx.coroutines.flow.MutableStateFlow(emptyList<com.example.voxa.data.ChildProfile>())
     override val activeProfile = kotlinx.coroutines.flow.MutableStateFlow(com.example.voxa.data.ChildProfile(name = "Adam", gender = "Male", isActive = true))
     override val enrolledIntents = kotlinx.coroutines.flow.MutableStateFlow(emptyList<com.example.voxa.data.EnrolledIntent>())
+    override val practiceStats = kotlinx.coroutines.flow.MutableStateFlow(emptyList<com.example.voxa.data.PracticeStats>())
     override val isListening = kotlinx.coroutines.flow.MutableStateFlow(true)
     override val recentEvents = kotlinx.coroutines.flow.MutableStateFlow(
         listOf(

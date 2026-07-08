@@ -276,8 +276,9 @@ class VoxaViewModel(application: Application) : AndroidViewModel(application), I
             }
 
             if (VoxaListenerService.isRunning) {
-                val serviceIntent = Intent(application, VoxaListenerService::class.java)
-                application.startForegroundService(serviceIntent)
+                val context = getApplication<Application>()
+                val serviceIntent = Intent(context, VoxaListenerService::class.java)
+                context.startForegroundService(serviceIntent)
             }
         }
     }

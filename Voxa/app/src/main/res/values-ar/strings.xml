@@ -251,4 +251,21 @@
     <string name="quests_acknowledge_delete">موافقة وحذف</string>
     <string name="quests_cancel_task">إلغاء المهمة</string>
     <string name="quests_new_quest_title">مهمة جديدة 🎯</string>
+
+    <!-- Enrollment Screen (Team Version) -->
+    <string name="enroll_subtitle">سجل عينات صوتية لتدريب قاموس الأصوات.</string>
+    <string name="enroll_card_title">تفاصيل الصوت</string>
+    <string name="btn_suggestions">💡 عرض الاقتراحات</string>
+    <string name="field_meaning">معنى الصوت / الكلمة (مثال: ماء)</string>
+    <string name="field_translation">الترجمة الصوتية بالعامية المصرية (مثال: أنا عايز مية)</string>
+    <string name="enroll_timer_progress">استعد! العينة التالية تبدأ خلال ١.٥ ثانية...</string>
+    <string name="enroll_guideline_tap">اضغط على \'سجل عينة\' للبدء، واضغط مجددًا للإنهاء.</string>
+    <string name="btn_record">سجل\nعينة</string>
+    <string name="btn_stop">إيقاف</string>
+    <string name="btn_save_sound">حفظ الصوت</string>
+    <string name="dialog_complete_title">اكتمل التسجيل</string>
+    <string name="dialog_complete_text">لقد قمت بتسجيل %2$d عينات لـ \'%1$s\'. هل ترغب في حفظ هذا الصوت الآن؟</string>
+    <string name="dialog_suggestions_title">💡 الأصوات المقترحة</string>
+    <string name="dialog_suggestions_desc">اختر كلمة أو عبارة شائعة لملء التفاصيل أدناه تلقائيًا:</string>
+    <string name="dialog_cancel">إلغاء</string>
 </resources>

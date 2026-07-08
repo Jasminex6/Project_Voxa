@@ -210,6 +210,7 @@ private class MockLibraryViewModel : IVoxaViewModel {
             EnrolledIntent(id = 2, profileId = 1, intentName = "Milk", outputPhrase = "أنا عايز لبن", audioAssetPath = "milk.mp3")
         )
     )
+    override val practiceStats = kotlinx.coroutines.flow.MutableStateFlow(emptyList<com.example.voxa.data.PracticeStats>())
     override val isListening = kotlinx.coroutines.flow.MutableStateFlow(false)
     override val recentEvents = kotlinx.coroutines.flow.MutableStateFlow(emptyList<LogEvent>())
     override val volumeLevel = kotlinx.coroutines.flow.MutableStateFlow(0f)

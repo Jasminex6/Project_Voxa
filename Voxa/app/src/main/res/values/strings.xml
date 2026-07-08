@@ -251,4 +251,21 @@
     <string name="quests_acknowledge_delete">Acknowledge &amp; Delete</string>
     <string name="quests_cancel_task">Cancel Task</string>
     <string name="quests_new_quest_title">New Quest 🎯</string>
+
+    <!-- Enrollment Screen (Team Version) -->
+    <string name="enroll_subtitle">Record 3 speech samples to train the sound dictionary.</string>
+    <string name="enroll_card_title">Vocalization Details</string>
+    <string name="btn_suggestions">💡 View Suggestions</string>
+    <string name="field_meaning">Meaning of Sound / Word (e.g. Water)</string>
+    <string name="field_translation">Egyptian Arabic Voice Translation (e.g. أنا عايز ميّه)</string>
+    <string name="enroll_timer_progress">Get ready! Next sample starts in 1.5 seconds...</string>
+    <string name="enroll_guideline_tap">Tap \'Record Sample\' to start, tap again to finish.</string>
+    <string name="btn_record">Record\nSample</string>
+    <string name="btn_stop">Stop</string>
+    <string name="btn_save_sound">Save Sound</string>
+    <string name="dialog_complete_title">Enrollment Complete</string>
+    <string name="dialog_complete_text">You have recorded %2$d samples for \'%1$s\'. Would you like to save this sound now?</string>
+    <string name="dialog_suggestions_title">💡 Suggested Vocalizations</string>
+    <string name="dialog_suggestions_desc">Select a commonly used word or phrase to auto-populate the details below:</string>
+    <string name="dialog_cancel">Cancel</string>
 </resources>
