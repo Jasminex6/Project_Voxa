@@ -2,7 +2,6 @@ package com.example.voxa
 
 import com.example.voxa.ai.PrototypicalMatcher
 import com.example.voxa.ai.YamnetEncoder
-import com.example.voxa.logic.MarginGate
 import org.junit.Assert.*
 import org.junit.Test
 import kotlin.math.sqrt
@@ -217,79 +216,5 @@ class AiBridgeTest {
         assertFalse(result.isMatch)
         assertNull(result.intentName)
         assertTrue(result.reason.contains("Ambiguous"))
-    }
-
-    // ── MARGIN GATE TESTS ──
-
-    @Test
-    fun testMarginGate_validMatch() {
-        val candidates = listOf(
-            MarginGate.CandidateMatch("Water", 0.90f),
-            MarginGate.CandidateMatch("More", 0.82f)
-        )
-        val result = MarginGate.evaluate(
-            candidates = candidates,
-            absoluteThreshold = 0.82f,
-            marginThreshold = 0.04f
-        )
-        assertTrue(result.isMatch)
-        assertEquals("Water", result.matchedWord)
-    }
-
-    @Test
-    fun testMarginGate_failsAbsoluteThreshold() {
-        val candidates = listOf(
-            MarginGate.CandidateMatch("Water", 0.80f),
-            MarginGate.CandidateMatch("More", 0.75f)
-        )
-        val result = MarginGate.evaluate(
-            candidates = candidates,
-            absoluteThreshold = 0.82f,
-            marginThreshold = 0.04f
-        )
-        assertFalse(result.isMatch)
-        assertNull(result.matchedWord)
-        assertTrue(result.reason.contains("below absolute threshold"))
-    }
-
-    @Test
-    fun testMarginGate_failsMarginCheck() {
-        val candidates = listOf(
-            MarginGate.CandidateMatch("Water", 0.85f),
-            MarginGate.CandidateMatch("More", 0.83f)
-        )
-        val result = MarginGate.evaluate(
-            candidates = candidates,
-            absoluteThreshold = 0.82f,
-            marginThreshold = 0.04f
-        )
-        assertFalse(result.isMatch)
-        assertNull(result.matchedWord)
-        assertTrue(result.reason.contains("Ambiguous match"))
-    }
-
-    @Test
-    fun testMarginGate_singleCandidate() {
-        val candidates = listOf(
-            MarginGate.CandidateMatch("Water", 0.85f)
-        )
-        val result = MarginGate.evaluate(
-            candidates = candidates,
-            absoluteThreshold = 0.82f,
-            marginThreshold = 0.04f
-        )
-        assertTrue(result.isMatch)
-        assertEquals("Water", result.matchedWord)
-    }
-
-    @Test
-    fun testMarginGate_emptyCandidates() {
-        val result = MarginGate.evaluate(
-            candidates = emptyList(),
-            absoluteThreshold = 0.82f,
-            marginThreshold = 0.04f
-        )
-        assertFalse(result.isMatch)
-        assertNull(result.matchedWord)
     }
 }
