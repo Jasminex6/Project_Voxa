@@ -18,9 +18,9 @@ data class VADConfig(
     val frameMs: Int = 20,                  // 20ms per frame
     val speechTriggerFrames: Int = 8,       // M = 8 consecutive speech frames → trigger
     val silenceBoundaryFrames: Int = 15,    // N = 15 consecutive silent frames → end segment
-    val minSegmentMs: Int = 400,
-    val maxSegmentMs: Int = 2000,
-    val energyThreshold: Double = 900.0     // RMS energy threshold for speech detection (increased from 500.0 to avoid noise)
+    val minSegmentMs: Int = 400,            // 400ms minimum to reject clicks and short noise
+    val maxSegmentMs: Int = 2000,           // 2000ms maximum
+    val energyThreshold: Double = 900.0     // RMS energy threshold for speech detection
 ) {
     val frameSize: Int get() = sampleRate * frameMs / 1000      // 320 samples
     val minSamples: Int get() = sampleRate * minSegmentMs / 1000 // 6400

@@ -12,7 +12,5 @@ data class ChildProfile(
     val isActive: Boolean = false,
     val avatarEmoji: String = "👦",
     val speakerEmbedding: String? = null, // JSON-serialized FloatArray(192) — ECAPA-TDNN voice fingerprint
-    val caregiverPhone1: String = "",
-    val caregiverPhone2: String = "",
-    val caregiverPhone3: String = ""
+    val caregiverContactsJson: String? = null // JSON-serialized list of CaregiverContact models
 )

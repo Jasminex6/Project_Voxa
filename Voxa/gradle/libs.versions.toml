@@ -14,7 +14,6 @@ ksp = "2.2.10-2.0.2"
 appcompat = "1.7.0"
 playServicesLocation = "21.3.0"
 
-
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -42,8 +41,8 @@ androidx-room-compiler = { group = "androidx.room", name = "room-compiler", vers
 litert = { group = "com.google.ai.edge.litert", name = "litert", version.ref = "litert" }
 
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+# Google Play Services Location
 play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "playServicesLocation" }
-
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

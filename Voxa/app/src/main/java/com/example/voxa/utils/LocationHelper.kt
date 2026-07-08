@@ -4,39 +4,78 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.location.Location
 import android.os.Build
-import android.widget.Toast
+import android.util.Log
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
-import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
+import kotlinx.coroutines.suspendCancellableCoroutine
 
 object LocationHelper {
+    private const val TAG = "LocationHelper"
 
     /**
-     * Retrieves the current device location coordinates using Google Play Services Location API.
-     * Requires ACCESS_FINE_LOCATION permission to be granted beforehand.
+     * Fetches the current location using FusedLocationProviderClient.
+     * Checks permissions internally but caller should ensure they are granted.
      */
     @SuppressLint("MissingPermission")
-    suspend fun getCurrentLocation(context: Context): Location? {
-        val client = LocationServices.getFusedLocationProviderClient(context)
-        val tokenSource = CancellationTokenSource()
-
+    suspend fun getFreshLocation(context: Context): Location? {
+        val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
+        
         return suspendCancellableCoroutine { continuation ->
-            client.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, tokenSource.token)
-                .addOnSuccessListener { location ->
-                    continuation.resume(location)
+            // First try last known location for rapid response
+            fusedLocationClient.lastLocation
+                .addOnSuccessListener { location: Location? ->
+                    if (location != null && (System.currentTimeMillis() - location.time) < 60_000) {
+                        // Location is fresh enough (under 1 minute old), resolve immediately
+                        Log.d(TAG, "Using fresh last known location: ${location.latitude}, ${location.longitude}")
+                        if (continuation.isActive) {
+                            continuation.resume(location)
+                        }
+                    } else {
+                        // Request active single update
+                        val cts = CancellationTokenSource()
+                        fusedLocationClient.getCurrentLocation(
+                            Priority.PRIORITY_HIGH_ACCURACY,
+                            cts.token
+                        ).addOnSuccessListener { freshLocation: Location? ->
+                            Log.d(TAG, "Fresh location retrieved: ${freshLocation?.latitude}, ${freshLocation?.longitude}")
+                            if (continuation.isActive) {
+                                continuation.resume(freshLocation)
+                            }
+                        }.addOnFailureListener { exception ->
+                            Log.e(TAG, "Failed to get current location: ${exception.message}")
+                            if (continuation.isActive) {
+                                continuation.resume(null)
+                            }
+                        }
+                        
+                        continuation.invokeOnCancellation {
+                            cts.cancel()
+                        }
+                    }
                 }
-                .addOnFailureListener {
-                    continuation.resume(null)
+                .addOnFailureListener { exception ->
+                    Log.e(TAG, "Failed to get last location: ${exception.message}")
+                    // Proceed to try active single update as fallback
+                    val cts = CancellationTokenSource()
+                    fusedLocationClient.getCurrentLocation(
+                        Priority.PRIORITY_HIGH_ACCURACY,
+                        cts.token
+                    ).addOnSuccessListener { freshLocation: Location? ->
+                        if (continuation.isActive) {
+                            continuation.resume(freshLocation)
+                        }
+                    }.addOnFailureListener { e ->
+                        Log.e(TAG, "Failed active update fallback: ${e.message}")
+                        if (continuation.isActive) {
+                            continuation.resume(null)
+                        }
+                    }
+                    continuation.invokeOnCancellation {
+                        cts.cancel()
+                    }
                 }
-                .addOnCanceledListener {
-                    continuation.resume(null)
-                }
-
-            continuation.invokeOnCancellation {
-                tokenSource.cancel()
-            }
         }
     }
 
@@ -59,13 +98,12 @@ object LocationHelper {
         profile: com.example.voxa.data.ChildProfile,
         addLog: (String) -> Unit
     ) {
-        val location = getCurrentLocation(context)
+        val location = getFreshLocation(context)
         val mapsUrl = getGoogleMapsUrl(location)
         val message = "🚨 VOXA EMERGENCY ALERT! ${profile.name} needs help! Current Location: $mapsUrl"
 
-        // Collect caregiver phone numbers
-        val phones = listOf(profile.caregiverPhone1, profile.caregiverPhone2, profile.caregiverPhone3)
-            .filter { it.isNotBlank() }
+        // Parse caregiver phone numbers from Youmna's database structure
+        val phones = parseCaregiverPhones(profile.caregiverContactsJson)
 
         if (phones.isEmpty()) {
             addLog("🆘 SOS triggered but no caregiver phone numbers configured")
@@ -115,5 +153,20 @@ object LocationHelper {
             // Wait 1 second before notifying the next contact
             kotlinx.coroutines.delay(1000)
         }
+    }
+
+    private fun parseCaregiverPhones(jsonStr: String?): List<String> {
+        val list = mutableListOf<String>()
+        if (jsonStr.isNullOrBlank()) return list
+        try {
+            val array = org.json.JSONArray(jsonStr)
+            for (i in 0 until array.length()) {
+                val obj = array.getJSONObject(i)
+                list.add(obj.getString("phone"))
+            }
+        } catch (e: java.lang.Exception) {
+            Log.e(TAG, "Failed to parse caregiver phones: ${e.message}")
+        }
+        return list
     }
 }

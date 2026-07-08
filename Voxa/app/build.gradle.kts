@@ -52,6 +52,9 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     
+    // AppCompat
+    implementation(libs.androidx.appcompat)
+    
     // Room Database
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
@@ -62,7 +65,6 @@ dependencies {
     implementation(libs.litert)
 
     // Google Play Services Location
-    implementation(libs.androidx.appcompat)
     implementation(libs.play.services.location)
 
     testImplementation(libs.junit)
