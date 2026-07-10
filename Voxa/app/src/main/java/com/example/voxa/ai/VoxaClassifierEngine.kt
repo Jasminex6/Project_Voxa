@@ -14,7 +14,7 @@ import com.example.voxa.utils.AudioFileHelper
  *   1. VAD → Extract speech segments (persistent state across audio blocks)
  *   2. Silence Trim → Normalize pre-processing to match enrollment conditions
  *   3. Pad/Crop → Normalize to exactly 1.44s (23040 samples)
- *   4. YAMNet → Extract 2048-D temporal-halved embedding
+ *   4. YAMNet → Extract 1024-D mean-pooled embedding
  *   5. Cosine Similarity + CCP → Score against enrolled intent centroids
  *   6. OOD Gate → Reject if similarity is below intent-specific threshold
  *   7. Margin Gate → Reject if best and second-best are too close
@@ -37,7 +37,7 @@ class VoxaClassifierEngine(
     // Energy-based VAD for speech segment extraction (retained from v1 — highly optimized native code)
     private val vad = VoxaVAD()
 
-    // YAMNet neural encoder for 2048-D feature extraction
+    // YAMNet neural encoder for 1024-D feature extraction (mean-pooled)
     private val yamnetEncoder: YamnetEncoder = YamnetEncoder(context)
 
     // Pre-parsed centroid data for each enrolled intent
@@ -114,8 +114,8 @@ class VoxaClassifierEngine(
 
         // ── Step 2: Silence trim to match enrollment pre-processing ──
         val trimmedSegment = AudioFileHelper.trimSilence(rawSegment)
-        if (trimmedSegment.size < 1600) { // Less than 100ms of actual speech
-            Log.d(TAG, "Segment too short after trimming (${trimmedSegment.size} samples) — skipping")
+        if (trimmedSegment.size < 4000) { // Less than 250ms of actual speech (unified with AudioFileHelper)
+            Log.d(TAG, "Segment too short after trimming (${trimmedSegment.size} samples, ${trimmedSegment.size / 16.0}ms) — skipping")
             return null
         }
 
@@ -128,7 +128,7 @@ class VoxaClassifierEngine(
             )
         }
 
-        // ── Step 4: Extract 2048-D embedding via YAMNet temporal halving ──
+        // ── Step 4: Extract 1024-D embedding via YAMNet mean-pooling ──
         val liveEmbedding: FloatArray
         try {
             liveEmbedding = yamnetEncoder.extractFromPcm(trimmedSegment)

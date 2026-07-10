@@ -96,7 +96,7 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
 
                 val audioRecord = try {
                     AudioRecord(
-                        MediaRecorder.AudioSource.MIC,
+                        MediaRecorder.AudioSource.VOICE_RECOGNITION, // Must match VoxaListenerService for gain parity
                         sampleRate,
                         channelConfig,
                         audioFormat,
@@ -192,13 +192,13 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                         }
 
                         Toast.makeText(context, "Sample $recordedSamplesCount saved successfully!", Toast.LENGTH_SHORT).show()
-                        if (recordedSamplesCount == 15) {
+                        if (recordedSamplesCount == 8) {
                             showSaveDialog = true
                         } else {
                             // Auto-advance: launch a coroutine to start next sample recording after 1.5 seconds
                             scope.launch {
                                 delay(1500)
-                                if (recordedSamplesCount < 15) {
+                                if (recordedSamplesCount < 8) {
                                     isRecordingSample = true
                                 }
                             }
@@ -410,8 +410,8 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                                 fontWeight = FontWeight.Medium
                             )
                             Text(
-                                text = "Min: 10 / Target: 15",
-                                color = if (recordedSamplesCount >= 10) SuccessGreen else Slate400,
+                                text = "Min: 5 / Target: 8",
+                                color = if (recordedSamplesCount >= 5) SuccessGreen else Slate400,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -440,12 +440,12 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                             }
                         } else {
                             Text(
-                                text = if (recordedSamplesCount > 0 && recordedSamplesCount < 15) {
+                                text = if (recordedSamplesCount > 0 && recordedSamplesCount < 8) {
                                     stringResource(id = R.string.enroll_timer_progress)
                                 } else {
                                     stringResource(id = R.string.enroll_guideline_tap)
                                 },
-                                color = if (recordedSamplesCount > 0 && recordedSamplesCount < 15) SuccessGreen else Slate400,
+                                color = if (recordedSamplesCount > 0 && recordedSamplesCount < 8) SuccessGreen else Slate400,
                                 fontSize = 11.sp,
                                 textAlign = TextAlign.Center
                             )
@@ -459,7 +459,7 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                                 if (intentName.isBlank() || outputPhrase.isBlank()) return@Button
                                 isRecordingSample = !isRecordingSample
                             },
-                            enabled = intentName.isNotBlank() && outputPhrase.isNotBlank() && recordedSamplesCount < 15,
+                            enabled = intentName.isNotBlank() && outputPhrase.isNotBlank() && recordedSamplesCount < 8,
                             contentPadding = PaddingValues(0.dp), // Clear default margins for comfy circle text
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = if (isRecordingSample) ErrorRed else Sky500,
@@ -484,7 +484,7 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                             onClick = {
                                 showSaveDialog = true
                             },
-                            enabled = recordedSamplesCount >= 10,
+                            enabled = recordedSamplesCount >= 5,
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = SuccessGreen,
                                 disabledContainerColor = Slate700

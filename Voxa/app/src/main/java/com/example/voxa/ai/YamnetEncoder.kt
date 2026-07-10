@@ -11,10 +11,15 @@ import kotlin.math.sqrt
 /**
  * 🧠 YamnetEncoder — YAMNet-based Audio Feature Extractor
  *
- * Loads the frozen YAMNet TFLite model from assets and extracts a 2048-D Temporal-Halved
+ * Loads the frozen YAMNet TFLite model from assets and extracts a 1024-D mean-pooled
  * feature vector from an audio window normalized to exactly 1.44s (23040 samples at 16kHz).
  *
  * Pipeline position:  VAD → [Trim + Pad/Crop to 1.44s] → [YamnetEncoder] → Prototypical Matcher
+ *
+ * Key changes from v4.0:
+ *   - Loop (repeat) padding replaces zero-padding to preserve spectral texture
+ *   - Mean-pooling over all YAMNet frames replaces temporal halving for robustness
+ *   - Output dimension is now 1024-D (down from 2048-D)
  */
 class YamnetEncoder(private val context: Context, modelName: String = "yamnet.tflite") {
 
@@ -24,8 +29,8 @@ class YamnetEncoder(private val context: Context, modelName: String = "yamnet.tf
         /** Each YAMNet frame produces a 1024-D embedding */
         private const val EMBEDDING_DIM = 1024
 
-        /** Output is a 2048-D Temporal-Halved vector (first 2 YAMNet frames concatenated) */
-        const val OUTPUT_DIM = 2048
+        /** Output is a 1024-D mean-pooled vector (averaged over all YAMNet frames) */
+        const val OUTPUT_DIM = 1024
 
         /** Target audio length: 1.44s at 16kHz (guarantees exactly 2 YAMNet frames) */
         private const val TARGET_SAMPLES = 23040
@@ -35,9 +40,11 @@ class YamnetEncoder(private val context: Context, modelName: String = "yamnet.tf
 
         /**
          * Prepares a raw PCM speech segment for YAMNet by converting to Float
-         * and normalizing to exactly [TARGET_SAMPLES] (1.44s) via center-pad or center-crop.
+         * and normalizing to exactly [TARGET_SAMPLES] (1.44s) via loop-pad or center-crop.
          *
-         * This matches the notebook's `load_and_pad()` behavior, ensuring enrollment
+         * Uses **loop (repeat) padding** instead of zero-padding to preserve the
+         * spectral texture of the vocalization in YAMNet's mel spectrogram.
+         * This matches the notebook's `np.tile()` behavior, ensuring enrollment
          * and live inference produce comparable embeddings.
          *
          * @param pcmInt16 Raw 16-bit PCM speech segment at 16kHz
@@ -45,17 +52,19 @@ class YamnetEncoder(private val context: Context, modelName: String = "yamnet.tf
          */
         fun prepareAudioWindow(pcmInt16: ShortArray): FloatArray {
             val floats = FloatArray(TARGET_SAMPLES)
-            if (pcmInt16.size <= TARGET_SAMPLES) {
-                // Center-pad: place audio in the middle of the 1.44s window
-                val offset = (TARGET_SAMPLES - pcmInt16.size) / 2
-                for (i in pcmInt16.indices) {
-                    floats[offset + i] = pcmInt16[i] / 32768.0f
-                }
-            } else {
+            if (pcmInt16.isEmpty()) return floats
+
+            if (pcmInt16.size >= TARGET_SAMPLES) {
                 // Center-crop: take the middle 1.44s from longer audio
                 val start = (pcmInt16.size - TARGET_SAMPLES) / 2
                 for (i in 0 until TARGET_SAMPLES) {
                     floats[i] = pcmInt16[start + i] / 32768.0f
+                }
+            } else {
+                // Loop (repeat) padding: tile the signal to fill 1.44s
+                // This preserves the spectral texture instead of injecting silence
+                for (i in 0 until TARGET_SAMPLES) {
+                    floats[i] = pcmInt16[i % pcmInt16.size] / 32768.0f
                 }
             }
             return floats
@@ -93,11 +102,16 @@ class YamnetEncoder(private val context: Context, modelName: String = "yamnet.tf
     fun isValid(): Boolean = interpreter != null
 
     /**
-     * Extracts a 2048-D Temporal-Halved, L2-normalized embedding vector.
-     * Concatenates the first two YAMNet frame embeddings (each 1024-D).
+     * Extracts a 1024-D mean-pooled, L2-normalized embedding vector.
+     * Averages all YAMNet frame embeddings (each 1024-D) into a single vector.
+     *
+     * Mean-pooling is more robust than temporal halving because:
+     *   - It is invariant to frame count (no zero-fill fallback needed)
+     *   - It captures the aggregate acoustic signature, not position-dependent features
+     *   - It avoids the ≤0.707 cosine similarity trap of half-zero vectors
      *
      * @param audioWindow FloatArray of exactly [TARGET_SAMPLES] values
-     * @return L2-normalized 2048-D FloatArray
+     * @return L2-normalized 1024-D FloatArray
      */
     fun extractEmbedding(audioWindow: FloatArray): FloatArray {
         val interp = interpreter
@@ -132,23 +146,25 @@ class YamnetEncoder(private val context: Context, modelName: String = "yamnet.tf
 
         interp.runForMultipleInputsOutputs(arrayOf(audioWindow), outputs)
 
-        // Temporal Halving: concatenate first 2 YAMNet frames into a 2048-D vector
-        // This matches the notebook's extract_2048d() function
-        val temporalHalved = FloatArray(OUTPUT_DIM)
-        // Frame 0 → positions [0, 1024)
-        if (numFrames > 0) {
-            for (j in 0 until EMBEDDING_DIM) {
-                temporalHalved[j] = embeddings[0][j]
-            }
-        }
-        // Frame 1 → positions [1024, 2048)
-        if (numFrames > 1) {
-            for (j in 0 until EMBEDDING_DIM) {
-                temporalHalved[EMBEDDING_DIM + j] = embeddings[1][j]
-            }
+        // Runtime assertion: for 1.44s input, YAMNet should always produce exactly 2 frames
+        require(numFrames >= 1) {
+            "YAMNet produced 0 frames for ${audioWindow.size} samples — model may be corrupt"
         }
 
-        return l2Normalize(temporalHalved)
+        // Mean-pooling: average all YAMNet frame embeddings into a single 1024-D vector
+        // This replaces temporal halving (2048-D) for better robustness
+        val meanPooled = FloatArray(EMBEDDING_DIM)
+        for (f in 0 until numFrames) {
+            for (j in 0 until EMBEDDING_DIM) {
+                meanPooled[j] += embeddings[f][j]
+            }
+        }
+        val invN = 1.0f / numFrames.toFloat()
+        for (j in 0 until EMBEDDING_DIM) {
+            meanPooled[j] *= invN
+        }
+
+        return l2Normalize(meanPooled)
     }
 
     /**

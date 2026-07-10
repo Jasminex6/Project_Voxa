@@ -8,7 +8,12 @@ import kotlin.math.sqrt
  * Detects speech segments from continuous PCM audio by monitoring energy levels
  * and tracking consecutive speech/silence frames using a configurable state machine.
  *
- * Pipeline position: Microphone → [VAD] → Speaker Verify → MFCC → DTW
+ * Pipeline position: Microphone → [VAD] → Silence Trim → YAMNet → Prototypical Matcher
+ *
+ * Key changes from v4.0:
+ *   - Adaptive energy threshold replaces fixed 900.0 (device-gain independent)
+ *   - Speech trigger lowered from 8→4 frames (catches short plosive vocalizations)
+ *   - Pre-roll buffer captures onset frames before trigger confirmation
  *
  * Ported from: notebooks/vad.py + notebooks/vad_kotlin_pseudocode.md (Dev A)
  */
@@ -16,14 +21,17 @@ import kotlin.math.sqrt
 data class VADConfig(
     val sampleRate: Int = 16_000,
     val frameMs: Int = 20,                  // 20ms per frame
-    val speechTriggerFrames: Int = 8,       // M = 8 consecutive speech frames → trigger
+    val speechTriggerFrames: Int = 4,       // M = 4 consecutive speech frames → trigger (was 8; lowered to catch short bursts)
     val silenceBoundaryFrames: Int = 15,    // N = 15 consecutive silent frames → end segment
-    val minSegmentMs: Int = 400,
+    val minSegmentMs: Int = 250,            // Minimum valid segment (unified with AudioFileHelper)
     val maxSegmentMs: Int = 2000,
-    val energyThreshold: Double = 900.0     // RMS energy threshold for speech detection (increased from 500.0 to avoid noise)
+    val energyThreshold: Double = 900.0,    // Initial/fallback RMS energy threshold
+    val adaptiveMultiplier: Double = 3.0,   // Threshold = max(floor, multiplier × ambient RMS)
+    val adaptiveFloor: Double = 600.0,      // Minimum adaptive threshold (avoids triggering on mic self-noise)
+    val ambientWindowFrames: Int = 250      // 5s of 20ms frames for ambient RMS estimation
 ) {
     val frameSize: Int get() = sampleRate * frameMs / 1000      // 320 samples
-    val minSamples: Int get() = sampleRate * minSegmentMs / 1000 // 6400
+    val minSamples: Int get() = sampleRate * minSegmentMs / 1000 // 4000 (was 6400 at 400ms)
     val maxSamples: Int get() = sampleRate * maxSegmentMs / 1000 // 32000
 }
 
@@ -42,17 +50,39 @@ class VoxaVAD(private val config: VADConfig = VADConfig()) {
     private val segmentBuffer: MutableList<ShortArray> = mutableListOf()
     private var segmentSampleCount: Int = 0
 
+    // ── Adaptive threshold state ──
+    // Tracks ambient RMS over a rolling window of non-speech frames
+    private val ambientRmsHistory = ArrayDeque<Double>(config.ambientWindowFrames)
+    private var currentThreshold: Double = config.energyThreshold
+
+    // ── Pre-roll buffer ──
+    // Stores recent frames so we can include onset frames before the trigger confirmation
+    private val preRollBuffer = ArrayDeque<ShortArray>(config.speechTriggerFrames)
+
     fun reset() {
         state = VADState.SILENCE
         speechFrameCount = 0
         silenceFrameCount = 0
         segmentBuffer.clear()
         segmentSampleCount = 0
+        // Note: we do NOT reset ambientRmsHistory or currentThreshold on segment reset
+        // because the ambient estimate should persist across segments
     }
 
     /**
-     * Energy-based speech detection fallback.
-     * Returns true if the RMS energy of the frame exceeds the configured threshold.
+     * Returns the current adaptive energy threshold.
+     * Useful for debugging/logging.
+     */
+    fun getCurrentThreshold(): Double = currentThreshold
+
+    /**
+     * Energy-based speech detection with adaptive threshold.
+     *
+     * The threshold adapts to ambient noise conditions:
+     *   threshold = max(adaptiveFloor, adaptiveMultiplier × rollingAmbientRMS)
+     *
+     * This makes the VAD device-gain independent: a quiet mic gets a lower
+     * threshold, a hot mic gets a higher one, automatically.
      */
     private fun isSpeechEnergy(frameShorts: ShortArray): Boolean {
         var sumSquares = 0.0
@@ -60,7 +90,33 @@ class VoxaVAD(private val config: VADConfig = VADConfig()) {
             sumSquares += s.toDouble() * s.toDouble()
         }
         val rms = sqrt(sumSquares / frameShorts.size)
-        return rms > config.energyThreshold
+        return rms > currentThreshold
+    }
+
+    /**
+     * Updates the ambient RMS estimate from a non-speech frame.
+     * Called only when we're in SILENCE state (not during speech collection).
+     */
+    private fun updateAmbientEstimate(frameShorts: ShortArray) {
+        var sumSquares = 0.0
+        for (s in frameShorts) {
+            sumSquares += s.toDouble() * s.toDouble()
+        }
+        val rms = sqrt(sumSquares / frameShorts.size)
+
+        // Only add to ambient if it's below the current threshold (definitely not speech)
+        if (rms < currentThreshold) {
+            if (ambientRmsHistory.size >= config.ambientWindowFrames) {
+                ambientRmsHistory.removeFirst()
+            }
+            ambientRmsHistory.addLast(rms)
+
+            // Recompute threshold from rolling average
+            if (ambientRmsHistory.size >= 10) { // Need at least 10 frames (~200ms) for stable estimate
+                val avgAmbient = ambientRmsHistory.average()
+                currentThreshold = maxOf(config.adaptiveFloor, config.adaptiveMultiplier * avgAmbient)
+            }
+        }
     }
 
     /**
@@ -80,10 +136,28 @@ class VoxaVAD(private val config: VADConfig = VADConfig()) {
                     segmentSampleCount += frameSamples.size
 
                     if (speechFrameCount >= config.speechTriggerFrames) {
+                        // Include pre-roll frames to capture onset
+                        val preRollFrames = preRollBuffer.toList()
+                        if (preRollFrames.isNotEmpty()) {
+                            // Prepend pre-roll frames to segment buffer
+                            for (i in preRollFrames.indices.reversed()) {
+                                segmentBuffer.add(0, preRollFrames[i])
+                                segmentSampleCount += preRollFrames[i].size
+                            }
+                        }
+                        preRollBuffer.clear()
                         state = VADState.SPEECH_COLLECTING
                         silenceFrameCount = 0
                     }
                 } else {
+                    // Not speech — update ambient estimate and maintain pre-roll buffer
+                    updateAmbientEstimate(frameSamples)
+
+                    if (preRollBuffer.size >= config.speechTriggerFrames) {
+                        preRollBuffer.removeFirst()
+                    }
+                    preRollBuffer.addLast(frameSamples.copyOf())
+
                     speechFrameCount = 0
                     segmentBuffer.clear()
                     segmentSampleCount = 0

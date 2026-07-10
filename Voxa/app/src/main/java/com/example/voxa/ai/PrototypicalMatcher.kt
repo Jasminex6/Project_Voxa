@@ -6,7 +6,7 @@ import kotlin.math.sqrt
 /**
  * 🎯 PrototypicalMatcher — Centroid-Based Sound Intent Matching
  *
- * Implements the mathematical core of the Architecture v4 prototypical matching pipeline:
+ * Implements the mathematical core of the Architecture v4.1 prototypical matching pipeline:
  *   1. QC Outlier Rejection (μ + 2σ rule)
  *   2. K-Means (K=2) Bifurcation for high-variance intents
  *   3. Centroid computation (mean of L2-normalized vectors)
@@ -16,31 +16,47 @@ import kotlin.math.sqrt
  * All vectors are assumed to be L2-normalized (via YamnetEncoder), so cosine
  * similarity simplifies to the dot product.
  *
+ * Key changes from v4.0:
+ *   - OOD threshold formula: max(0.55, mean − max(2σ, 0.08)) with σ floor
+ *   - CCP penalty applied identically during calibration AND inference (fixes asymmetry bug)
+ *   - Margin gate widened to 0.06 (was 0.04, tuned for collapsed embeddings)
+ *   - MIN_SAMPLES_FOR_BIFURCATION lowered to 6 (was 12, enrollment count reduced)
+ *   - Now operates on 1024-D vectors (mean-pooled YAMNet, down from 2048-D)
+ *
  * Reference: proposed_arch_v4.md (Layers 3-5) and voxa.ipynb
  */
 object PrototypicalMatcher {
 
     private const val TAG = "ProtoMatcher"
 
-    // ── THRESHOLDS (from proposed_arch_v4.md) ──
+    // ── THRESHOLDS (v4.1 — post-audit) ──
 
     /** Centroid Count Penalty: subtracted per extra centroid beyond 1 */
     const val CCP_PENALTY = 0.05f
 
     /** Margin Gate: minimum separation between best and second-best similarity */
-    const val MARGIN_THRESHOLD = 0.04f
+    const val MARGIN_THRESHOLD = 0.06f  // Widened from 0.04 — old value was tuned on collapsed embeddings
 
     /** Default OOD threshold if not stored per-intent */
-    const val DEFAULT_OOD_THRESHOLD = 0.85f
+    const val DEFAULT_OOD_THRESHOLD = 0.75f  // Lowered from 0.85 — old value caused mass rejection with proper padding
 
     /** Bifurcation trigger: max pairwise distance exceeding this fraction of OOD threshold */
     const val BIFURCATION_DISTANCE_FACTOR = 0.5f
 
     /** Minimum valid embeddings required after QC for bifurcation */
-    const val MIN_SAMPLES_FOR_BIFURCATION = 12
+    const val MIN_SAMPLES_FOR_BIFURCATION = 6  // Lowered from 12 — enrollment now uses 5-8 samples
 
     /** K-Means iteration limit */
     private const val KMEANS_MAX_ITER = 30
+
+    /** Minimum σ floor for OOD calibration (prevents threshold near 1.0 with very consistent enrollment) */
+    private const val MIN_SIGMA_FLOOR = 0.08f
+
+    /** Minimum OOD threshold floor */
+    private const val MIN_OOD_FLOOR = 0.55f
+
+    /** Maximum OOD threshold ceiling */
+    private const val MAX_OOD_CEILING = 0.90f
 
     // ═══════════════════════════════════════════════════════════
     // SECTION 1: SIMILARITY & DISTANCE
@@ -207,11 +223,11 @@ object PrototypicalMatcher {
      * Result of the enrollment centroid extraction process.
      */
     data class EnrollmentResult(
-        /** 1 or 2 centroids (L2-normalized 2048-D vectors) */
+        /** 1 or 2 centroids (L2-normalized 1024-D vectors) */
         val centroids: List<FloatArray>,
         /** Whether K-Means bifurcation was triggered */
         val bifurcated: Boolean,
-        /** Per-intent OOD threshold: mean similarity minus 2σ (floored at 0.50) */
+        /** Per-intent OOD threshold: calibrated with σ floor and CCP-aware */
         val oodThreshold: Float,
         /** Number of samples that passed QC */
         val validCount: Int,
@@ -224,7 +240,7 @@ object PrototypicalMatcher {
      *   1. QC outlier rejection
      *   2. Check bifurcation trigger
      *   3. Compute 1 or 2 centroids
-     *   4. Compute per-intent OOD threshold
+     *   4. Compute per-intent OOD threshold (CCP-aware, σ-floored)
      *
      * @param embeddings Raw L2-normalized embeddings from all enrollment recordings
      * @return EnrollmentResult containing centroids and metadata
@@ -262,18 +278,27 @@ object PrototypicalMatcher {
             bifurcated = false
         }
 
-        // Step 4: Compute per-intent OOD threshold
-        // OOD threshold = mean similarity to own centroid(s) minus 2σ, floored at 0.50
-        val similarities = validEmbeddings.map { emb ->
-            centroids.maxOf { centroid -> cosineSimilarity(emb, centroid) }
+        // Step 4: Compute per-intent OOD threshold (CCP-aware)
+        // CRITICAL FIX: Apply the same CCP penalty during calibration as during inference
+        // This eliminates the asymmetry where bifurcated intents were held to a threshold
+        // 0.05 stricter than they were calibrated for.
+        val ccpPenalty = (centroids.size - 1) * CCP_PENALTY
+        val effectiveSimilarities = validEmbeddings.map { emb ->
+            val maxSim = centroids.maxOf { centroid -> cosineSimilarity(emb, centroid) }
+            maxSim - ccpPenalty  // Apply CCP during calibration too
         }
-        val meanSim = similarities.average().toFloat()
-        val simVariance = similarities.map { (it - meanSim) * (it - meanSim) }.average().toFloat()
-        val simStdDev = sqrt(simVariance)
-        // Per-intent OOD threshold: μ - 2σ of enrollment similarities, floored at 0.50
-        val oodThreshold = maxOf(0.50f, meanSim - 2.0f * simStdDev)
+        val meanEffSim = effectiveSimilarities.average().toFloat()
+        val effSimVariance = effectiveSimilarities.map { (it - meanEffSim) * (it - meanEffSim) }.average().toFloat()
+        val effSimStdDev = sqrt(effSimVariance)
 
-        Log.d(TAG, "Enrollment complete: ${centroids.size} centroid(s), OOD=$oodThreshold, " +
+        // Per-intent OOD threshold: μ_eff − max(2σ, σ_floor), clamped to [0.55, 0.90]
+        // The σ floor (0.08) prevents the threshold from being set too high when
+        // enrollment samples are artificially consistent (e.g., same position, same volume)
+        val effectiveSigma = maxOf(2.0f * effSimStdDev, MIN_SIGMA_FLOOR)
+        val oodThreshold = (meanEffSim - effectiveSigma).coerceIn(MIN_OOD_FLOOR, MAX_OOD_CEILING)
+
+        Log.d(TAG, "Enrollment complete: ${centroids.size} centroid(s), OOD=$oodThreshold " +
+                "(meanEffSim=$meanEffSim, σ=$effSimStdDev, effectiveσ=$effectiveSigma), " +
                 "bifurcated=$bifurcated, valid=${validEmbeddings.size}/${embeddings.size}")
 
         return EnrollmentResult(
@@ -312,7 +337,7 @@ object PrototypicalMatcher {
      * Applies Centroid Count Penalty (CCP):
      *   Effective_Sim = Max_Sim - (K - 1) * CCP_PENALTY
      *
-     * @param liveEmbedding L2-normalized 2048-D live vector
+     * @param liveEmbedding L2-normalized 1024-D live vector
      * @param centroids 1 or 2 L2-normalized centroids for this intent
      * @param intentName Name of the intent
      * @param outputPhrase Translation output phrase
