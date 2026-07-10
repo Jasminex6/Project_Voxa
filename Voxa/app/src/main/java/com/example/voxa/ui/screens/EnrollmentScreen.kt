@@ -96,7 +96,7 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
 
                 val audioRecord = try {
                     AudioRecord(
-                        MediaRecorder.AudioSource.VOICE_RECOGNITION, // Must match VoxaListenerService for gain parity
+                        MediaRecorder.AudioSource.MIC, // Reverted to MIC to avoid overly aggressive hardware AGC
                         sampleRate,
                         channelConfig,
                         audioFormat,

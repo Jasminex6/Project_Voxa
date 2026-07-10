@@ -169,7 +169,7 @@ class VoxaListenerService : Service() {
             try {
                 // Initialize the AudioRecord interface to access the microphone hardware
                 audioRecord = AudioRecord(
-                    MediaRecorder.AudioSource.VOICE_RECOGNITION, // VOICE_RECOGNITION applies HW AGC for consistent gain across devices
+                    MediaRecorder.AudioSource.MIC, // Reverted to MIC to avoid overly aggressive hardware AGC
                     sampleRate,
                     channelConfig,
                     audioFormat,
