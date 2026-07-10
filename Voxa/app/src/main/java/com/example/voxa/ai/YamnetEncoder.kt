@@ -39,17 +39,24 @@ class YamnetEncoder(private val context: Context, modelName: String = "yamnet.tf
         private const val MIN_SAMPLES = 15600
 
         /**
-         * Prepares a raw PCM speech segment for YAMNet by converting to Float
-         * and normalizing to exactly [TARGET_SAMPLES] (1.44s) via loop-pad or center-crop.
+         * Prepares a raw PCM speech segment for YAMNet by converting to Float,
+         * normalizing to exactly [TARGET_SAMPLES] (1.44s) via loop-pad or center-crop,
+         * and applying software RMS gain normalization.
          *
          * Uses **loop (repeat) padding** instead of zero-padding to preserve the
          * spectral texture of the vocalization in YAMNet's mel spectrogram.
-         * This matches the notebook's `np.tile()` behavior, ensuring enrollment
-         * and live inference produce comparable embeddings.
+         *
+         * **Software gain normalization** (Fix #7) replaces hardware AGC:
+         * YAMNet's log-mel features are amplitude-sensitive, so different mic gains
+         * produce different embeddings for the same sound. By normalizing every
+         * segment to a fixed target RMS, we get device independence without
+         * relying on Android's VOICE_RECOGNITION AGC (which can over-compress).
          *
          * @param pcmInt16 Raw 16-bit PCM speech segment at 16kHz
-         * @return FloatArray of exactly [TARGET_SAMPLES] values in [-1.0, 1.0]
+         * @return FloatArray of exactly [TARGET_SAMPLES] values, RMS-normalized
          */
+        private const val TARGET_RMS = 0.05f // Target RMS for gain normalization
+
         fun prepareAudioWindow(pcmInt16: ShortArray): FloatArray {
             val floats = FloatArray(TARGET_SAMPLES)
             if (pcmInt16.isEmpty()) return floats
@@ -67,6 +74,20 @@ class YamnetEncoder(private val context: Context, modelName: String = "yamnet.tf
                     floats[i] = pcmInt16[i % pcmInt16.size] / 32768.0f
                 }
             }
+
+            // Software RMS gain normalization (Fix #7)
+            // Scale the entire window so its RMS equals TARGET_RMS.
+            // This makes embeddings invariant to mic gain differences across devices.
+            var sumSq = 0.0f
+            for (v in floats) sumSq += v * v
+            val rms = sqrt(sumSq / floats.size)
+            if (rms > 1e-6f) {
+                val gain = TARGET_RMS / rms
+                for (i in floats.indices) {
+                    floats[i] = (floats[i] * gain).coerceIn(-1.0f, 1.0f)
+                }
+            }
+
             return floats
         }
 
@@ -168,17 +189,23 @@ class YamnetEncoder(private val context: Context, modelName: String = "yamnet.tf
     }
 
     /**
-     * Convenience method: prepares the window, saves debug wav, and extracts the embedding.
+     * Convenience method: prepares the window and extracts the embedding.
+     * Debug WAV saving and verbose logging are gated behind BuildConfig.DEBUG (Fix #8: privacy).
      */
     fun extractFromPcm(pcmInt16: ShortArray): FloatArray {
-        android.util.Log.e("VoxaDebug", "YamnetEncoder.extractFromPcm called! pcm size: ${pcmInt16.size}")
+        if (com.example.voxa.BuildConfig.DEBUG) {
+            android.util.Log.d("VoxaDebug", "YamnetEncoder.extractFromPcm called, pcm size: ${pcmInt16.size}")
+        }
         try {
             val window = prepareAudioWindow(pcmInt16)
-            AudioDebugUtils.saveDebugWav(window, context, "debug_audio")
-            android.util.Log.e("VoxaDebug", "saveDebugWav finished, about to extractEmbedding")
+            if (com.example.voxa.BuildConfig.DEBUG) {
+                AudioDebugUtils.saveDebugWav(window, context, "debug_audio")
+            }
             return extractEmbedding(window)
         } catch (e: Throwable) {
-            android.util.Log.e("VoxaDebug", "CRASH in extractFromPcm: ${e.javaClass.simpleName} - ${e.message}", e)
+            if (com.example.voxa.BuildConfig.DEBUG) {
+                android.util.Log.e("VoxaDebug", "CRASH in extractFromPcm: ${e.javaClass.simpleName} - ${e.message}", e)
+            }
             throw e
         }
     }

@@ -118,29 +118,29 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                     return@withContext
                 }
 
-                val pcmBufferList = mutableListOf<Short>()
+                val pcmBuffer = ShortArray(sampleRate * 3) // Pre-allocate 3s max buffer (no autoboxing)
+                var pcmOffset = 0
                 val readBuffer = ShortArray(1024)
                 audioRecord.startRecording()
 
                 try {
                     // Maximum 2.5 seconds to prevent memory overflow
                     val maxSamples = (sampleRate * 2.5).toInt()
-                    while (isRecordingSample && pcmBufferList.size < maxSamples) {
+                    while (isRecordingSample && pcmOffset < maxSamples) {
                         val readSize = audioRecord.read(readBuffer, 0, readBuffer.size)
                         if (readSize > 0) {
+                            val copyLen = minOf(readSize, pcmBuffer.size - pcmOffset)
+                            System.arraycopy(readBuffer, 0, pcmBuffer, pcmOffset, copyLen)
+                            pcmOffset += copyLen
+                            // Update live volume level
                             var maxVal = 0
                             for (i in 0 until readSize) {
-                                val sample = readBuffer[i]
-                                pcmBufferList.add(sample)
-                                val absVal = abs(sample.toInt())
-                                if (absVal > maxVal) {
-                                    maxVal = absVal
-                                }
+                                val absVal = abs(readBuffer[i].toInt())
+                                if (absVal > maxVal) maxVal = absVal
                             }
-                            // Update live volume level
                             volumeLevel = (maxVal.toFloat() / 26214f).coerceIn(0f, 1f)
                         }
-                        delay(20)
+                        // No delay() — AudioRecord.read() already blocks until data is ready
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
@@ -153,10 +153,9 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                     }
                 }
 
-                val rawPcm = pcmBufferList.toShortArray()
+                val rawPcm = pcmBuffer.copyOfRange(0, pcmOffset)
                 
-                // Use the exact same VAD engine as live listening to extract the segment, 
-                // preserving the natural trailing room noise required for YAMNet matching.
+                // Use the exact same VAD engine as live listening to extract the segment
                 val vad = com.example.voxa.ai.VoxaVAD()
                 val segments = vad.processAudio(rawPcm)
                 
@@ -169,7 +168,17 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                         return@withContext
                     }
                     
-                    val processedPcm = segments[0]
+                    // PARITY FIX: Apply the same silence trim as inference (VoxaClassifierEngine.processAudioBlock)
+                    // Without this, enrollment embeddings include trailing silence that gets loop-padded,
+                    // while inference embeddings are trimmed — causing a systematic cosine offset.
+                    val trimmedSegment = com.example.voxa.utils.AudioFileHelper.trimSilence(segments[0])
+                    
+                    if (trimmedSegment.isEmpty() || trimmedSegment.size < 4000) { // < 250ms after trim
+                        Toast.makeText(context, "Audio too quiet after trimming. Please speak louder.", Toast.LENGTH_SHORT).show()
+                        return@withContext
+                    }
+                    
+                    val processedPcm = trimmedSegment
                     
                     try {
                         AudioFileHelper.validateDuration(processedPcm)

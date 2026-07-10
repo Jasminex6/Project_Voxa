@@ -76,6 +76,16 @@ class VoxaClassifierEngine(
                 continue
             }
 
+            // Dimension guard: reject stale centroids from previous pipeline versions (e.g. 2048-D)
+            // Without this, cosineSimilarity's require(a.size == b.size) throws on every utterance,
+            // which gets swallowed as a generic "Classification error" in the listener service.
+            val expectedDim = YamnetEncoder.OUTPUT_DIM
+            if (centroids.any { it.size != expectedDim }) {
+                Log.e(TAG, "⚠️ Intent '${intent.intentName}' has stale ${centroids[0].size}-D centroids " +
+                        "(expected ${expectedDim}-D). Re-enrollment required — skipping this intent.")
+                continue
+            }
+
             result.add(IntentData(
                 intentName = intent.intentName,
                 outputPhrase = intent.outputPhrase,
@@ -89,14 +99,27 @@ class VoxaClassifierEngine(
         return result
     }
 
-    override fun processAudioBlock(pcmData: ShortArray): ClassificationResult? {
-        // ── Step 1: Feed audio frames to persistent VAD (state preserved across blocks) ──
-        val frameSize = 320 // 20ms at 16kHz
-        val completedSegments = mutableListOf<ShortArray>()
+    // Carry-over buffer for tail samples from previous audio block (Fix #5)
+    // minBufferSize is not guaranteed to be a multiple of frameSize (320),
+    // so we can lose up to 319 samples per block — enough to split a word boundary
+    private var carryOver: ShortArray = ShortArray(0)
 
+    override fun processAudioBlock(pcmData: ShortArray): ClassificationResult? {
+        // ── Step 1: Prepend carry-over from previous block, then feed frames to VAD ──
+        val frameSize = 320 // 20ms at 16kHz
+        val combined: ShortArray
+        if (carryOver.isNotEmpty()) {
+            combined = ShortArray(carryOver.size + pcmData.size)
+            System.arraycopy(carryOver, 0, combined, 0, carryOver.size)
+            System.arraycopy(pcmData, 0, combined, carryOver.size, pcmData.size)
+        } else {
+            combined = pcmData
+        }
+
+        val completedSegments = mutableListOf<ShortArray>()
         var offset = 0
-        while (offset + frameSize <= pcmData.size) {
-            val frame = pcmData.copyOfRange(offset, offset + frameSize)
+        while (offset + frameSize <= combined.size) {
+            val frame = combined.copyOfRange(offset, offset + frameSize)
             val (_, segment) = vad.processFrame(frame)
             if (segment != null) {
                 completedSegments.add(segment)
@@ -104,72 +127,83 @@ class VoxaClassifierEngine(
             offset += frameSize
         }
 
+        // Save remainder for next block
+        carryOver = if (offset < combined.size) {
+            combined.copyOfRange(offset, combined.size)
+        } else {
+            ShortArray(0)
+        }
+
         if (completedSegments.isEmpty()) {
             return null // No complete speech segment yet — continue listening
         }
 
-        // Process the first completed speech segment
-        val rawSegment = completedSegments[0]
-        Log.d(TAG, "VAD completed segment: ${rawSegment.size} samples (${rawSegment.size / 16000.0}s)")
+        // Process ALL completed segments (Fix #5: second segment in same block was previously dropped)
+        for (rawSegment in completedSegments) {
+            Log.d(TAG, "VAD completed segment: ${rawSegment.size} samples (${rawSegment.size / 16000.0}s)")
 
-        // ── Step 2: Silence trim to match enrollment pre-processing ──
-        val trimmedSegment = AudioFileHelper.trimSilence(rawSegment)
-        if (trimmedSegment.size < 4000) { // Less than 250ms of actual speech (unified with AudioFileHelper)
-            Log.d(TAG, "Segment too short after trimming (${trimmedSegment.size} samples, ${trimmedSegment.size / 16.0}ms) — skipping")
-            return null
+            // ── Step 2: Silence trim to match enrollment pre-processing ──
+            val trimmedSegment = AudioFileHelper.trimSilence(rawSegment)
+            if (trimmedSegment.size < 4000) { // Less than 250ms of actual speech
+                Log.d(TAG, "Segment too short after trimming (${trimmedSegment.size} samples, ${trimmedSegment.size / 16.0}ms) — skipping")
+                continue
+            }
+
+            // ── Step 3: Check encoder readiness ──
+            if (!yamnetEncoder.isValid()) {
+                return ClassificationResult(
+                    isMatch = false, intentName = null, outputPhrase = null,
+                    audioAssetPath = null, confidence = 0f,
+                    reason = "YAMNet encoder not loaded"
+                )
+            }
+
+            // ── Step 4: Extract 1024-D embedding via YAMNet mean-pooling ──
+            val liveEmbedding: FloatArray
+            try {
+                liveEmbedding = yamnetEncoder.extractFromPcm(trimmedSegment)
+            } catch (e: Exception) {
+                Log.e(TAG, "YAMNet embedding extraction failed: ${e.message}")
+                continue // Try next segment instead of failing entirely
+            }
+
+            // ── Step 5: Check enrolled intents ──
+            if (parsedIntentData.isEmpty()) {
+                return ClassificationResult(
+                    isMatch = false, intentName = null, outputPhrase = null,
+                    audioAssetPath = null, confidence = 0f,
+                    reason = "No enrolled templates available"
+                )
+            }
+
+            // ── Step 6: Score live embedding against all enrolled intents ──
+            val scores = parsedIntentData.map { intentData ->
+                PrototypicalMatcher.scoreIntent(
+                    liveEmbedding = liveEmbedding,
+                    centroids = intentData.centroids,
+                    intentName = intentData.intentName,
+                    outputPhrase = intentData.outputPhrase,
+                    audioAssetPath = intentData.audioAssetPath,
+                    oodThreshold = intentData.oodThreshold
+                )
+            }
+
+            // Log all scores for debugging
+            for (score in scores) {
+                Log.d(TAG, "  ${score.intentName}: raw=${String.format("%.3f", score.rawSimilarity)}, " +
+                        "eff=${String.format("%.3f", score.effectiveSimilarity)}, " +
+                        "centroids=${score.centroidCount}, OOD=${String.format("%.3f", score.oodThreshold)}")
+            }
+
+            // ── Step 7: Evaluate OOD Gate + Margin Gate ──
+            val result = PrototypicalMatcher.evaluateGates(scores)
+            if (result.isMatch) {
+                return result // Return first valid match
+            }
+            // If not a match, log and continue to next segment
+            Log.d(TAG, "Segment rejected: ${result.reason}")
         }
 
-        // ── Step 3: Check encoder readiness ──
-        if (!yamnetEncoder.isValid()) {
-            return ClassificationResult(
-                isMatch = false, intentName = null, outputPhrase = null,
-                audioAssetPath = null, confidence = 0f,
-                reason = "YAMNet encoder not loaded"
-            )
-        }
-
-        // ── Step 4: Extract 1024-D embedding via YAMNet mean-pooling ──
-        val liveEmbedding: FloatArray
-        try {
-            liveEmbedding = yamnetEncoder.extractFromPcm(trimmedSegment)
-        } catch (e: Exception) {
-            Log.e(TAG, "YAMNet embedding extraction failed: ${e.message}")
-            return ClassificationResult(
-                isMatch = false, intentName = null, outputPhrase = null,
-                audioAssetPath = null, confidence = 0f,
-                reason = "Embedding extraction failed: ${e.message}"
-            )
-        }
-
-        // ── Step 5: Check enrolled intents ──
-        if (parsedIntentData.isEmpty()) {
-            return ClassificationResult(
-                isMatch = false, intentName = null, outputPhrase = null,
-                audioAssetPath = null, confidence = 0f,
-                reason = "No enrolled templates available"
-            )
-        }
-
-        // ── Step 6: Score live embedding against all enrolled intents ──
-        val scores = parsedIntentData.map { intentData ->
-            PrototypicalMatcher.scoreIntent(
-                liveEmbedding = liveEmbedding,
-                centroids = intentData.centroids,
-                intentName = intentData.intentName,
-                outputPhrase = intentData.outputPhrase,
-                audioAssetPath = intentData.audioAssetPath,
-                oodThreshold = intentData.oodThreshold
-            )
-        }
-
-        // Log all scores for debugging
-        for (score in scores) {
-            Log.d(TAG, "  ${score.intentName}: raw=${String.format("%.3f", score.rawSimilarity)}, " +
-                    "eff=${String.format("%.3f", score.effectiveSimilarity)}, " +
-                    "centroids=${score.centroidCount}, OOD=${String.format("%.3f", score.oodThreshold)}")
-        }
-
-        // ── Step 7: Evaluate OOD Gate + Margin Gate ──
-        return PrototypicalMatcher.evaluateGates(scores)
+        return null // No segment matched
     }
 }

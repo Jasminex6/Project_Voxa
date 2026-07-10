@@ -58,7 +58,7 @@ object AudioFileHelper {
     }
 
     /**
-     * Validates that the trimmed PCM data duration is between 200ms (0.2s) and 4000ms (4.0s).
+     * Validates that the trimmed PCM data duration is between 250ms (0.25s) and 2500ms (2.5s).
      * Throws IllegalArgumentException if validation fails.
      */
     fun validateDuration(pcmData: ShortArray) {

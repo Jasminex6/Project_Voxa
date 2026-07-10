@@ -51,9 +51,10 @@ class VoxaVAD(private val config: VADConfig = VADConfig()) {
     private var segmentSampleCount: Int = 0
 
     // ── Adaptive threshold state ──
-    // Tracks ambient RMS over a rolling window of non-speech frames
+    // Tracks ambient RMS over a rolling window of recent frames (speech + silence)
     private val ambientRmsHistory = ArrayDeque<Double>(config.ambientWindowFrames)
     private var currentThreshold: Double = config.energyThreshold
+    private var consecutiveDiscards: Int = 0 // Tracks how many segments were discarded in a row
 
     // ── Pre-roll buffer ──
     // Stores recent frames so we can include onset frames before the trigger confirmation
@@ -73,6 +74,7 @@ class VoxaVAD(private val config: VADConfig = VADConfig()) {
      * Returns the current adaptive energy threshold.
      * Useful for debugging/logging.
      */
+    fun getConsecutiveDiscards(): Int = consecutiveDiscards
     fun getCurrentThreshold(): Double = currentThreshold
 
     /**
@@ -94,8 +96,13 @@ class VoxaVAD(private val config: VADConfig = VADConfig()) {
     }
 
     /**
-     * Updates the ambient RMS estimate from a non-speech frame.
-     * Called only when we're in SILENCE state (not during speech collection).
+     * Updates the ambient RMS estimate.
+     *
+     * FIX for Fable #4: The old version only updated when rms < currentThreshold,
+     * which meant if ambient noise rose above the threshold, every frame was classified
+     * as speech, segments hit maxSamples and got discarded, and the threshold could
+     * never adapt upward. Now we unconditionally feed all non-speech-state frames
+     * into the rolling window, allowing the threshold to track rising ambient noise.
      */
     private fun updateAmbientEstimate(frameShorts: ShortArray) {
         var sumSquares = 0.0
@@ -104,18 +111,33 @@ class VoxaVAD(private val config: VADConfig = VADConfig()) {
         }
         val rms = sqrt(sumSquares / frameShorts.size)
 
-        // Only add to ambient if it's below the current threshold (definitely not speech)
-        if (rms < currentThreshold) {
-            if (ambientRmsHistory.size >= config.ambientWindowFrames) {
-                ambientRmsHistory.removeFirst()
-            }
-            ambientRmsHistory.addLast(rms)
+        if (ambientRmsHistory.size >= config.ambientWindowFrames) {
+            ambientRmsHistory.removeFirst()
+        }
+        ambientRmsHistory.addLast(rms)
 
-            // Recompute threshold from rolling average
-            if (ambientRmsHistory.size >= 10) { // Need at least 10 frames (~200ms) for stable estimate
-                val avgAmbient = ambientRmsHistory.average()
-                currentThreshold = maxOf(config.adaptiveFloor, config.adaptiveMultiplier * avgAmbient)
+        // Recompute threshold from rolling average
+        if (ambientRmsHistory.size >= 10) { // Need at least 10 frames (~200ms) for stable estimate
+            val avgAmbient = ambientRmsHistory.average()
+            currentThreshold = maxOf(config.adaptiveFloor, config.adaptiveMultiplier * avgAmbient)
+        }
+    }
+
+    /**
+     * Called when a segment is discarded (too long or too short).
+     * If we get too many consecutive discards, force a threshold reset from
+     * recent frames — this breaks the "stuck loud" deadlock from Fable #4.
+     */
+    private fun onSegmentDiscarded() {
+        consecutiveDiscards++
+        if (consecutiveDiscards >= 3) {
+            // Force the threshold up: assume the recent "speech" was actually ambient
+            // by feeding the last few segment frames into the ambient estimate
+            val recentFrames = segmentBuffer.takeLast(minOf(50, segmentBuffer.size))
+            for (frame in recentFrames) {
+                updateAmbientEstimate(frame)
             }
+            consecutiveDiscards = 0
         }
     }
 
@@ -176,9 +198,15 @@ class VoxaVAD(private val config: VADConfig = VADConfig()) {
                         val segment = concatenateBuffers(segmentBuffer)
                         reset()
 
-                        return if (segment.size in config.minSamples..config.maxSamples) {
-                            Pair(VADState.SEGMENT_COMPLETE, segment)
+                        return if (segment.size >= config.minSamples) {
+                            // Truncate to maxSamples if needed (Fix #6: don't discard long vocalizations)
+                            val finalSegment = if (segment.size > config.maxSamples) {
+                                segment.copyOfRange(0, config.maxSamples)
+                            } else segment
+                            consecutiveDiscards = 0
+                            Pair(VADState.SEGMENT_COMPLETE, finalSegment)
                         } else {
+                            onSegmentDiscarded()
                             Pair(VADState.DISCARDED, null)
                         }
                     }
@@ -186,10 +214,13 @@ class VoxaVAD(private val config: VADConfig = VADConfig()) {
                     silenceFrameCount = 0
                 }
 
-                // Safety: reject if segment is too long
+                // Safety: truncate if segment is too long (Fix #6: truncate, don't discard)
                 if (segmentSampleCount > config.maxSamples) {
+                    val segment = concatenateBuffers(segmentBuffer)
+                    val truncated = segment.copyOfRange(0, config.maxSamples)
                     reset()
-                    return Pair(VADState.DISCARDED, null)
+                    consecutiveDiscards = 0
+                    return Pair(VADState.SEGMENT_COMPLETE, truncated)
                 }
             }
 

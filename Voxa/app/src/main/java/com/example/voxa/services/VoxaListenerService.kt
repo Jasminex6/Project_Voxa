@@ -91,10 +91,11 @@ class VoxaListenerService : Service() {
 
         // 2. Acquire a CPU WakeLock.
         // Tells the operating system: "Keep the CPU running even if the screen turns off, because we are actively
-        // listening for vocalizations." We set a safety timeout of 10 minutes to prevent battery drain bugs.
+        // listening for vocalizations." No timeout — released explicitly in onDestroy().
+        // Fix #9: the 10-minute timeout caused background listening (including SOS trigger) to silently die.
         val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
         wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Voxa::ListenerLock").apply {
-            acquire(10 * 60 * 1000L /* 10 minutes safety timeout */)
+            acquire()
         }
 
         // 3. Load AI pipeline data from Room then start recording
