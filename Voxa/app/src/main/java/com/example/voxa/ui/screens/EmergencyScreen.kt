@@ -1,5 +1,6 @@
 package com.example.voxa.ui.screens
 
+import androidx.compose.ui.res.stringResource
 import android.content.Intent
 import android.net.Uri
 import android.media.MediaPlayer
@@ -130,23 +131,25 @@ fun EmergencyScreen(viewModel: IVoxaViewModel) {
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Slate900)
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        // Redesigned Header section
+    val layoutDir = if (java.util.Locale.getDefault().language == "ar") androidx.compose.ui.unit.LayoutDirection.Rtl else androidx.compose.ui.unit.LayoutDirection.Ltr
+    CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides layoutDir) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Slate900)
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Redesigned Header section
         Text(
-            text = "Emergency Actions",
+            text = stringResource(com.example.voxa.R.string.emergency_actions_title),
             fontSize = 22.sp,
             fontWeight = FontWeight.Bold,
             color = Color.White,
             modifier = Modifier.padding(top = 16.dp)
         )
         Text(
-            text = "Quick access to distress triggers.",
+            text = stringResource(com.example.voxa.R.string.emergency_actions_subtitle),
             fontSize = 13.sp,
             color = Slate400,
             modifier = Modifier.padding(top = 6.dp, bottom = 24.dp)
@@ -155,9 +158,8 @@ fun EmergencyScreen(viewModel: IVoxaViewModel) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .weight(1f),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             // ══════════════════════════════════════
             // 📱 SECTION 1: PHONE
@@ -184,7 +186,7 @@ fun EmergencyScreen(viewModel: IVoxaViewModel) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
+                        .padding(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
@@ -194,7 +196,7 @@ fun EmergencyScreen(viewModel: IVoxaViewModel) {
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(44.dp)
+                                .size(36.dp)
                                 .clip(RoundedCornerShape(8.dp))
                                 .background(Sky400.copy(alpha = 0.15f)),
                             contentAlignment = Alignment.Center
@@ -203,20 +205,20 @@ fun EmergencyScreen(viewModel: IVoxaViewModel) {
                                 imageVector = Icons.Default.Phone,
                                 contentDescription = null,
                                 tint = Sky400,
-                                modifier = Modifier.size(24.dp)
+                                modifier = Modifier.size(20.dp)
                             )
                         }
-                        Spacer(modifier = Modifier.width(16.dp))
+                        Spacer(modifier = Modifier.width(10.dp))
                         Column {
                             Text(
-                                text = "Call Emergency Contact",
-                                fontSize = 16.sp,
+                                text = stringResource(com.example.voxa.R.string.emergency_call_title),
+                                fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
                             )
                             Text(
-                                text = "Instantly dial ${emergencyContactName.ifBlank { emergencyPhone }}",
-                                fontSize = 12.sp,
+                                text = stringResource(com.example.voxa.R.string.emergency_call_desc, emergencyContactName.ifBlank { emergencyPhone }),
+                                fontSize = 11.sp,
                                 color = Slate400
                             )
                         }
@@ -253,7 +255,7 @@ fun EmergencyScreen(viewModel: IVoxaViewModel) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
+                        .padding(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
@@ -263,7 +265,7 @@ fun EmergencyScreen(viewModel: IVoxaViewModel) {
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(44.dp)
+                                .size(36.dp)
                                 .clip(RoundedCornerShape(8.dp))
                                 .background(Sky400.copy(alpha = 0.15f)),
                             contentAlignment = Alignment.Center
@@ -272,20 +274,20 @@ fun EmergencyScreen(viewModel: IVoxaViewModel) {
                                 imageVector = Icons.Default.Mail,
                                 contentDescription = null,
                                 tint = Sky400,
-                                modifier = Modifier.size(24.dp)
+                                modifier = Modifier.size(20.dp)
                             )
                         }
-                        Spacer(modifier = Modifier.width(16.dp))
+                        Spacer(modifier = Modifier.width(10.dp))
                         Column {
                             Text(
-                                text = "Emergency SMS",
-                                fontSize = 16.sp,
+                                text = stringResource(com.example.voxa.R.string.emergency_sms_title),
+                                fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
                             )
                             Text(
-                                text = "Send SMS to ${emergencyContactName.ifBlank { "emergency contact" }}",
-                                fontSize = 12.sp,
+                                text = stringResource(com.example.voxa.R.string.emergency_sms_desc, emergencyContactName.ifBlank { stringResource(com.example.voxa.R.string.emergency_contact_fallback) }),
+                                fontSize = 11.sp,
                                 color = Slate400
                             )
                         }
@@ -334,7 +336,7 @@ fun EmergencyScreen(viewModel: IVoxaViewModel) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
+                        .padding(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
@@ -344,7 +346,7 @@ fun EmergencyScreen(viewModel: IVoxaViewModel) {
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(44.dp)
+                                .size(36.dp)
                                 .clip(RoundedCornerShape(8.dp))
                                 .background(Color(0xFF25D366).copy(alpha = 0.15f)),
                             contentAlignment = Alignment.Center
@@ -353,20 +355,20 @@ fun EmergencyScreen(viewModel: IVoxaViewModel) {
                                 imageVector = Icons.Default.Phone,
                                 contentDescription = null,
                                 tint = Color(0xFF25D366),
-                                modifier = Modifier.size(24.dp)
+                                modifier = Modifier.size(20.dp)
                             )
                         }
-                        Spacer(modifier = Modifier.width(16.dp))
+                        Spacer(modifier = Modifier.width(10.dp))
                         Column {
                             Text(
-                                text = "WhatsApp Call",
-                                fontSize = 16.sp,
+                                text = stringResource(com.example.voxa.R.string.emergency_whatsapp_call_title),
+                                fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
                             )
                             Text(
-                                text = "Call ${emergencyContactName.ifBlank { "emergency contact" }} via WhatsApp",
-                                fontSize = 12.sp,
+                                text = stringResource(com.example.voxa.R.string.emergency_whatsapp_call_desc, emergencyContactName.ifBlank { stringResource(com.example.voxa.R.string.emergency_contact_fallback) }),
+                                fontSize = 11.sp,
                                 color = Slate400
                             )
                         }
@@ -411,7 +413,7 @@ fun EmergencyScreen(viewModel: IVoxaViewModel) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
+                        .padding(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
@@ -421,7 +423,7 @@ fun EmergencyScreen(viewModel: IVoxaViewModel) {
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(44.dp)
+                                .size(36.dp)
                                 .clip(RoundedCornerShape(8.dp))
                                 .background(Color(0xFF25D366).copy(alpha = 0.15f)),
                             contentAlignment = Alignment.Center
@@ -430,20 +432,20 @@ fun EmergencyScreen(viewModel: IVoxaViewModel) {
                                 imageVector = Icons.Default.Mail,
                                 contentDescription = null,
                                 tint = Color(0xFF25D366),
-                                modifier = Modifier.size(24.dp)
+                                modifier = Modifier.size(20.dp)
                             )
                         }
-                        Spacer(modifier = Modifier.width(16.dp))
+                        Spacer(modifier = Modifier.width(10.dp))
                         Column {
                             Text(
-                                text = "WhatsApp Message",
-                                fontSize = 16.sp,
+                                text = stringResource(com.example.voxa.R.string.emergency_whatsapp_msg_title),
+                                fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
                             )
                             Text(
-                                text = "Send message to ${emergencyContactName.ifBlank { "emergency contact" }}",
-                                fontSize = 12.sp,
+                                text = stringResource(com.example.voxa.R.string.emergency_whatsapp_msg_desc, emergencyContactName.ifBlank { stringResource(com.example.voxa.R.string.emergency_contact_fallback) }),
+                                fontSize = 11.sp,
                                 color = Slate400
                             )
                         }
@@ -518,7 +520,7 @@ fun EmergencyScreen(viewModel: IVoxaViewModel) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
+                        .padding(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
@@ -528,7 +530,7 @@ fun EmergencyScreen(viewModel: IVoxaViewModel) {
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(44.dp)
+                                .size(36.dp)
                                 .clip(RoundedCornerShape(8.dp))
                                 .background(Color(0xFF25D366).copy(alpha = 0.15f)),
                             contentAlignment = Alignment.Center
@@ -537,20 +539,20 @@ fun EmergencyScreen(viewModel: IVoxaViewModel) {
                                 imageVector = Icons.Default.LocationOn,
                                 contentDescription = null,
                                 tint = Color(0xFF25D366),
-                                modifier = Modifier.size(24.dp)
+                                modifier = Modifier.size(20.dp)
                             )
                         }
-                        Spacer(modifier = Modifier.width(16.dp))
+                        Spacer(modifier = Modifier.width(10.dp))
                         Column {
                             Text(
-                                text = "Send Current Location",
-                                fontSize = 16.sp,
+                                text = stringResource(com.example.voxa.R.string.emergency_location_title),
+                                fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
                             )
                             Text(
-                                text = if (isFetchingLocation) "Getting location..." else "Send GPS pin via WhatsApp",
-                                fontSize = 12.sp,
+                                text = if (isFetchingLocation) stringResource(com.example.voxa.R.string.emergency_fetching_location) else stringResource(com.example.voxa.R.string.emergency_send_gps),
+                                fontSize = 11.sp,
                                 color = if (isFetchingLocation) Color(0xFF25D366) else Slate400
                             )
                         }
@@ -632,20 +634,20 @@ fun EmergencyScreen(viewModel: IVoxaViewModel) {
                                 imageVector = Icons.Default.NotificationsActive,
                                 contentDescription = null,
                                 tint = if (isAlarmActive) Color(0xFFF59E0B) else ErrorRed,
-                                modifier = Modifier.size(24.dp)
+                                modifier = Modifier.size(20.dp)
                             )
                         }
-                        Spacer(modifier = Modifier.width(16.dp))
+                        Spacer(modifier = Modifier.width(10.dp))
                         Column {
                             Text(
-                                text = "Emergency Siren",
-                                fontSize = 16.sp,
+                                text = stringResource(com.example.voxa.R.string.emergency_siren_title),
+                                fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
                             )
                             Text(
-                                text = if (isAlarmActive) "Release to mute siren" else "Hold for 2 seconds to play emergency siren",
-                                fontSize = 12.sp,
+                                text = if (isAlarmActive) stringResource(com.example.voxa.R.string.emergency_release_mute) else stringResource(com.example.voxa.R.string.emergency_hold_siren),
+                                fontSize = 11.sp,
                                 color = if (isAlarmActive) Color(0xFFF59E0B) else Slate400
                             )
                         }
@@ -655,6 +657,7 @@ fun EmergencyScreen(viewModel: IVoxaViewModel) {
 
             Spacer(modifier = Modifier.height(8.dp))
         }
+    }
     }
 }
 

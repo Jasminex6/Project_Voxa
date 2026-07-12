@@ -1,30 +1,158 @@
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">فوكسا</string>
+    <string name="quests_role_parent_named">أنا %1$s\u200F</string>
+    <string name="quests_rewards_add_some_parent">أضف بعض المكافآت لتحفيز طفلك</string>
 
-    <!-- Navigation Screen Titles -->
+    
+    <string name="dashboard_waiting_vocalizations">في انتظار أصوات الطفل...</string>
+    <string name="dashboard_tap_mic">انقر على الميكروفون لبدء المراقبة</string>
+    <string name="dashboard_listening">🎙️ جاري الاستماع...</string>
+    <string name="dashboard_ready_translate">🎙️ جاهز للترجمة</string>
+    <string name="dashboard_en">EN</string>
+    <string name="dashboard_ar">AR</string>
+    <string name="dashboard_caregiver_default_name">مقدم الرعاية</string>
+
+    
+    <string name="onboarding_dismiss">تخطي</string>
+    <string name="onboarding_back">رجوع</string>
+    <string name="onboarding_next">التالي</string>
+    <string name="onboarding_child_name">اسم الطفل</string>
+    <string name="onboarding_contact_name">اسم جهة الاتصال *</string>
+    <string name="onboarding_relation">صلة القرابة *</string>
+    <string name="onboarding_relation_hint">مثال: أخ، مربية</string>
+    <string name="onboarding_phone_number">رقم الهاتف *</string>
+    <string name="onboarding_phone_hint">0xxx xxx xxxx</string>
+    <string name="onboarding_emergency_sms">رسالة الطوارئ *</string>
+    <string name="onboarding_english">English</string>
+    <string name="onboarding_arabic">العربية</string>
+
+    
+    <string name="emergency_hold_secs">استمر بالضغط لثانيتين</string>
+    <string name="emergency_hold_siren">استمر بالضغط لثانيتين لتشغيل الإنذار</string>
+    <string name="emergency_release_mute">أفلت لكتم الإنذار</string>
+    <string name="emergency_send_gps">إرسال الموقع عبر واتساب</string>
+    <string name="emergency_fetching_location">جاري الحصول على الموقع...</string>
+
+    
+    <string name="quests_main_title">المهام</string>
+    <string name="quests_child_wallet_title">محفظة النجوم الخاصة بي 🌟</string>
+    <string name="quests_need_help">أحتاج مساعدة 🙋🏽‍♀️</string>
+    <string name="quests_i_did_it">لقد فعلتها 🎉\u200F</string>
+    <string name="quests_parent_badge_needs_verification">بانتظار التحقق</string>
+    <string name="quests_parent_badge_needs_help">الطفل يحتاج مساعدة</string>
+    <string name="quests_parent_badge_awaiting">بانتظار الطفل</string>
+    <string name="quests_parent_btn_cancel">إلغاء المهمة</string>
+    <string name="quests_parent_btn_ack_delete">تأكيد وحذف</string>
+    <string name="quests_notification_new_task_title">مهمة جديدة!</string>
+    <string name="quests_notification_new_task_desc">لديك مهمة جديدة: %1$s</string>
+    <string name="quests_notification_task_done_title">اكتملت المهمة! 🎉</string>
+    <string name="quests_notification_task_done_desc">أنهى الطفل: %1$s</string>
+    <string name="quests_great_job">عمل رائع 🌟\u200F</string>
+    <string name="quests_all_missions_done">اكتملت جميع المهام.</string>
+    <string name="quests_get_rewards">اذهب واحصل على مكافآتك 🎁\u200F</string>
+
+    
+    <string name="profile_looking_for_nearby">جاري البحث عن مستخدمين قريبين يفتحون فوكسا...</string>
+    <string name="profile_searching">جاري البحث...</string>
+
+    
+    <string name="speech_practice_title">🎯 تدريب النطق</string>
+    <string name="speech_practice_desc">اضغط على كلمة، واستمر في الضغط على الميكروفون للتحدث، واكسب النجوم</string>
+    <string name="speech_choose_word">اختر كلمة:</string>
+    <string name="speech_listen_example">استمع للمثال</string>
+    <string name="speech_recording">جاري التسجيل... حرر الزر لمعرفة النتيجة</string>
+    <string name="speech_scoring">جاري تقييم نطقك...</string>
+    <string name="speech_hold_mic">استمر بالضغط على الميكروفون وانطق الكلمة</string>
+    <string name="speech_practice_again">تدرب مجدداً 🎮</string>
+    <string name="speech_try_again">حاول مجدداً 💪</string>
+    <string name="speech_error_loud">تعذر معالجة الصوت. حاول التحدث بصوت أعلى 🔊</string>
+    <string name="speech_error_generic">حدث خطأ ما. دعنا نحاول مجدداً 🔄</string>
+    
+    <string-array name="speech_msg_3_stars">
+        <item>مذهل أنت بطل 🎉</item>
+        <item>رائع نطق مثالي 🏆</item>
+        <item>أحسنت صنعاً بطل 👑</item>
+        <item>لا يصدق صوتك مثالي ✨</item>
+        <item>ممتاز كان ذلك بلا أخطاء 🌟</item>
+    </string-array>
+    
+    <string-array name="speech_msg_2_stars">
+        <item>عمل رائع شبه مثالي 💪</item>
+        <item>قريب جداً من الكمال استمر 🚀</item>
+        <item>عمل رائع أنت تتحسن ⭐</item>
+        <item>جيد جداً فقط القليل بعد 🎯</item>
+        <item>مثير للإعجاب أنت على وشك الوصول 🌈</item>
+    </string-array>
+    
+    <string-array name="speech_msg_1_star">
+        <item>محاولة جيدة استمر في التدرب 😊</item>
+        <item>مجهود لطيف أنت تتعلم بسرعة 📚</item>
+        <item>أنت على الطريق الصحيح 🌱</item>
+        <item>استمر الممارسة تصنع الكمال 💡</item>
+        <item>هذه بداية رائعة حاول مرة أخرى 🎵</item>
+    </string-array>
+    
+    <string-array name="speech_msg_0_stars">
+        <item>دعنا نحاول مرة أخرى يمكنك فعل ذلك 🌈</item>
+        <item>لا تستسلم الممارسة تصنع الكمال 💫</item>
+        <item>مرة أخرى تستطيع فعلها 🎯</item>
+        <item>استمر في المحاولة كل محاولة مهمة 🦋</item>
+        <item>أنت شجاع للمحاولة هيا مرة أخرى 🌟</item>
+    </string-array>
+    
+    
+    <string name="word_water">ماء</string>
+    <string name="word_milk">حليب</string>
+    <string name="word_bread">خبز</string>
+    <string name="word_help">مساعدة</string>
+    <string name="word_mom">أمي</string>
+    <string name="word_dad">أبي</string>
+    <string name="profile_found">تم العثور على: %1$s</string>
+    <string name="profile_connecting_auto">جاري الاتصال تلقائياً...</string>
+    <string name="profile_connecting_to">جاري الاتصال بـ %1$s...</string>
+    <string name="profile_connected_sending">متصل جاري إرسال البيانات...</string>
+    <string name="profile_transferring">جاري نقل النوايا...</string>
+    <string name="profile_shared_success">تمت مشاركة الملف الشخصي بنجاح</string>
+    <string name="profile_error">خطأ: %1$s</string>
+    <string name="profile_cancel">إلغاء</string>
+
+    
+    <string name="gender_male">ولد</string>
+    <string name="gender_female">بنت</string>
+
+    
     <string name="title_home">الرئيسية</string>
     <string name="title_enroll">تسجيل</string>
     <string name="title_library">المكتبة</string>
     <string name="title_emergency">الطوارئ</string>
     <string name="title_profile">الملف الشخصي</string>
     <string name="title_practice">التدريب</string>
-
-    <!-- Onboarding Walkthrough -->
-    <string name="onboarding_title_1">مرحباً بك في فوكسا</string>
-    <string name="onboarding_desc_1">فوكسا يترجم الأصوات الفريدة لطفلك إلى عبارات واضحة باللهجة المصرية، مما يساعده على التعبير عن احتياجاته فوراً.</string>
-    <string name="onboarding_title_2">ترجمة مخصصة للطفل</string>
-    <string name="onboarding_desc_2">يقوم مقدمو الرعاية بتسجيل نماذج صوتية مخصصة (مثل همهمات أو نغمات معينة) وربطها بالمعاني المطلوبة. يقوم فوكسا بمقارنتها والتعرف عليها بدون إنترنت.</string>
-    <string name="onboarding_title_3">صلاحيات النظام</string>
-    <string name="onboarding_desc_3">لمراقبة الصوت وإرسال التنبيهات، يحتاج فوكسا صلاحية الميكروفون، الإشعارات، والموقع الجغرافي. تتم معالجة الصوت محلياً بالكامل ولا يغادر هذا الجهاز أبداً.</string>
-    <string name="onboarding_title_4">إنشاء أول ملف شخصي</string>
-    <string name="onboarding_desc_4">لنبدأ بإنشاء ملف شخصي لطفلك. أدخل الاسم واختر الحزمة الصوتية المناسبة لنوعه.</string>
+    <string name="title_quests">المهام</string>
+    
+    <string name="onboarding_title_1">👋 مرحباً بك في فوكسا</string>
+    <string name="onboarding_desc_1">أداة تواصل شاملة تعتمد على الذكاء الاصطناعي ومصممة لترجمة أصوات طفلك الفريدة إلى كلمات منطوقة وإشعارات واضحة.</string>
+    <string name="onboarding_title_2">✨ كيف يعمل النظام</string>
+    <string name="onboarding_desc_2">١. سجل الأصوات أو الكلمات المخصصة التي يستخدمها طفلك.\n٢. قم بترجمتها إلى نص وصوت في الوقت الفعلي.\n٣. راقب الإشارات الصوتية محلياً وبأمان دون إنترنت.</string>
+    <string name="onboarding_title_3">🔒 بوابة الصلاحيات</string>
+    <string name="onboarding_desc_3">يرجى تفعيل الصلاحيات التالية لتشغيل ميزات فوكسا. جميع العمليات تتم على الجهاز نفسه.</string>
+    <string name="onboarding_title_4">👶 إعداد بيانات الطفل</string>
+    <string name="onboarding_desc_4">قم بإعداد الملف الشخصي لطفلك. اختيار الجنس الصحيح يضبط نبرة الصوت الناتجة.</string>
+    <string name="onboarding_avatar_title">اختر صورة رمزية</string>
+    <string name="onboarding_emergency_title">🚨 جهة اتصال الطوارئ</string>
+    <string name="onboarding_emergency_desc">قم بتعيين من سيتم الاتصال به في حالة الطوارئ.</string>
+    <string name="onboarding_emergency_msg_desc">سيتم إرسال هذه الرسالة عند تفعيل إجراء الطوارئ الخاص بالرسائل النصية.</string>
+    <string name="onboarding_choose_lang">Choose Language</string>
+    <string name="onboarding_choose_lang_ar">اختر اللغة</string>
     <string name="btn_next">التالي</string>
     <string name="btn_get_started">ابدأ الآن</string>
     <string name="btn_grant_permissions">منح الصلاحيات</string>
     <string name="btn_skip">تخطي</string>
 
-    <!-- Dashboard Screen -->
+    
     <string name="header_live_translation">الترجمة الفورية</string>
+    <string name="timeline_system_update">تحديث النظام</string>
+    <string name="timeline_detected_vocalization">تم رصد صوت</string>
     <string name="listening_active">🎙️ جاري الاستماع...</string>
     <string name="listening_ready">🎙️ جاهز للترجمة</string>
     <string name="listening_waiting">بانتظار نطق الطفل...</string>
@@ -39,29 +167,110 @@
     <string name="sidebar_caregivers_info">👨‍👩‍👧 بيانات مقدمي الرعاية</string>
     <string name="sidebar_settings">⚙️ الإعدادات</string>
     <string name="sidebar_data_management">💾 إدارة البيانات</string>
+    <string name="emergency_actions_title">إجراءات الطوارئ</string>
+    <string name="emergency_actions_subtitle">وصول سريع لخيارات الطوارئ.</string>
+    <string name="emergency_call_title">الاتصال بالطوارئ</string>
+    <string name="emergency_call_desc">اتصال فوري بـ %1$s</string>
+    <string name="emergency_sms_title">رسالة طوارئ</string>
+    <string name="emergency_sms_desc">إرسال رسالة إلى %1$s</string>
+    <string name="emergency_contact_fallback">جهة اتصال الطوارئ</string>
+    <string name="emergency_whatsapp_call_title">مكالمة واتساب</string>
+    <string name="emergency_whatsapp_call_desc">الاتصال بـ %1$s عبر الواتساب</string>
+    <string name="emergency_whatsapp_msg_title">رسالة واتساب</string>
+    <string name="emergency_whatsapp_msg_desc">إرسال رسالة إلى %1$s</string>
+    <string name="emergency_location_title">إرسال الموقع الحالي</string>
+    <string name="emergency_siren_title">صافرة إنذار</string>
+    <string name="quests_who_is_playing">من يلعب؟ 🤔</string>
+    <string name="quests_caregiver_gateway">بوابة مقدم الرعاية 🛡️</string>
+    <string name="quests_pin_prompt">قم بإنشاء رمز PIN من 4 أرقام لتأمين لوحة تحكم الوالدين.</string>
+    <string name="quests_caregiver_login">تسجيل دخول مقدم الرعاية</string>
+    <string name="quests_child_missions">مهام الطفل</string>
+    <string name="quests_my_missions">مهامي\u200F</string>
+    <string name="quests_reward_label">المكافأة: </string>
+    <string name="quests_unfulfilled_reward">مكافأة غير منفذة</string>
+    <string name="quests_child_spent">أنفق الطفل %1$d نجمة.</string>
+    
+    
+    <string name="quests_role_parent">أنا الوالد</string>
+    <string name="quests_role_parent_desc">إدارة المهام والمكافآت</string>
+    <string name="quests_role_child">أنا الطفل</string>
+    <string name="quests_role_child_desc">العب المهام واجمع النجوم</string>
+    <string name="quests_exit">الخروج من المهام</string>
+    <string name="quests_set_pin_title">تعيين رمز PIN</string>
+    <string name="quests_set_pin_label">أدخل رمز PIN من 4 أرقام</string>
+    <string name="quests_confirm_pin_label">تأكيد رمز PIN</string>
+    <string name="quests_back_to_role">العودة لاختيار الدور</string>
+    <string name="quests_enter_pin_label">أدخل رمز PIN</string>
+    <string name="quests_unlock_dashboard">فتح لوحة التحكم</string>
+    <string name="quests_forgot_pin">نسيت الرمز؟ قم بإعادة تعيينه</string>
+    
+    
+    <string name="quests_parent_dashboard_title">لوحة تحكم مقدم الرعاية 🛠️</string>
+    <string name="quests_parent_child_wallet">محفظة الطفل</string>
+    <string name="quests_parent_points">%1$d نقطة</string>
+    <string name="quests_parent_pending_rewards">المكافآت المعلقة للتنفيذ 🎁</string>
+    <string name="quests_parent_actionable_quests">المهام القابلة للتنفيذ</string>
+    <string name="quests_parent_all_caught_up">تم إنجاز كل شيء</string>
+    <string name="quests_parent_completed_history">سجل المهام المنجزة</string>
+    <string name="quests_parent_no_history">لا يوجد سجل بعد.</string>
+    <string name="quests_parent_reject">رفض</string>
+    <string name="quests_parent_approve">موافقة</string>
+    <string name="quests_parent_mark_given">تم التسليم ✅</string>
+    <string name="quests_parent_new_quest">مهمة جديدة 🎯</string>
+    <string name="quests_parent_task_title">عنوان المهمة</string>
+    <string name="quests_parent_task_desc">الوصف</string>
+    <string name="quests_parent_points_reward">مكافأة النقاط</string>
+    <string name="quests_parent_select_emoji">اختر رمزًا تعبيريًا:</string>
+    <string name="quests_parent_cancel">إلغاء</string>
+    <string name="quests_parent_assign">تعيين</string>
+
+    
+    <string name="quests_rewards_title">متجر المكافآت 🎁</string>
+    <string name="quests_rewards_available_stars">النجوم المتاحة</string>
+    <string name="quests_rewards_empty_store">المتجر فارغ</string>
+    <string name="quests_rewards_ask_caregiver">اطلب من مقدم الرعاية إضافة مكافآت.</string>
+    <string name="quests_rewards_new_reward">مكافأة جديدة 🎁</string>
+    <string name="quests_rewards_reward_name">اسم المكافأة</string>
+    <string name="quests_rewards_cost_stars">التكلفة (بالنجوم)</string>
+    <string name="quests_rewards_select_emoji">اختر رمزًا تعبيريًا:</string>
+    <string name="quests_rewards_cancel">إلغاء</string>
+    <string name="quests_rewards_add">إضافة</string>
+    <string name="quests_rewards_cost_format">%1$d ⭐</string>
+    <string name="language_toggle">اللغة / Language</string>
+    <string name="continuous_listening">الاستماع المستمر: مفعل</string>
+    <string name="no_emergency_contact_set">لم يتم تعيين جهة اتصال للطوارئ</string>
+    <string name="translated_prefix">الترجمة:</string>
+    <string name="confidence_prefix">الدقة:</string>
+    <string name="voice_pack_prefix">الحزمة الصوتية:</string>
+    <string name="none">لا يوجد</string>
+    <string name="relation_prefix">صلة القرابة:</string>
+    <string name="phone_prefix">الهاتف:</string>
+    <string name="message_prefix">الرسالة:</string>
+    <string name="conf_abbr">دقة</string>
+    <string name="sound_prefix">الصوت:</string>
     <string name="btn_manage_profiles">إدارة الملفات الشخصية</string>
     <string name="btn_edit_caregiver">✏️ تعديل بيانات مقدم الرعاية</string>
     <string name="btn_export_profile">📤 تصدير الملف والكلمات</string>
     <string name="btn_import_profile">📥 استيراد الملف والكلمات</string>
     <string name="btn_clear_timeline">🧹 مسح السجل اليومي</string>
-    <string name="toast_timeline_cleared">تم مسح السجل بنجاح!</string>
+    <string name="toast_timeline_cleared">تم مسح السجل بنجاح</string>
     <string name="dialog_edit_caregiver_title">تعديل بيانات مقدم الرعاية</string>
     <string name="dialog_edit_caregiver_name">الاسم</string>
     <string name="dialog_edit_caregiver_phone">رقم الهاتف</string>
     <string name="dialog_save">حفظ</string>
     <string name="dialog_cancel">إلغاء</string>
 
-    <!-- Library Screen -->
+    
     <string name="library_title">📚 مكتبة معاني الكلمات</string>
-    <string name="library_desc">إدارة معاني الأصوات المخصصة للطفل %1$s.</string>
+    <string name="library_desc">إدارة معاني الأصوات المخصصة للطفل.</string>
     <string name="library_no_profile">يرجى إنشاء أو تفعيل ملف شخصي أولاً\nلعرض وإدارة قاموس الكلمات.</string>
-    <string name="library_empty">لا توجد كلمات مسجلة بعد.\nاضغط على + إضافة صوت بالأسفل لتسجيل أول كلمة!</string>
+    <string name="library_empty">لا توجد كلمات مسجلة بعد.\nاضغط على + إضافة صوت بالأسفل لتسجيل أول كلمة</string>
     <string name="btn_add_sound">+ إضافة صوت</string>
     <string name="label_intent">المعنى: %1$s</string>
     <string name="label_phrase">الترجمة الصوتية: %1$s</string>
     <string name="label_audio">الملف الصوتي: %1$s</string>
 
-    <!-- Enrollment Screen -->
+    
     <string name="enroll_title">تسجيل صوت مخصص</string>
     <string name="enroll_subtitle">قم بتسجيل 3 عينات صوتية لتدريب القاموس الصوتي.</string>
     <string name="enroll_no_profile">يرجى إنشاء وتفعيل ملف شخصي أولاً\nلتسجيل أصوات جديدة للطفل.</string>
@@ -71,7 +280,7 @@
     <string name="field_translation">الترجمة باللهجة المصرية (مثال: أنا عايز ميّه)</string>
     <string name="enroll_progress_title">تقدم تسجيل العينات</string>
     <string name="enroll_collected_count">تم جمع: %1$d / 15 عينات</string>
-    <string name="enroll_timer_progress">استعد! العينة التالية تبدأ خلال 1.5 ثانية...</string>
+    <string name="enroll_timer_progress">استعد العينة التالية تبدأ خلال 1.5 ثانية...</string>
     <string name="enroll_guideline_tap">اضغط على \'تسجيل عينة\' للبدء، واضغط مرة أخرى للإيقاف.</string>
     <string name="btn_record">تسجيل\nالعينة</string>
     <string name="btn_stop">إيقاف</string>
@@ -81,23 +290,11 @@
     <string name="dialog_suggestions_title">💡 اقتراحات نطق شائعة</string>
     <string name="dialog_suggestions_desc">اختر كلمة أو عبارة شائعة لتعبئة التفاصيل تلقائياً:</string>
 
-    <!-- Emergency Screen -->
-    <string name="emergency_title">إجراءات الطوارئ</string>
-    <string name="emergency_desc">وصول سريع لنداءات الاستغاثة.</string>
-    <string name="emergency_call_services">اتصال بخدمات الطوارئ</string>
-    <string name="emergency_call_desc">الاتصال برقم الطوارئ فوراً (112)</string>
-    <string name="emergency_sms">رسالة استغاثة SMS</string>
-    <string name="emergency_sms_desc">إرسال تنبيه SMS لمقدمي الرعاية</string>
-    <string name="emergency_siren">إنذار الطوارئ</string>
-    <string name="emergency_siren_hold">اضغط مع الاستمرار لثانيتين لتشغيل صفارة الإنذار</string>
-    <string name="emergency_siren_release">اترك الزر لكتم صفارة الإنذار</string>
-    <string name="emergency_caregiver_alert">الاتصال بمقدم الرعاية الأول</string>
-    <string name="emergency_caregiver_desc">اتصل مباشرة برقم هاتف مقدم الرعاية</string>
-    <string name="emergency_whatsapp">إرسال الموقع عبر واتساب</string>
-    <string name="emergency_whatsapp_desc">إرسال الموقع الجغرافي لمقدم الرعاية عبر واتساب (موصى به)</string>
+    
+
     <string name="caregiver_contacts_title">قائمة مقدمي الرعاية</string>
 
-    <!-- Profile Screen -->
+    
     <string name="profile_title">إعدادات ملف الطفل</string>
     <string name="profile_add_title">إضافة ملف طفل جديد</string>
     <string name="profile_name_label">اسم الطفل</string>
@@ -109,23 +306,30 @@
     <string name="profile_male">ذكر</string>
     <string name="profile_female">أنثى</string>
     <string name="btn_add_profile">إضافة ملف الطفل</string>
-    <string name="profile_enrolled_title">الملفات المسجلة (اضغط للتفعيل)</string>
+    <string name="profile_enrolled_title">الحسابات المسجلة (اضغط للتفعيل)</string>
     <string name="profile_empty">لم يتم إنشاء أي ملفات بعد.\nاستخدم النموذج بالأعلى لإضافة ملف طفل.</string>
     <string name="active_tag">مفعّل</string>
     <string name="voice_pack_label">حزمة الصوت: %1$s</string>
     <string name="btn_toggle_voice_pack">تغيير حزمة الصوت</string>
     <string name="btn_delete_profile">حذف الملف</string>
 
-    <!-- Practice Screen -->
+    
     <string name="practice_title">🎯 لعبة تدريب النطق</string>
-    <string name="practice_desc">تدرب على نطق الكلمات الشائعة لتحسين مخارج الحروف لديك!</string>
+    <string name="practice_desc">تدرب على نطق الكلمات الشائعة لتحسين مخارج الحروف لديك</string>
     <string name="practice_word_card">الكلمة المطلوب نطقها</string>
     <string name="practice_speak_btn">اضغط وتحدث</string>
     <string name="practice_speak_recording">جاري الاستماع... اترك الزر عند الانتهاء</string>
     <string name="score_label">درجة تطابق النطق</string>
-    <string name="feedback_perfect">رائع! نطقك ممتاز جداً! 🌟🌟🌟</string>
-    <string name="feedback_good">عمل رائع! استمر في المحاولة! 🌟🌟</string>
-    <string name="feedback_try_again">محاولة جيدة! دعنا نحاول مجدداً. 🌟</string>
+    <string name="feedback_perfect">رائع نطقك ممتاز جداً 🌟🌟🌟</string>
+    <string name="feedback_good">عمل رائع استمر في المحاولة 🌟🌟</string>
+    <string name="feedback_try_again">محاولة جيدة دعنا نحاول مجدداً. 🌟</string>
     <string name="history_title">محاولات اللعب الأخيرة</string>
     <string name="history_empty">لم يتم تسجيل محاولات تدريب بعد.</string>
+    <string name="onboarding_get_started">ابدأ الآن</string>
+    <string name="onboarding_mic_title">الميكروفون (مطلوب)</string>
+    <string name="onboarding_mic_desc">لالتقاط والتعرف على كلام الطفل</string>
+    <string name="onboarding_notif_title">الإشعارات (مطلوب)</string>
+    <string name="onboarding_notif_desc">لتشغيل خدمة الاستماع في الخلفية</string>
+    <string name="onboarding_gps_title">موقع GPS (مطلوب)</string>
+    <string name="onboarding_gps_desc">للعثور على الطفل وإرسال الإحداثيات لمقدم الرعاية</string>
 </resources>

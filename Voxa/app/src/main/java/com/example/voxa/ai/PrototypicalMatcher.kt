@@ -42,6 +42,14 @@ object PrototypicalMatcher {
     /** K-Means iteration limit */
     private const val KMEANS_MAX_ITER = 30
 
+    /** Minimum σ floor for OOD calibration (prevents threshold near 1.0 with very consistent enrollment) */
+    private const val MIN_SIGMA_FLOOR = 0.08f
+
+    /** Minimum OOD threshold floor — lowered from 0.55 after software RMS normalization shifted cosine ranges */
+    private const val MIN_OOD_FLOOR = 0.35f
+
+    /** Maximum OOD threshold ceiling */
+    private const val MAX_OOD_CEILING = 0.90f
     // ═══════════════════════════════════════════════════════════
     // SECTION 1: SIMILARITY & DISTANCE
     // ═══════════════════════════════════════════════════════════

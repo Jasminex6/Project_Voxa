@@ -114,13 +114,59 @@ class QuestsViewModel(application: Application) : AndroidViewModel(application) 
                     status = QuestStatus.PENDING
                 )
             )
+            val context = getApplication<Application>()
+            sendNotification(
+                context.getString(com.example.voxa.R.string.quests_notification_new_task_title),
+                context.getString(com.example.voxa.R.string.quests_notification_new_task_desc, title)
+            )
         }
     }
     
     fun markQuestSubmitted(quest: QuestEntity) {
         viewModelScope.launch {
             questDao.updateQuestStatus(quest.id, QuestStatus.SUBMITTED, null)
+            val context = getApplication<Application>()
+            sendNotification(
+                context.getString(com.example.voxa.R.string.quests_notification_task_done_title),
+                context.getString(com.example.voxa.R.string.quests_notification_task_done_desc, quest.title)
+            )
         }
+    }
+
+    private fun sendNotification(title: String, message: String) {
+        val context = getApplication<Application>()
+        val manager = context.getSystemService(android.content.Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+        val channelId = "voxa_quests_channel"
+        
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            val channel = android.app.NotificationChannel(
+                channelId,
+                "Quests & Tasks",
+                android.app.NotificationManager.IMPORTANCE_DEFAULT
+            )
+            manager.createNotificationChannel(channel)
+        }
+        
+        val intent = android.content.Intent(context, com.example.voxa.MainActivity::class.java).apply {
+            flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val pendingIntent = android.app.PendingIntent.getActivity(
+            context,
+            0,
+            intent,
+            android.app.PendingIntent.FLAG_IMMUTABLE
+        )
+        
+        val notification = androidx.core.app.NotificationCompat.Builder(context, channelId)
+            .setSmallIcon(com.example.voxa.R.mipmap.ic_launcher)
+            .setContentTitle(title)
+            .setContentText(message)
+            .setPriority(androidx.core.app.NotificationCompat.PRIORITY_DEFAULT)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .build()
+            
+        manager.notify(System.currentTimeMillis().toInt(), notification)
     }
     
     fun markQuestUnable(quest: QuestEntity) {

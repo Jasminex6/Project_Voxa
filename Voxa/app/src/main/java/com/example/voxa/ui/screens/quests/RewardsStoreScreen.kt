@@ -1,5 +1,6 @@
 package com.example.voxa.ui.screens.quests
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -47,10 +48,12 @@ fun RewardsStoreScreen(
     val scope = rememberCoroutineScope()
     var showCreateSheet by remember { mutableStateOf(false) }
 
+    androidx.activity.compose.BackHandler(onBack = onBack)
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Rewards Store 🎁", color = Color.White, fontWeight = FontWeight.ExtraBold) },
+                title = { Text(stringResource(com.example.voxa.R.string.quests_rewards_title), color = Color.White, fontWeight = FontWeight.ExtraBold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
@@ -96,7 +99,7 @@ fun RewardsStoreScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Available Stars", color = Slate300, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                    Text(stringResource(com.example.voxa.R.string.quests_rewards_available_stars), color = Slate300, fontSize = 22.sp, fontWeight = FontWeight.Bold)
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text("$childPoints", color = QuestGold, fontSize = 36.sp, fontWeight = FontWeight.ExtraBold)
                         Spacer(modifier = Modifier.width(6.dp))
@@ -109,9 +112,10 @@ fun RewardsStoreScreen(
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text("🛒", fontSize = 80.sp)
                             Spacer(modifier = Modifier.height(20.dp))
-                            Text("Store is empty!", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold)
+                            Text(stringResource(com.example.voxa.R.string.quests_rewards_empty_store), color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold)
                             Spacer(modifier = Modifier.height(8.dp))
-                            Text("Ask your caregiver to add rewards.", color = Slate400, fontSize = 16.sp)
+                            val emptyTextRes = if (isParentAuthenticated) com.example.voxa.R.string.quests_rewards_add_some_parent else com.example.voxa.R.string.quests_rewards_ask_caregiver
+                            Text(stringResource(emptyTextRes), color = Slate400, fontSize = 16.sp, textAlign = TextAlign.Center)
                         }
                     }
                 } else {
@@ -230,7 +234,7 @@ fun RewardCard(
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth().height(48.dp)
                 ) {
-                    Text("${reward.cost} ⭐", color = if (canAfford) Color.White else Slate400, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
+                    Text(stringResource(com.example.voxa.R.string.quests_rewards_cost_format, reward.cost), color = if (canAfford) Color.White else Slate400, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
                 }
             }
 
@@ -269,13 +273,13 @@ fun CreateRewardSheetContent(
             .padding(24.dp)
             .padding(bottom = 32.dp)
     ) {
-        Text("New Reward 🎁", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 24.sp)
+        Text(stringResource(com.example.voxa.R.string.quests_rewards_new_reward), color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 24.sp)
         Spacer(modifier = Modifier.height(24.dp))
 
         OutlinedTextField(
             value = title,
             onValueChange = { title = it },
-            label = { Text("Reward Name", color = Slate400) },
+            label = { Text(stringResource(com.example.voxa.R.string.quests_rewards_reward_name), color = Slate400) },
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = QuestOrange,
                 unfocusedBorderColor = Slate600,
@@ -289,7 +293,7 @@ fun CreateRewardSheetContent(
         OutlinedTextField(
             value = cost,
             onValueChange = { if (it.all { char -> char.isDigit() }) cost = it },
-            label = { Text("Cost (Stars)", color = Slate400) },
+            label = { Text(stringResource(com.example.voxa.R.string.quests_rewards_cost_stars), color = Slate400) },
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = QuestOrange,
                 unfocusedBorderColor = Slate600,
@@ -300,7 +304,7 @@ fun CreateRewardSheetContent(
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(24.dp))
-        Text("Select Emoji:", color = Slate300, fontWeight = FontWeight.Medium)
+        Text(stringResource(com.example.voxa.R.string.quests_rewards_select_emoji), color = Slate300, fontWeight = FontWeight.Medium)
         Spacer(modifier = Modifier.height(12.dp))
 
         // Emoji Grid
@@ -350,7 +354,7 @@ fun CreateRewardSheetContent(
                 shape = RoundedCornerShape(12.dp),
                 border = BorderStroke(1.dp, Slate600)
             ) {
-                Text("Cancel", color = Slate300, fontWeight = FontWeight.Bold)
+                Text(stringResource(com.example.voxa.R.string.quests_rewards_cancel), color = Slate300, fontWeight = FontWeight.Bold)
             }
             Spacer(modifier = Modifier.width(16.dp))
             Button(
@@ -363,7 +367,7 @@ fun CreateRewardSheetContent(
                 colors = ButtonDefaults.buttonColors(containerColor = QuestOrange),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Text("Add", color = Color.White, fontWeight = FontWeight.Bold)
+                Text(stringResource(com.example.voxa.R.string.quests_rewards_add), color = Color.White, fontWeight = FontWeight.Bold)
             }
         }
     }

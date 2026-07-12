@@ -1,5 +1,6 @@
 package com.example.voxa.ui.screens
 
+import androidx.compose.ui.res.stringResource
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
@@ -9,7 +10,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -23,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -44,7 +48,7 @@ fun OnboardingScreen(
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
-    val pagerState = rememberPagerState(pageCount = { 5 })
+    val pagerState = rememberPagerState(pageCount = { 6 })
 
     // Permission states
     fun isPermissionGranted(permission: String): Boolean {
@@ -66,6 +70,8 @@ fun OnboardingScreen(
     val micLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { isMicGranted = it }
     val notifLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { isNotifGranted = it }
     val locationLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { isLocationGranted = it }
+
+    val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
 
     // Child profile setup state
     var childName by remember { mutableStateOf("") }
@@ -92,6 +98,9 @@ fun OnboardingScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .pointerInput(Unit) {
+                    detectTapGestures(onTap = { focusManager.clearFocus() })
+                }
                 .navigationBarsPadding()
                 .statusBarsPadding()
                 .padding(24.dp),
@@ -107,9 +116,17 @@ fun OnboardingScreen(
                     .fillMaxWidth()
             ) { page ->
                 when (page) {
-                    0 -> OnboardingWelcomePage()
-                    1 -> OnboardingConceptPage()
-                    2 -> OnboardingPermissionsPage(
+                    0 -> OnboardingLanguagePage(onLanguageSelected = { lang ->
+                        val prefs = context.getSharedPreferences("voxa_settings", Context.MODE_PRIVATE)
+                        prefs.edit().putString("app_language", lang).apply()
+                        val intent = android.content.Intent(context, com.example.voxa.MainActivity::class.java).apply {
+                            addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP or android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        context.startActivity(intent)
+                    })
+                    1 -> OnboardingWelcomePage()
+                    2 -> OnboardingConceptPage()
+                    3 -> OnboardingPermissionsPage(
                         isMicGranted = isMicGranted,
                         isNotifGranted = isNotifGranted,
                         isLocationGranted = isLocationGranted,
@@ -117,7 +134,7 @@ fun OnboardingScreen(
                         onNotifClick = { if (!isNotifGranted) notifLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) },
                         onLocationClick = { if (!isLocationGranted) locationLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION) }
                     )
-                    3 -> OnboardingProfilePage(
+                    4 -> OnboardingProfilePage(
                         childName = childName,
                         onNameChange = { childName = it },
                         childGender = childGender,
@@ -126,7 +143,7 @@ fun OnboardingScreen(
                         onAvatarSelect = { selectedAvatar = it },
                         avatars = avatars
                     )
-                    4 -> OnboardingEmergencyPage(
+                    5 -> OnboardingEmergencyPage(
                         contactName = emergencyContactName,
                         onNameChange = { emergencyContactName = it },
                         contactRelation = emergencyContactRelation,
@@ -150,7 +167,7 @@ fun OnboardingScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(vertical = 16.dp)
                 ) {
-                    repeat(5) { index ->
+                    repeat(6) { index ->
                         val isSelected = pagerState.currentPage == index
                         Box(
                             modifier = Modifier
@@ -165,32 +182,36 @@ fun OnboardingScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 // Navigation Buttons
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Back Button
-                    if (pagerState.currentPage > 0) {
-                        Button(
-                            onClick = {
-                                coroutineScope.launch {
-                                    pagerState.animateScrollToPage(pagerState.currentPage - 1)
-                                }
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-                            contentPadding = PaddingValues(0.dp)
-                        ) {
-                            Text("Back", color = Slate400, fontSize = 16.sp)
+                androidx.compose.runtime.CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Back Button
+                        if (pagerState.currentPage > 0) {
+                            Button(
+                                onClick = {
+                                    coroutineScope.launch {
+                                        pagerState.animateScrollToPage(pagerState.currentPage - 1)
+                                    }
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                                contentPadding = PaddingValues(0.dp)
+                            ) {
+                                Text(stringResource(com.example.voxa.R.string.onboarding_back), color = Slate400, fontSize = 16.sp)
+                            }
+                        } else {
+                            Spacer(modifier = Modifier.width(60.dp))
                         }
-                    } else {
-                        Spacer(modifier = Modifier.width(60.dp))
-                    }
+
 
                     // Next/Get Started Button
                     Button(
                         onClick = {
-                            if (pagerState.currentPage < 4) {
+                            if (pagerState.currentPage < 5) {
                                 coroutineScope.launch {
                                     pagerState.animateScrollToPage(pagerState.currentPage + 1)
                                 }
@@ -218,20 +239,21 @@ fun OnboardingScreen(
                             containerColor = Sky400,
                             disabledContainerColor = Sky400.copy(alpha = 0.5f)
                         ),
-                        enabled = (pagerState.currentPage < 2) || 
-                                 (pagerState.currentPage == 2 && allPermissionsGranted) || 
-                                 (pagerState.currentPage == 3 && childName.isNotBlank()) || 
-                                 (pagerState.currentPage == 4 && isEmergencyValid),
+                        enabled = (pagerState.currentPage < 3) || 
+                                 (pagerState.currentPage == 3 && allPermissionsGranted) || 
+                                 (pagerState.currentPage == 4 && childName.isNotBlank()) || 
+                                 (pagerState.currentPage == 5 && isEmergencyValid),
                         shape = RoundedCornerShape(12.dp),
                         modifier = Modifier.width(140.dp)
                     ) {
                         Text(
-                            text = if (pagerState.currentPage == 4) "Get Started" else "Next",
+                            text = if (pagerState.currentPage == 5) stringResource(com.example.voxa.R.string.onboarding_get_started) else stringResource(com.example.voxa.R.string.onboarding_next),
                             color = Slate900,
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp
                         )
                     }
+                }
                 }
             }
         }
@@ -247,8 +269,9 @@ fun OnboardingWelcomePage() {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
+
         Text(
-            text = "👋 Welcome to Voxa",
+            text = stringResource(com.example.voxa.R.string.onboarding_title_1),
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
             color = Color.White,
@@ -256,7 +279,7 @@ fun OnboardingWelcomePage() {
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "An inclusive, AI-powered communication tool designed to translate your child's unique vocalizations into clear spoken words and notifications.",
+            text = stringResource(com.example.voxa.R.string.onboarding_desc_1),
             fontSize = 16.sp,
             color = Slate400,
             textAlign = TextAlign.Center,
@@ -281,42 +304,85 @@ fun OnboardingWelcomePage() {
 
 @Composable
 fun OnboardingConceptPage() {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text(
-            text = "✨ How It Works",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.White,
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = "1. Enroll custom vocal sounds or words that your child uses.\n2. Translate them into text and speech in real-time.\n3. Monitor voice signals locally & securely without internet.",
-            fontSize = 15.sp,
-            color = Slate300,
-            textAlign = TextAlign.Start,
-            lineHeight = 26.sp,
-            modifier = Modifier.padding(horizontal = 8.dp)
-        )
-        Spacer(modifier = Modifier.height(32.dp))
-        Box(
+    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+    val layoutDirection = if (configuration.layoutDirection == android.view.View.LAYOUT_DIRECTION_RTL) {
+        androidx.compose.ui.unit.LayoutDirection.Rtl
+    } else {
+        androidx.compose.ui.unit.LayoutDirection.Ltr
+    }
+
+    CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides layoutDirection) {
+        Column(
             modifier = Modifier
-                .size(160.dp)
-                .clip(RoundedCornerShape(32.dp))
-                .background(Sky400.copy(alpha = 0.1f))
-                .border(2.dp, Sky400.copy(alpha = 0.3f), RoundedCornerShape(32.dp)),
-            contentAlignment = Alignment.Center
+                .fillMaxSize()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
             Text(
-                text = "🤖",
-                fontSize = 80.sp
+                text = stringResource(com.example.voxa.R.string.onboarding_title_2),
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                textAlign = TextAlign.Center
             )
+            Spacer(modifier = Modifier.height(16.dp))
+            val descLines = stringResource(com.example.voxa.R.string.onboarding_desc_2).split("\n")
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                descLines.forEach { line ->
+                    val prefixMatch = Regex("^[0-9١-٩]+\\.\\s").find(line)
+                    if (prefixMatch != null) {
+                        val prefix = prefixMatch.value
+                        val rest = line.substring(prefix.length)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.Top
+                        ) {
+                            Text(
+                                text = prefix,
+                                fontSize = 15.sp,
+                                color = Slate300,
+                                lineHeight = 26.sp
+                            )
+                            Text(
+                                text = rest,
+                                fontSize = 15.sp,
+                                color = Slate300,
+                                textAlign = TextAlign.Start,
+                                lineHeight = 26.sp
+                            )
+                        }
+                    } else {
+                        Text(
+                            text = line,
+                            fontSize = 15.sp,
+                            color = Slate300,
+                            textAlign = TextAlign.Start,
+                            lineHeight = 26.sp,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(32.dp))
+            Box(
+                modifier = Modifier
+                    .size(160.dp)
+                    .clip(RoundedCornerShape(32.dp))
+                    .background(Sky400.copy(alpha = 0.1f))
+                    .border(2.dp, Sky400.copy(alpha = 0.3f), RoundedCornerShape(32.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "🤖",
+                    fontSize = 80.sp
+                )
+            }
         }
     }
 }
@@ -338,7 +404,7 @@ fun OnboardingPermissionsPage(
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            text = "🔒 Permissions Gate",
+            text = stringResource(com.example.voxa.R.string.onboarding_title_3),
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
             color = Color.White,
@@ -346,7 +412,7 @@ fun OnboardingPermissionsPage(
         )
         Spacer(modifier = Modifier.height(12.dp))
         Text(
-            text = "Please enable the following permissions to activate Voxa features. All calculations are performed on-device.",
+            text = stringResource(com.example.voxa.R.string.onboarding_desc_3),
             fontSize = 14.sp,
             color = Slate400,
             textAlign = TextAlign.Center,
@@ -360,8 +426,8 @@ fun OnboardingPermissionsPage(
         ) {
             // Mic Permission Item
             PermissionItem(
-                title = "Microphone (Required)",
-                description = "To capture and recognize child speech",
+                title = stringResource(com.example.voxa.R.string.onboarding_mic_title),
+                description = stringResource(com.example.voxa.R.string.onboarding_mic_desc),
                 isGranted = isMicGranted,
                 onClick = onMicClick
             )
@@ -369,8 +435,8 @@ fun OnboardingPermissionsPage(
             // Notifications Permission Item (Tiramisu+)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 PermissionItem(
-                    title = "Notifications (Required)",
-                    description = "To run background speech listening service",
+                    title = stringResource(com.example.voxa.R.string.onboarding_notif_title),
+                    description = stringResource(com.example.voxa.R.string.onboarding_notif_desc),
                     isGranted = isNotifGranted,
                     onClick = onNotifClick
                 )
@@ -378,8 +444,8 @@ fun OnboardingPermissionsPage(
 
             // Location Permission Item
             PermissionItem(
-                title = "GPS Location (Required)",
-                description = "To find child and send caregiver coordinates",
+                title = stringResource(com.example.voxa.R.string.onboarding_gps_title),
+                description = stringResource(com.example.voxa.R.string.onboarding_gps_desc),
                 isGranted = isLocationGranted,
                 onClick = onLocationClick
             )
@@ -456,7 +522,7 @@ fun OnboardingProfilePage(
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            text = "👶 Child Setup",
+            text = stringResource(com.example.voxa.R.string.onboarding_title_4),
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
             color = Color.White,
@@ -464,7 +530,7 @@ fun OnboardingProfilePage(
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "Set up your child's profile. Selecting the correct gender adapts the voice feedback pitch.",
+            text = stringResource(com.example.voxa.R.string.onboarding_desc_4),
             fontSize = 13.sp,
             color = Slate400,
             textAlign = TextAlign.Center
@@ -475,7 +541,7 @@ fun OnboardingProfilePage(
         OutlinedTextField(
             value = childName,
             onValueChange = onNameChange,
-            label = { Text("Child's Name", color = Slate400) },
+            label = { Text(stringResource(com.example.voxa.R.string.onboarding_child_name), color = Slate400) },
             singleLine = true,
             colors = OutlinedTextFieldDefaults.colors(
                 focusedTextColor = Color.White,
@@ -509,7 +575,7 @@ fun OnboardingProfilePage(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = if (gender == "Male") "👦 Boy" else "👧 Girl",
+                        text = if (gender == "Male") "👦 ${stringResource(com.example.voxa.R.string.profile_gender_male)}" else "👧 ${stringResource(com.example.voxa.R.string.profile_gender_female)}",
                         color = if (isSelected) Sky400 else Color.White,
                         fontWeight = FontWeight.Bold,
                         fontSize = 15.sp
@@ -521,7 +587,7 @@ fun OnboardingProfilePage(
 
         // Avatar selector
         Text(
-            text = "Pick an Avatar",
+            text = stringResource(com.example.voxa.R.string.onboarding_avatar_title),
             color = Color.White,
             fontSize = 14.sp,
             fontWeight = FontWeight.Bold,
@@ -554,6 +620,7 @@ fun OnboardingProfilePage(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OnboardingEmergencyPage(
     contactName: String,
@@ -576,7 +643,7 @@ fun OnboardingEmergencyPage(
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            text = "🆘 Emergency Contact",
+            text = stringResource(com.example.voxa.R.string.onboarding_emergency_title),
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
             color = Color.White,
@@ -584,7 +651,7 @@ fun OnboardingEmergencyPage(
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "Set up who to contact in case of an emergency.",
+            text = stringResource(com.example.voxa.R.string.onboarding_emergency_desc),
             fontSize = 13.sp,
             color = Slate400,
             textAlign = TextAlign.Center
@@ -603,7 +670,7 @@ fun OnboardingEmergencyPage(
                 OutlinedTextField(
                     value = contactName,
                     onValueChange = onNameChange,
-                    label = { Text("Contact Name *", color = Slate400) },
+                    label = { Text(stringResource(com.example.voxa.R.string.onboarding_contact_name), color = Slate400) },
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedTextColor = Color.White,
@@ -614,20 +681,55 @@ fun OnboardingEmergencyPage(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                OutlinedTextField(
-                    value = contactRelation,
-                    onValueChange = onRelationChange,
-                    label = { Text("Relation with Child *", color = Slate400) },
-                    placeholder = { Text("e.g. Mother, Father, Guardian", color = Slate600) },
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedBorderColor = Sky400,
-                        unfocusedBorderColor = Slate600
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                )
+                var expanded by remember { mutableStateOf(false) }
+                val isCustomMode = remember { mutableStateOf(false) }
+                val options = listOf("Mother", "Father", "Teacher", "Therapist", "Other")
+
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { expanded = it }
+                ) {
+                    OutlinedTextField(
+                        value = contactRelation,
+                        onValueChange = onRelationChange,
+                        readOnly = !isCustomMode.value,
+                        label = { Text(stringResource(com.example.voxa.R.string.onboarding_relation), color = Slate400) },
+                        placeholder = { Text(stringResource(com.example.voxa.R.string.onboarding_relation_hint), color = Slate600) },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            focusedBorderColor = Sky400,
+                            unfocusedBorderColor = Slate600
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                    )
+
+                    ExposedDropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false },
+                        modifier = Modifier.background(Slate800)
+                    ) {
+                        options.forEach { selectionOption ->
+                            DropdownMenuItem(
+                                text = { Text(selectionOption, color = Color.White) },
+                                onClick = {
+                                    if (selectionOption == "Other") {
+                                        isCustomMode.value = true
+                                        onRelationChange("")
+                                    } else {
+                                        isCustomMode.value = false
+                                        onRelationChange(selectionOption)
+                                    }
+                                    expanded = false
+                                }
+                            )
+                        }
+                    }
+                }
 
                 OutlinedTextField(
                     value = contactPhone,
@@ -637,14 +739,14 @@ fun OnboardingEmergencyPage(
                             onPhoneChange(digits)
                         }
                     },
-                    label = { Text("Phone Number *", color = Slate400) },
-                    placeholder = { Text("0xxx xxx xxxx", color = Slate600) },
+                    label = { Text(stringResource(com.example.voxa.R.string.onboarding_phone_number), color = Slate400) },
+                    placeholder = { Text(stringResource(com.example.voxa.R.string.onboarding_phone_hint), color = Slate600) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                     isError = contactPhone.isNotEmpty() && contactPhone.length < 11,
                     supportingText = {
                         if (contactPhone.isNotEmpty() && contactPhone.length < 11) {
-                            Text("Phone number must be exactly 11 digits", color = MaterialTheme.colorScheme.error)
+                            Text(stringResource(com.example.voxa.R.string.dashboard_phone_error), color = MaterialTheme.colorScheme.error)
                         }
                     },
                     colors = OutlinedTextFieldDefaults.colors(
@@ -671,7 +773,7 @@ fun OnboardingEmergencyPage(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
-                    text = "This message will be sent when you trigger the emergency SMS action.",
+                    text = stringResource(com.example.voxa.R.string.onboarding_emergency_msg_desc),
                     fontSize = 12.sp,
                     color = Slate400,
                     lineHeight = 16.sp
@@ -679,7 +781,7 @@ fun OnboardingEmergencyPage(
                 OutlinedTextField(
                     value = message,
                     onValueChange = onMessageChange,
-                    label = { Text("Emergency SMS Message *", color = Slate400) },
+                    label = { Text(stringResource(com.example.voxa.R.string.onboarding_emergency_sms), color = Slate400) },
                     minLines = 1,
                     maxLines = 5,
                     colors = OutlinedTextFieldDefaults.colors(
@@ -690,6 +792,99 @@ fun OnboardingEmergencyPage(
                     ),
                     modifier = Modifier.fillMaxWidth()
                 )
+            }
+        }
+    }
+}
+
+@Composable
+fun OnboardingLanguagePage(onLanguageSelected: (String) -> Unit) {
+    val context = LocalContext.current
+    val prefs = context.getSharedPreferences("voxa_settings", Context.MODE_PRIVATE)
+    val currentLang = prefs.getString("app_language", "en") ?: "en"
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        // Globe icon
+        Box(
+            modifier = Modifier
+                .size(100.dp)
+                .clip(RoundedCornerShape(28.dp))
+                .background(Sky400.copy(alpha = 0.1f))
+                .border(2.dp, Sky400.copy(alpha = 0.3f), RoundedCornerShape(28.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "🌍",
+                fontSize = 56.sp
+            )
+        }
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        // English title
+        Text(
+            text = stringResource(com.example.voxa.R.string.onboarding_choose_lang),
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.White,
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        // Arabic title
+        Text(
+            text = stringResource(com.example.voxa.R.string.onboarding_choose_lang_ar),
+            fontSize = 22.sp,
+            fontWeight = FontWeight.Bold,
+            color = Slate300,
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp)
+                .clickable { onLanguageSelected("en") },
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = if (currentLang == "en") Slate700 else Slate800),
+            border = if (currentLang == "en") BorderStroke(2.dp, Sky400) else null
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(20.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("🇬🇧", fontSize = 28.sp)
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(stringResource(com.example.voxa.R.string.onboarding_english), color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            }
+        }
+
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onLanguageSelected("ar") },
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = if (currentLang == "ar") Slate700 else Slate800),
+            border = if (currentLang == "ar") BorderStroke(2.dp, Sky400) else null
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(20.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("🇸🇦", fontSize = 28.sp)
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(stringResource(com.example.voxa.R.string.onboarding_arabic), color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
             }
         }
     }

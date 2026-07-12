@@ -52,7 +52,7 @@ fun LibraryScreen(viewModel: IVoxaViewModel, onNavigateToEnrollment: () -> Unit)
             )
             Text(
                 text = if (activeProfile != null) {
-                    stringResource(id = R.string.library_desc, activeProfile!!.name)
+                    stringResource(id = R.string.library_desc)
                 } else {
                     stringResource(id = R.string.library_no_profile)
                 },

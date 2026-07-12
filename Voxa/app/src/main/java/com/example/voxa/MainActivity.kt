@@ -5,7 +5,9 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -22,6 +24,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -53,9 +56,7 @@ class MainActivity : ComponentActivity() {
         java.util.Locale.setDefault(locale)
         val config = android.content.res.Configuration(newBase.resources.configuration)
         config.setLocale(locale)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-            config.setLayoutDirection(locale)
-        }
+        // Layout direction is left to Compose to handle text natively
         val context = newBase.createConfigurationContext(config)
         super.attachBaseContext(context)
     }
@@ -69,15 +70,17 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            VoxaTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = Slate900
-                ) {
-                    VoxaAppEntry(
-                        viewModel = viewModel,
-                        questsViewModel = questsViewModel
-                    )
+            androidx.compose.runtime.CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr) {
+                VoxaTheme {
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        color = Slate900
+                    ) {
+                        VoxaAppEntry(
+                            viewModel = viewModel,
+                            questsViewModel = questsViewModel
+                        )
+                    }
                 }
             }
         }
@@ -94,14 +97,14 @@ class MainActivity : ComponentActivity() {
 
 // Tabs on a binder analogy: The Screen enum specifies the active pages that the bottom
 // navigation bar can switch between.
-enum class Screen(val title: String, val icon: String) {
-    Dashboard("Home", "🏠"),
-    Enrollment("Enroll", "➕"),
-    Library("Library", "📚"),
-    Practice("Practice", "🎮"),
-    Emergency("Emergency", "🆘"),
-    Profile("Profile", "👤"),
-    Quests("Quests", "🎯")
+enum class Screen(val titleResId: Int, val icon: String) {
+    Dashboard(R.string.title_home, "🏠"),
+    Enrollment(R.string.title_enroll, "➕"),
+    Library(R.string.title_library, "📚"),
+    Practice(R.string.title_practice, "🎮"),
+    Emergency(R.string.title_emergency, "🚨"),
+    Profile(R.string.title_profile, "👤"),
+    Quests(R.string.title_quests, "🎯")
 }
 
 // Security gate (night club analogy)
@@ -128,14 +131,23 @@ fun VoxaAppEntry(viewModel: IVoxaViewModel, questsViewModel: QuestsViewModel, mo
 // that dynamically slides different screen contents into focus depending on state.
 @Composable
 fun VoxaAppContent(viewModel: IVoxaViewModel, questsViewModel: QuestsViewModel, modifier: Modifier = Modifier) {
-    var currentScreen by remember { mutableStateOf(Screen.Dashboard) }
+    val navStack = remember { mutableStateListOf(Screen.Dashboard) }
+    val currentScreen = navStack.last()
+
+    BackHandler(enabled = navStack.size > 1) {
+        navStack.removeLast()
+    }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
         bottomBar = {
             CustomBottomBar(
                 currentScreen = currentScreen,
-                onScreenSelected = { currentScreen = it }
+                onScreenSelected = { screen -> 
+                    if (navStack.last() != screen) {
+                        navStack.add(screen)
+                    }
+                }
             )
         }
     ) { innerPadding ->
@@ -147,25 +159,25 @@ fun VoxaAppContent(viewModel: IVoxaViewModel, questsViewModel: QuestsViewModel, 
             when (currentScreen) {
                 Screen.Dashboard -> DashboardScreen(
                     viewModel = viewModel,
-                    onNavigateToProfile = { currentScreen = Screen.Profile }
+                    onNavigateToProfile = { navStack.add(Screen.Profile) }
                 )
                 Screen.Enrollment -> EnrollmentScreen(
                     viewModel = viewModel,
-                    onBack = { currentScreen = Screen.Library }
+                    onBack = { if (navStack.size > 1) navStack.removeLast() }
                 )
                 Screen.Library -> LibraryScreen(
                     viewModel = viewModel,
-                    onNavigateToEnrollment = { currentScreen = Screen.Enrollment }
+                    onNavigateToEnrollment = { navStack.add(Screen.Enrollment) }
                 )
                 Screen.Emergency -> EmergencyScreen(viewModel = viewModel)
                 Screen.Practice -> SpeechPracticeScreen(viewModel = viewModel)
                 Screen.Profile -> ProfileScreen(
                     viewModel = viewModel,
-                    onBack = { currentScreen = Screen.Dashboard }
+                    onBack = { if (navStack.size > 1) navStack.removeLast() }
                 )
                 Screen.Quests -> QuestsMainScreen(
                     viewModel = questsViewModel,
-                    onNavigateBack = { currentScreen = Screen.Dashboard }
+                    onNavigateBack = { if (navStack.size > 1) navStack.removeLast() }
                 )
             }
         }
@@ -183,7 +195,8 @@ fun CustomBottomBar(
         tonalElevation = 8.dp,
         modifier = Modifier.fillMaxWidth()
     ) {
-        Row(
+        CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr) {
+            Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .navigationBarsPadding()
@@ -191,8 +204,8 @@ fun CustomBottomBar(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Center Home (Dashboard) flanked by Library, Practice, and Emergency
-            val tabScreens = listOf(Screen.Library, Screen.Dashboard, Screen.Practice, Screen.Emergency, Screen.Quests)
+            // Center Home (Dashboard) flanked by Library, Practice, Quests, and Emergency
+            val tabScreens = listOf(Screen.Library, Screen.Practice, Screen.Dashboard, Screen.Quests, Screen.Emergency)
             
             tabScreens.forEach { screen ->
                 val isSelected = currentScreen == screen
@@ -248,13 +261,14 @@ fun CustomBottomBar(
                     )
                     Spacer(modifier = Modifier.height(1.dp))
                     Text(
-                        text = screen.title,
+                        text = stringResource(id = screen.titleResId),
                         color = if (isSelected) activeContentColor else inactiveContentColor,
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.Center
                     )
                 }
+            }
             }
         }
     }

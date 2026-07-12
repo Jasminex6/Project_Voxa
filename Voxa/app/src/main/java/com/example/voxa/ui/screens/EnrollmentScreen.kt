@@ -360,7 +360,7 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                                 colors = ButtonDefaults.buttonColors(containerColor = WarningAmber),
                                 modifier = Modifier.align(Alignment.End)
                             ) {
-                                Text("Dismiss", color = Color.White, fontWeight = FontWeight.Bold)
+                                Text(stringResource(com.example.voxa.R.string.onboarding_dismiss), color = Color.White, fontWeight = FontWeight.Bold)
                             }
                         }
                     }

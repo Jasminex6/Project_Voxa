@@ -172,8 +172,9 @@ class VoxaViewModel(application: Application) : AndroidViewModel(application), I
     // as the active profile automatically.
     override fun createProfile(name: String, gender: String, avatarEmoji: String) {
         viewModelScope.launch {
+            val capitalizedName = name.trim().replaceFirstChar { if (it.isLowerCase()) it.titlecase(java.util.Locale.getDefault()) else it.toString() }
             val newProfile = ChildProfile(
-                name = name,
+                name = capitalizedName,
                 gender = gender,
                 isActive = _activeProfile.value == null,
                 avatarEmoji = avatarEmoji

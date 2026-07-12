@@ -1,5 +1,6 @@
 package com.example.voxa.ui.screens.quests
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -99,6 +100,9 @@ fun ChildPlaygroundScreen(
                         )
                     )
             ) {
+                // Full screen Confetti Rain in the background
+                ConfettiRain(modifier = Modifier.fillMaxSize())
+
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -106,48 +110,42 @@ fun ChildPlaygroundScreen(
                         .padding(horizontal = 20.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-
-                    // Dynamic Bouncing Avatar
-                    Box(modifier = Modifier.offset(y = avatarOffsetY.dp)) {
-                        Text(
-                            text = activeProfile?.avatarEmoji ?: "👦",
-                            fontSize = 80.sp
-                        )
-                    }
                     Spacer(modifier = Modifier.height(16.dp))
+                    
                     Text(
-                        text = "${activeProfile?.name ?: "My"} Missions! 🚀",
+                        text = stringResource(com.example.voxa.R.string.quests_child_missions),
                         color = Color.White,
-                        fontSize = 32.sp,
-                        fontWeight = FontWeight.ExtraBold
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        modifier = Modifier.padding(top = 8.dp)
                     )
 
                     // Wallet Header with bouncy scale
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 24.dp)
-                            .clip(RoundedCornerShape(32.dp))
+                            .padding(vertical = 16.dp)
+                            .clip(RoundedCornerShape(24.dp))
                             .background(
                                 brush = Brush.horizontalGradient(
                                     colors = listOf(QuestTeal, Sky500)
                                 )
                             )
-                            .padding(24.dp),
+                            .padding(16.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("My Star Wallet 🌟", color = Color.White.copy(alpha = 0.9f), fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(stringResource(com.example.voxa.R.string.quests_child_wallet_title), color = Color.White.copy(alpha = 0.9f), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                            Spacer(modifier = Modifier.height(8.dp))
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("⭐", fontSize = 64.sp)
-                                Spacer(modifier = Modifier.width(16.dp))
+                                Text("⭐", fontSize = 36.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
                                 // Bounce effect using derived scale from points changes
                                 val scale = 1f + (animatedPoints - childPoints.toFloat()) * 0.05f
                                 Text(
                                     text = childPoints.toString(),
                                     color = Color.White,
-                                    fontSize = 72.sp,
+                                    fontSize = 48.sp,
                                     fontWeight = FontWeight.ExtraBold,
                                     modifier = Modifier.scale(scale.coerceIn(1f, 1.4f))
                                 )
@@ -157,21 +155,26 @@ fun ChildPlaygroundScreen(
 
                     if (childActiveQuests.isEmpty()) {
                         Box(modifier = Modifier.fillMaxSize().weight(1f), contentAlignment = Alignment.Center) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                val bounce by infiniteTransition.animateFloat(
-                                    initialValue = 0.9f,
-                                    targetValue = 1.2f,
-                                    animationSpec = infiniteRepeatable(
-                                        animation = tween(800, easing = LinearOutSlowInEasing),
-                                        repeatMode = RepeatMode.Reverse
-                                    ),
-                                    label = "bounce"
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.padding(16.dp)
+                            ) {
+                                Text(
+                                    text = stringResource(com.example.voxa.R.string.quests_great_job), 
+                                    color = QuestGold, 
+                                    fontSize = 36.sp, 
+                                    fontWeight = FontWeight.ExtraBold,
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
                                 )
-                                Text("🎉", fontSize = 120.sp, modifier = Modifier.scale(bounce))
-                                Spacer(modifier = Modifier.height(32.dp))
-                                Text("All done for today!", color = Color.White, fontSize = 32.sp, fontWeight = FontWeight.ExtraBold)
-                                Spacer(modifier = Modifier.height(12.dp))
-                                Text("Check back later for more fun.", color = Slate300, fontSize = 20.sp)
+
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Text(
+                                    text = stringResource(com.example.voxa.R.string.quests_get_rewards), 
+                                    color = Slate300, 
+                                    fontSize = 24.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                )
                             }
                         }
                     } else {
@@ -248,19 +251,8 @@ fun QuestChildCard(
     }
 
     if (isSubmitting) {
-        // Render Burst State
-        Box(
-            modifier = Modifier.fillMaxWidth().height(200.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "🌟",
-                fontSize = 80.sp,
-                modifier = Modifier
-                    .scale(submitScale)
-                    .graphicsLayer(alpha = submitAlpha)
-            )
-        }
+        // Render Burst State (Confetti Rain)
+        ConfettiRain(modifier = Modifier.fillMaxWidth().height(200.dp))
     } else {
         // Normal Floating Card
         Card(
@@ -276,36 +268,36 @@ fun QuestChildCard(
             border = BorderStroke(4.dp, QuestPurple.copy(alpha = 0.8f)),
             elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
         ) {
-            Column(modifier = Modifier.padding(24.dp)) {
+            Column(modifier = Modifier.padding(16.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         modifier = Modifier
-                            .size(88.dp)
+                            .size(64.dp)
                             .clip(CircleShape)
                             .background(Slate700),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(text = quest.icon, fontSize = 56.sp)
+                        Text(text = quest.icon, fontSize = 36.sp)
                     }
-                    Spacer(modifier = Modifier.width(24.dp))
+                    Spacer(modifier = Modifier.width(16.dp))
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(text = quest.title, color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.ExtraBold)
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(text = quest.title, color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold)
+                        Spacer(modifier = Modifier.height(4.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(text = "Reward: ", color = Slate300, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                            Text(text = "${quest.points} ⭐", color = QuestGold, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold)
+                            Text(text = stringResource(com.example.voxa.R.string.quests_reward_label), color = Slate300, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                            Text(text = "${quest.points} ⭐", color = QuestGold, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
                         }
                     }
                 }
-                Spacer(modifier = Modifier.height(32.dp))
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Button(
                         onClick = onUnable,
                         colors = ButtonDefaults.buttonColors(containerColor = Slate700),
                         shape = CircleShape,
-                        modifier = Modifier.weight(1f).height(64.dp)
+                        modifier = Modifier.weight(1f).height(52.dp)
                     ) {
-                        Text("I Need Help 🙋", color = Slate300, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
+                        Text(stringResource(com.example.voxa.R.string.quests_need_help), color = Slate300, fontWeight = FontWeight.ExtraBold, fontSize = 14.sp)
                     }
 
                     // Pulsing Submit Button
@@ -325,12 +317,67 @@ fun QuestChildCard(
                         shape = CircleShape,
                         modifier = Modifier
                             .weight(1f)
-                            .height(64.dp)
+                            .height(52.dp)
                             .scale(pulse)
                     ) {
-                        Text("I Did It! ✨", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
+                        Text(stringResource(com.example.voxa.R.string.quests_i_did_it), color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 14.sp)
                     }
                 }
+            }
+        }
+    }
+}
+
+/**
+ * A smooth, continuous confetti rain effect.
+ */
+@Composable
+fun ConfettiRain(modifier: Modifier = Modifier) {
+    var timeMillis by remember { mutableStateOf(0L) }
+    LaunchedEffect(Unit) {
+        val startTime = androidx.compose.runtime.withFrameNanos { it }
+        while (true) {
+            androidx.compose.runtime.withFrameNanos { frameTimeNanos ->
+                timeMillis = (frameTimeNanos - startTime) / 1_000_000L
+            }
+        }
+    }
+
+    val colors = listOf(Color(0xFFFFD700), Color(0xFF00F2FE), Color(0xFF14B8A6), Color(0xFFA855F7), Color(0xFFF97316)).map { it.copy(alpha = 0.85f) }
+    
+    // Generate pseudo-random deterministic particles
+    val particles = remember {
+        List(60) { index ->
+            val x = (Math.random() * 2000).toFloat()
+            val yOffset = (Math.random() * 2000).toFloat()
+            val speed = 80f + (Math.random() * 120f).toFloat() // Slower speed
+            val size = 10f + (Math.random() * 15f).toFloat()
+            val color = colors[index % colors.size]
+            Triple(x, Triple(yOffset, speed, size), color)
+        }
+    }
+
+    androidx.compose.foundation.Canvas(modifier = modifier) {
+        val w = size.width
+        val h = size.height
+        if (w == 0f || h == 0f) return@Canvas
+
+        val timeSecs = timeMillis / 1000f
+
+        particles.forEach { (startX, physics, color) ->
+            val (yOffset, speed, pSize) = physics
+            val normalizedX = (startX % w)
+            
+            // Endless smooth fall by wrapping around height + buffer
+            val totalHeight = h + pSize * 2
+            val currentY = ((yOffset + timeSecs * speed) % totalHeight) - pSize
+            
+            if (currentY > -pSize && currentY < h + pSize) {
+                drawCircle(
+                    color = color,
+                    radius = pSize / 2f,
+                    center = androidx.compose.ui.geometry.Offset(normalizedX, currentY)
+                )
             }
         }
     }

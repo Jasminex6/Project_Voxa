@@ -1,5 +1,7 @@
 package com.example.voxa.ui.screens.quests
 
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -44,13 +46,15 @@ fun ParentDashboardScreen(
     var showCreateSheet by remember { mutableStateOf(false) }
     var showRewards by remember { mutableStateOf(false) }
 
-    if (showRewards) {
-        RewardsStoreScreen(viewModel = viewModel, onBack = { showRewards = false })
-    } else {
-        Scaffold(
+    val layoutDir = if (java.util.Locale.getDefault().language == "ar") androidx.compose.ui.unit.LayoutDirection.Rtl else androidx.compose.ui.unit.LayoutDirection.Ltr
+    CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides layoutDir) {
+        if (showRewards) {
+            RewardsStoreScreen(viewModel = viewModel, onBack = { showRewards = false })
+        } else {
+            Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("Caregiver Dashboard 🛠️", color = Color.White, fontWeight = FontWeight.ExtraBold) },
+                    title = { Text(stringResource(com.example.voxa.R.string.quests_parent_dashboard_title), color = Color.White, fontWeight = FontWeight.ExtraBold) },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = Slate900),
                     actions = {
                         IconButton(onClick = { showRewards = true }) {
@@ -92,14 +96,15 @@ fun ParentDashboardScreen(
                     border = BorderStroke(1.dp, Slate600)
                 ) {
                     Row(
-                        modifier = Modifier.padding(20.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        modifier = Modifier.padding(20.dp).fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
                     ) {
                         Text("⭐", fontSize = 40.sp)
                         Spacer(modifier = Modifier.width(20.dp))
-                        Column {
-                            Text("Child's Wallet", color = Slate400, fontSize = 16.sp, fontWeight = FontWeight.Medium)
-                            Text("$childPoints Points", color = QuestGold, fontSize = 28.sp, fontWeight = FontWeight.ExtraBold)
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(stringResource(com.example.voxa.R.string.quests_parent_child_wallet), color = Slate400, fontSize = 16.sp, fontWeight = FontWeight.Medium, textAlign = TextAlign.Center)
+                            Text(stringResource(com.example.voxa.R.string.quests_parent_points, childPoints), color = QuestGold, fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center)
                         }
                     }
                 }
@@ -108,7 +113,7 @@ fun ParentDashboardScreen(
             if (unfulfilledPurchases.isNotEmpty()) {
                 item {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("Pending Rewards to Fulfill 🎁", color = QuestOrange, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
+                        Text(stringResource(com.example.voxa.R.string.quests_parent_pending_rewards), color = QuestOrange, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
                         Spacer(modifier = Modifier.width(12.dp))
                         Badge(containerColor = QuestOrange) {
                             Text("${unfulfilledPurchases.size}", color = Color.White, fontWeight = FontWeight.Bold)
@@ -123,7 +128,7 @@ fun ParentDashboardScreen(
 
             item {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Actionable Quests", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
+                    Text(stringResource(com.example.voxa.R.string.quests_parent_actionable_quests), color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
                     Spacer(modifier = Modifier.width(12.dp))
                     Badge(containerColor = QuestTeal) {
                         Text("${actionableQuests.size}", color = Color.White, fontWeight = FontWeight.Bold)
@@ -139,11 +144,11 @@ fun ParentDashboardScreen(
                         shape = RoundedCornerShape(16.dp),
                         border = BorderStroke(1.dp, Slate600)
                     ) {
-                        Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                        Box(modifier = Modifier.fillMaxWidth().wrapContentHeight().padding(16.dp), contentAlignment = Alignment.Center) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text("✅", fontSize = 48.sp)
                                 Spacer(modifier = Modifier.height(16.dp))
-                                Text("All caught up!", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                                Text(stringResource(com.example.voxa.R.string.quests_parent_all_caught_up), color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                             }
                         }
                     }
@@ -157,7 +162,7 @@ fun ParentDashboardScreen(
             item {
                 Spacer(modifier = Modifier.height(16.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Completed History", color = Slate300, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    Text(stringResource(com.example.voxa.R.string.quests_parent_completed_history), color = Slate300, fontSize = 20.sp, fontWeight = FontWeight.Bold)
                     Spacer(modifier = Modifier.width(12.dp))
                     Badge(containerColor = Slate600) {
                         Text("${approvedQuests.size}", color = Color.White, fontWeight = FontWeight.Bold)
@@ -167,7 +172,7 @@ fun ParentDashboardScreen(
 
             if (approvedQuests.isEmpty()) {
                 item {
-                    Text("No history yet.", color = Slate500, modifier = Modifier.padding(bottom = 80.dp))
+                    Text(stringResource(com.example.voxa.R.string.quests_parent_no_history), color = Slate500, modifier = Modifier.padding(bottom = 80.dp))
                 }
             } else {
                 items(approvedQuests) { quest ->
@@ -207,8 +212,10 @@ fun ParentDashboardScreen(
         }
     }
     } // Closes the `else` block for `if (showRewards)`
+    } // Closes CompositionLocalProvider
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun QuestParentCard(quest: QuestEntity, viewModel: QuestsViewModel, isActionable: Boolean) {
     val borderColor = when (quest.status) {
@@ -233,90 +240,102 @@ fun QuestParentCard(quest: QuestEntity, viewModel: QuestsViewModel, isActionable
     }
     
     val badgeText = when (quest.status) {
-        QuestStatus.SUBMITTED -> "Needs Verification"
-        QuestStatus.UNABLE -> "Child Needs Help"
-        QuestStatus.PENDING -> "Awaiting Child"
+        QuestStatus.SUBMITTED -> stringResource(com.example.voxa.R.string.quests_parent_badge_needs_verification)
+        QuestStatus.UNABLE -> stringResource(com.example.voxa.R.string.quests_parent_badge_needs_help)
+        QuestStatus.PENDING -> stringResource(com.example.voxa.R.string.quests_parent_badge_awaiting)
         else -> ""
     }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = Slate800),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(12.dp),
         border = BorderStroke(1.dp, borderColor)
     ) {
-        Column(modifier = Modifier.padding(20.dp)) {
+        Column(modifier = Modifier.padding(14.dp)) {
             if (isActionable) {
                 Box(
                     modifier = Modifier
-                        .background(badgeColor, RoundedCornerShape(8.dp))
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                        .background(badgeColor, RoundedCornerShape(6.dp))
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
                 ) {
-                    Text(text = badgeText, color = badgeTextColor, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text(text = badgeText, color = badgeTextColor, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 }
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(8.dp))
             }
             
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(text = quest.icon, fontSize = 40.sp)
-                Spacer(modifier = Modifier.width(16.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = quest.title, 
-                        color = if (isActionable) Color.White else Slate400, 
-                        fontSize = 20.sp, 
-                        fontWeight = FontWeight.ExtraBold
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(text = quest.description, color = Slate500, fontSize = 14.sp)
+                Text(text = quest.icon, fontSize = 36.sp)
+                Spacer(modifier = Modifier.width(12.dp))
+                
+                FlowRow(
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Column(modifier = Modifier.wrapContentWidth()) {
+                        Text(
+                            text = quest.title, 
+                            color = if (isActionable) Color.White else Slate400, 
+                            fontSize = 18.sp, 
+                            fontWeight = FontWeight.ExtraBold
+                        )
+                        if (quest.description.isNotBlank()) {
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(text = quest.description, color = Slate500, fontSize = 13.sp)
+                        }
+                    }
+                    
+                    if (isActionable) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            when (quest.status) {
+                                QuestStatus.SUBMITTED -> {
+                                    Button(
+                                        onClick = { viewModel.rejectQuest(quest, null) },
+                                        colors = ButtonDefaults.buttonColors(containerColor = ErrorRed.copy(alpha = 0.15f), contentColor = ErrorRed),
+                                        shape = RoundedCornerShape(8.dp),
+                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                                    ) {
+                                        Icon(Icons.Default.Close, contentDescription = "Reject", modifier = Modifier.size(16.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(stringResource(com.example.voxa.R.string.quests_parent_reject), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                    }
+                                    Button(
+                                        onClick = { viewModel.approveQuest(quest, null) },
+                                        colors = ButtonDefaults.buttonColors(containerColor = SuccessGreen),
+                                        shape = RoundedCornerShape(8.dp),
+                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                                    ) {
+                                        Icon(Icons.Default.Check, contentDescription = "Approve", tint = Color.White, modifier = Modifier.size(16.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(stringResource(com.example.voxa.R.string.quests_parent_approve), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                    }
+                                }
+                                QuestStatus.UNABLE, QuestStatus.PENDING -> {
+                                    Button(
+                                        onClick = { viewModel.deleteQuest(quest) },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Slate700),
+                                        shape = RoundedCornerShape(8.dp),
+                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                                    ) {
+                                        Icon(Icons.Default.Delete, contentDescription = "Cancel", tint = Slate300, modifier = Modifier.size(16.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(if (quest.status == QuestStatus.UNABLE) stringResource(com.example.voxa.R.string.quests_parent_btn_ack_delete) else stringResource(com.example.voxa.R.string.quests_parent_btn_cancel), color = Slate300, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                    }
+                                }
+                                else -> {}
+                            }
+                        }
+                    }
                 }
+                
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = "+${quest.points}", 
                     color = if (isActionable) QuestGold else Slate500, 
                     fontWeight = FontWeight.ExtraBold, 
                     fontSize = 20.sp
                 )
-            }
-            
-            if (isActionable) {
-                Spacer(modifier = Modifier.height(24.dp))
-                Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
-                    when (quest.status) {
-                        QuestStatus.SUBMITTED -> {
-                            Button(
-                                onClick = { viewModel.rejectQuest(quest, null) },
-                                colors = ButtonDefaults.buttonColors(containerColor = ErrorRed.copy(alpha = 0.15f), contentColor = ErrorRed),
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
-                                Icon(Icons.Default.Close, contentDescription = "Reject")
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Reject", fontWeight = FontWeight.Bold)
-                            }
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Button(
-                                onClick = { viewModel.approveQuest(quest, null) },
-                                colors = ButtonDefaults.buttonColors(containerColor = SuccessGreen),
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
-                                Icon(Icons.Default.Check, contentDescription = "Approve", tint = Color.White)
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Approve", color = Color.White, fontWeight = FontWeight.Bold)
-                            }
-                        }
-                        QuestStatus.UNABLE, QuestStatus.PENDING -> {
-                            Button(
-                                onClick = { viewModel.deleteQuest(quest) },
-                                colors = ButtonDefaults.buttonColors(containerColor = Slate700),
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
-                                Icon(Icons.Default.Delete, contentDescription = "Cancel", tint = Slate300)
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(if (quest.status == QuestStatus.UNABLE) "Acknowledge & Delete" else "Cancel Task", color = Slate300, fontWeight = FontWeight.Bold)
-                            }
-                        }
-                        else -> {}
-                    }
-                }
             }
         }
     }
@@ -331,12 +350,14 @@ fun PurchasedRewardCard(purchase: PurchasedRewardEntity, viewModel: QuestsViewMo
         border = BorderStroke(2.dp, QuestOrange.copy(alpha = 0.5f))
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
-            Box(
-                modifier = Modifier
-                    .background(QuestOrange.copy(alpha = 0.2f), RoundedCornerShape(8.dp))
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
-            ) {
-                Text(text = "Unfulfilled Reward", color = QuestOrange, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            if (!purchase.isFulfilled) {
+                Box(
+                    modifier = Modifier
+                        .background(QuestOrange.copy(alpha = 0.2f), RoundedCornerShape(8.dp))
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    Text(text = stringResource(com.example.voxa.R.string.quests_unfulfilled_reward), color = QuestOrange, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
             }
             Spacer(modifier = Modifier.height(12.dp))
             
@@ -346,7 +367,7 @@ fun PurchasedRewardCard(purchase: PurchasedRewardEntity, viewModel: QuestsViewMo
                 Column(modifier = Modifier.weight(1f)) {
                     Text(text = purchase.title, color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold)
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text(text = "Child spent ${purchase.cost} stars.", color = Slate400, fontSize = 14.sp)
+                    Text(text = stringResource(com.example.voxa.R.string.quests_child_spent, purchase.cost), color = Slate400, fontSize = 14.sp)
                 }
             }
             Spacer(modifier = Modifier.height(24.dp))
@@ -358,7 +379,7 @@ fun PurchasedRewardCard(purchase: PurchasedRewardEntity, viewModel: QuestsViewMo
             ) {
                 Icon(Icons.Default.Check, contentDescription = "Mark as Given", tint = Color.White)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Mark as Given ✅", color = Color.White, fontWeight = FontWeight.Bold)
+                Text(stringResource(com.example.voxa.R.string.quests_parent_mark_given), color = Color.White, fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -383,19 +404,20 @@ fun CreateQuestSheetContent(
             .padding(24.dp)
             .padding(bottom = 32.dp)
     ) {
-        Text("New Quest 🎯", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 24.sp)
+        Text(stringResource(com.example.voxa.R.string.quests_parent_new_quest), color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 24.sp)
         Spacer(modifier = Modifier.height(24.dp))
 
         OutlinedTextField(
             value = title,
             onValueChange = { title = it },
-            label = { Text("Task Title", color = Slate400) },
+            label = { Text(stringResource(com.example.voxa.R.string.quests_parent_task_title), color = Slate400) },
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = QuestTeal,
                 unfocusedBorderColor = Slate600,
                 focusedTextColor = Color.White,
                 unfocusedTextColor = Color.White
             ),
+            singleLine = true,
             shape = RoundedCornerShape(12.dp),
             modifier = Modifier.fillMaxWidth()
         )
@@ -403,13 +425,14 @@ fun CreateQuestSheetContent(
         OutlinedTextField(
             value = description,
             onValueChange = { description = it },
-            label = { Text("Description", color = Slate400) },
+            label = { Text(stringResource(com.example.voxa.R.string.quests_parent_task_desc), color = Slate400) },
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = QuestTeal,
                 unfocusedBorderColor = Slate600,
                 focusedTextColor = Color.White,
                 unfocusedTextColor = Color.White
             ),
+            singleLine = true,
             shape = RoundedCornerShape(12.dp),
             modifier = Modifier.fillMaxWidth()
         )
@@ -417,7 +440,7 @@ fun CreateQuestSheetContent(
         OutlinedTextField(
             value = points,
             onValueChange = { if (it.all { char -> char.isDigit() }) points = it },
-            label = { Text("Points Reward", color = Slate400) },
+            label = { Text(stringResource(com.example.voxa.R.string.quests_parent_points_reward), color = Slate400) },
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = QuestTeal,
                 unfocusedBorderColor = Slate600,
@@ -428,7 +451,7 @@ fun CreateQuestSheetContent(
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(24.dp))
-        Text("Select Emoji:", color = Slate300, fontWeight = FontWeight.Medium)
+        Text(stringResource(com.example.voxa.R.string.quests_parent_select_emoji), color = Slate300, fontWeight = FontWeight.Medium)
         Spacer(modifier = Modifier.height(12.dp))
         
         // Emoji Grid
@@ -458,20 +481,20 @@ fun CreateQuestSheetContent(
                 shape = RoundedCornerShape(12.dp),
                 border = BorderStroke(1.dp, Slate600)
             ) {
-                Text("Cancel", color = Slate300, fontWeight = FontWeight.Bold)
+                Text(stringResource(com.example.voxa.R.string.quests_parent_cancel), color = Slate300, fontWeight = FontWeight.Bold)
             }
             Spacer(modifier = Modifier.width(16.dp))
             Button(
                 onClick = { 
                     if (title.isNotBlank()) {
-                        onCreate(title, description, selectedIcon, points.toIntOrNull() ?: 0)
+                        onCreate(title.trim(), description.trim(), selectedIcon, points.toIntOrNull() ?: 0)
                     }
                 },
                 modifier = Modifier.weight(1f).height(56.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = QuestTeal),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Text("Assign", color = Color.White, fontWeight = FontWeight.Bold)
+                Text(stringResource(com.example.voxa.R.string.quests_parent_assign), color = Color.White, fontWeight = FontWeight.Bold)
             }
         }
     }

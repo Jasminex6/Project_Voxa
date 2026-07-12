@@ -1,5 +1,6 @@
 package com.example.voxa.ui.screens
 
+import androidx.compose.ui.res.stringResource
 import android.Manifest
 import android.content.pm.PackageManager
 import android.media.AudioFormat
@@ -57,7 +58,7 @@ import kotlin.math.sin
  * Practice word data model — defines each word card in the horizontal selector.
  */
 data class PracticeWord(
-    val english: String,
+    val titleResId: Int,
     val arabic: String,
     val emoji: String,
     val assetFileName: String // e.g. "practice/water_ref.wav" (supports .wav and .mp3)
@@ -65,12 +66,12 @@ data class PracticeWord(
 
 /** Hardcoded practice vocabulary — ships with the app */
 val PRACTICE_WORDS = listOf(
-    PracticeWord("Water", "مايه", "💧", "practice/water_ref.wav"),
-    PracticeWord("Milk", "لبن", "🥛", "practice/milk_ref.wav"),
-    PracticeWord("Bread", "عيش", "🍞", "practice/bread_ref.wav"),
-    PracticeWord("Help", "مساعدة", "🆘", "practice/help_ref.wav"),
-    PracticeWord("Mom", "ماما", "👩", "practice/mama_ref.wav"),
-    PracticeWord("Dad", "بابا", "👨", "practice/baba_ref.wav")
+    PracticeWord(com.example.voxa.R.string.word_water, "مايه", "💧", "practice/water_ref.wav"),
+    PracticeWord(com.example.voxa.R.string.word_milk, "لبن", "🥛", "practice/milk_ref.wav"),
+    PracticeWord(com.example.voxa.R.string.word_bread, "عيش", "🍞", "practice/bread_ref.wav"),
+    PracticeWord(com.example.voxa.R.string.word_help, "مساعدة", "🆘", "practice/help_ref.wav"),
+    PracticeWord(com.example.voxa.R.string.word_mom, "ماما", "👩", "practice/mama_ref.wav"),
+    PracticeWord(com.example.voxa.R.string.word_dad, "بابا", "👨", "practice/baba_ref.wav")
 )
 
 // ── Accent color for the Practice tab ──
@@ -79,34 +80,17 @@ val PracticeVioletDark = Color(0xFF7c3aed)
 val PracticeVioletBg = Color(0xFF581c87)
 
 // ── Motivational message pools ──
-private val MESSAGES_3_STARS = listOf(
-    "Amazing! You're a superstar! 🎉",
-    "WOW! Perfect pronunciation! 🏆",
-    "You nailed it! Champion! 👑",
-    "Incredible! You sound perfect! ✨",
-    "Bravo! That was flawless! 🌟"
-)
-private val MESSAGES_2_STARS = listOf(
-    "Great job! Almost perfect! 💪",
-    "So close to perfect! Keep it up! 🚀",
-    "Wonderful work! You're getting better! ⭐",
-    "Really good! Just a tiny bit more! 🎯",
-    "Impressive! You're nearly there! 🌈"
-)
-private val MESSAGES_1_STAR = listOf(
-    "Good try! Keep practicing! 😊",
-    "Nice effort! You're learning fast! 📚",
-    "You're on the right track! 🌱",
-    "Keep going! Practice makes perfect! 💡",
-    "That's a great start! Try again! 🎵"
-)
-private val MESSAGES_0_STARS = listOf(
-    "Let's try again! You can do it! 🌈",
-    "Don't give up! Practice makes perfect! 💫",
-    "One more time! You've got this! 🎯",
-    "Keep trying! Every attempt counts! 🦋",
-    "You're brave for trying! Go again! 🌟"
-)
+@Composable
+fun getMessages3Stars(): List<String> = androidx.compose.ui.res.stringArrayResource(com.example.voxa.R.array.speech_msg_3_stars).toList()
+
+@Composable
+fun getMessages2Stars(): List<String> = androidx.compose.ui.res.stringArrayResource(com.example.voxa.R.array.speech_msg_2_stars).toList()
+
+@Composable
+fun getMessages1Star(): List<String> = androidx.compose.ui.res.stringArrayResource(com.example.voxa.R.array.speech_msg_1_star).toList()
+
+@Composable
+fun getMessages0Stars(): List<String> = androidx.compose.ui.res.stringArrayResource(com.example.voxa.R.array.speech_msg_0_stars).toList()
 
 /**
  * Maps DTW distance to (score, stars) per the specification.
@@ -123,12 +107,12 @@ private fun computeScoreFromDtw(dtwDistance: Double): Pair<Int, Int> {
 /**
  * Returns a random motivational message for the given star count.
  */
-private fun getMotivationalMessage(stars: Int): String {
+private fun getMotivationalMessage(stars: Int, msg3: List<String>, msg2: List<String>, msg1: List<String>, msg0: List<String>): String {
     return when (stars) {
-        3 -> MESSAGES_3_STARS.random()
-        2 -> MESSAGES_2_STARS.random()
-        1 -> MESSAGES_1_STAR.random()
-        else -> MESSAGES_0_STARS.random()
+        3 -> msg3.random()
+        2 -> msg2.random()
+        1 -> msg1.random()
+        else -> msg0.random()
     }
 }
 
@@ -167,6 +151,11 @@ fun SpeechPracticeScreen(viewModel: IVoxaViewModel) {
     var recordedPcm by remember { mutableStateOf<ShortArray?>(null) }
 
     val selectedWord = PRACTICE_WORDS[selectedWordIndex]
+    val msg3Stars = getMessages3Stars()
+    val msg2Stars = getMessages2Stars()
+    val msg1Star = getMessages1Star()
+    val msg0Stars = getMessages0Stars()
+    val englishWordTitle = stringResource(selectedWord.titleResId)
 
     // ── Recording animation ──
     val pulseAnim = rememberInfiniteTransition(label = "pulse")
@@ -276,7 +265,7 @@ fun SpeechPracticeScreen(viewModel: IVoxaViewModel) {
                         resultStars = 0
                         resultScore = 0
                         resultDtw = 99f
-                        resultMessage = "Could not process audio. Try speaking louder! 🔊"
+                        resultMessage = context.getString(com.example.voxa.R.string.speech_error_loud)
                         showResult = true
                     }
                     return@launch
@@ -285,7 +274,7 @@ fun SpeechPracticeScreen(viewModel: IVoxaViewModel) {
                 val dtwDistance = DtwMatcher.dtwDistance(refFeatures, childFeatures)
 
                 val (score, stars) = computeScoreFromDtw(dtwDistance)
-                val message = getMotivationalMessage(stars)
+                val message = getMotivationalMessage(stars, msg3Stars, msg2Stars, msg1Star, msg0Stars)
 
                 withContext(Dispatchers.Main) {
                     resultDtw = dtwDistance.toFloat()
@@ -296,7 +285,7 @@ fun SpeechPracticeScreen(viewModel: IVoxaViewModel) {
                     showResult = true
 
                     // Persist to database
-                    viewModel.recordPracticeAttempt(word = selectedWord.english, score = score, stars = stars)
+                    viewModel.recordPracticeAttempt(word = englishWordTitle, score = score, stars = stars)
                 }
             } catch (e: Exception) {
                 android.util.Log.e("SpeechPractice", "Recording/scoring failed: ${e.message}", e)
@@ -306,7 +295,7 @@ fun SpeechPracticeScreen(viewModel: IVoxaViewModel) {
                     resultStars = 0
                     resultScore = 0
                     resultDtw = 99f
-                    resultMessage = "Something went wrong. Let's try again! 🔄"
+                    resultMessage = context.getString(com.example.voxa.R.string.speech_error_generic)
                     showResult = true
                 }
             }
@@ -334,13 +323,13 @@ fun SpeechPracticeScreen(viewModel: IVoxaViewModel) {
         ) {
             // ── HEADER ──
             Text(
-                text = "🎮 Speech Practice",
+                text = stringResource(com.example.voxa.R.string.speech_practice_title),
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White
             )
             Text(
-                text = "Tap a word, hold the mic to speak, and earn stars!",
+                text = stringResource(com.example.voxa.R.string.speech_practice_desc),
                 fontSize = 13.sp,
                 color = Slate400,
                 modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
@@ -354,7 +343,7 @@ fun SpeechPracticeScreen(viewModel: IVoxaViewModel) {
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "Please create or activate a child profile first\nto start practicing! 🧒",
+                        text = stringResource(com.example.voxa.R.string.speech_practice_no_profile),
                         color = Slate400,
                         textAlign = TextAlign.Center,
                         lineHeight = 20.sp
@@ -365,7 +354,7 @@ fun SpeechPracticeScreen(viewModel: IVoxaViewModel) {
 
             // ── WORD SELECTOR (Horizontal LazyRow) ──
             Text(
-                text = "Choose a word:",
+                text = stringResource(com.example.voxa.R.string.speech_practice_choose_word),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = Slate300,
@@ -411,7 +400,7 @@ fun SpeechPracticeScreen(viewModel: IVoxaViewModel) {
                             )
                             Spacer(modifier = Modifier.height(6.dp))
                             Text(
-                                text = word.english,
+                                text = stringResource(word.titleResId),
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = if (isSelected) PracticeViolet else Color.White
@@ -453,7 +442,7 @@ fun SpeechPracticeScreen(viewModel: IVoxaViewModel) {
                         color = Color.White
                     )
                     Text(
-                        text = selectedWord.english,
+                        text = stringResource(selectedWord.titleResId),
                         fontSize = 16.sp,
                         color = Slate400,
                         modifier = Modifier.padding(top = 2.dp)
@@ -470,7 +459,7 @@ fun SpeechPracticeScreen(viewModel: IVoxaViewModel) {
                         }
                     ) {
                         Text(
-                            text = "🔊 Listen to example",
+                            text = stringResource(com.example.voxa.R.string.speech_listen_example),
                             color = PracticeViolet,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.SemiBold
@@ -542,9 +531,9 @@ fun SpeechPracticeScreen(viewModel: IVoxaViewModel) {
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Text(
-                        text = if (isRecording) "Recording... release to score!"
-                        else if (isScoring) "Scoring your pronunciation..."
-                        else "Hold the mic and say the word!",
+                        text = if (isRecording) stringResource(com.example.voxa.R.string.speech_recording)
+                        else if (isScoring) stringResource(com.example.voxa.R.string.speech_scoring)
+                        else stringResource(com.example.voxa.R.string.speech_hold_mic),
                         fontSize = 13.sp,
                         color = if (isRecording) PracticeViolet else Slate400,
                         textAlign = TextAlign.Center
@@ -636,7 +625,7 @@ fun SpeechPracticeScreen(viewModel: IVoxaViewModel) {
                             shape = RoundedCornerShape(12.dp)
                         ) {
                             Text(
-                                text = if (resultStars >= 2) "Practice Again! 🎮" else "Try Again! 💪",
+                                text = if (resultStars >= 2) stringResource(com.example.voxa.R.string.speech_practice_again) else stringResource(com.example.voxa.R.string.speech_try_again),
                                 color = scoreColor,
                                 fontWeight = FontWeight.Bold
                             )
@@ -652,7 +641,7 @@ fun SpeechPracticeScreen(viewModel: IVoxaViewModel) {
             // ═══════════════════════════════════════════════════
             if (practiceStats.isNotEmpty()) {
                 Text(
-                    text = "📊 Recent Practice",
+                    text = stringResource(com.example.voxa.R.string.speech_practice_recent),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
@@ -692,7 +681,7 @@ private fun PracticeHistoryItem(stat: PracticeStats) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Word emoji
-            val wordEmoji = PRACTICE_WORDS.find { it.english == stat.word }?.emoji ?: "🗣️"
+            val wordEmoji = PRACTICE_WORDS.find { stringResource(it.titleResId) == stat.word }?.emoji ?: "🗣️"
             Text(
                 text = wordEmoji,
                 fontSize = 22.sp,
@@ -878,7 +867,7 @@ private fun generateSyntheticTemplate(
 ): Array<FloatArray> {
     val sampleRate = 16000
     val durationSamples = sampleRate * 1 // 1 second
-    val baseFrequency = 200.0 + (word.english.hashCode().and(0x7FFFFFFF) % 300) // 200–500 Hz
+    val baseFrequency = 200.0 + (word.arabic.hashCode().and(0x7FFFFFFF) % 300) // 200–500 Hz
 
     val pcm = ShortArray(durationSamples) { i ->
         val t = i.toDouble() / sampleRate

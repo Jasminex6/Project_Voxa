@@ -7,8 +7,10 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -29,6 +31,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Share
 
 
 /**
@@ -47,6 +50,8 @@ fun ProfileScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
     // Observing database profile states via ViewModel live StateFlow broadcasts.
     val profiles by viewModel.allProfiles.collectAsState()
     val activeProfile by viewModel.activeProfile.collectAsState()
+    val enrolledIntents by viewModel.enrolledIntents.collectAsState()
+    var showShareSheet by remember { mutableStateOf(false) }
 
     var newName by remember { mutableStateOf("") }
     
@@ -59,6 +64,7 @@ fun ProfileScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
             .fillMaxSize()
             .background(Slate900)
             .padding(16.dp)
+            .verticalScroll(rememberScrollState())
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -258,7 +264,7 @@ fun ProfileScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                 Button(
                     onClick = {
                         if (newName.isNotBlank()) {
-                            viewModel.createProfile(newName.trim(), selectedGender, selectedEmoji)
+                            viewModel.createProfile(newName.trim().replaceFirstChar { if (it.isLowerCase()) it.titlecase(java.util.Locale.getDefault()) else it.toString() }, selectedGender, selectedEmoji)
                             newName = ""
                         }
                     },
@@ -286,7 +292,7 @@ fun ProfileScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f),
+                    .padding(vertical = 32.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -297,11 +303,11 @@ fun ProfileScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                 )
             }
         } else {
-            LazyColumn(
-                modifier = Modifier.weight(1f),
+            Column(
+                modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(profiles, key = { it.id }) { profile ->
+                profiles.forEach { profile ->
                     val isActive = activeProfile?.id == profile.id
                     // Tapping a profile card triggers an atomic database query to clear other active profiles
                     // and select this specific profile ID, immediately shifting flatMapLatest queries for intents.
@@ -310,11 +316,20 @@ fun ProfileScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                         isActive = isActive,
                         onSelect = { viewModel.selectActiveProfile(profile.id) },
                         onDelete = { viewModel.deleteProfile(profile) },
-                        onToggleGender = { viewModel.updateProfileGender(profile, if (profile.gender == "Male") "Female" else "Male") }
+                        onToggleGender = { viewModel.updateProfileGender(profile, if (profile.gender == "Male") "Female" else "Male") },
+                        onShare = { showShareSheet = true }
                     )
                 }
             }
         }
+    }
+
+    if (showShareSheet && activeProfile != null) {
+        ShareProfileBottomSheet(
+            profile = activeProfile!!,
+            intents = enrolledIntents,
+            onDismiss = { showShareSheet = false }
+        )
     }
 }
 
@@ -324,7 +339,8 @@ fun ProfileItem(
     isActive: Boolean,
     onSelect: () -> Unit,
     onDelete: () -> Unit,
-    onToggleGender: () -> Unit
+    onToggleGender: () -> Unit,
+    onShare: () -> Unit
 ) {
     Card(
         shape = RoundedCornerShape(10.dp),
@@ -349,7 +365,11 @@ fun ProfileItem(
                     modifier = Modifier
                         .size(40.dp)
                         .clip(CircleShape)
-                        .background(if (isActive) Sky400.copy(alpha = 0.15f) else Slate700),
+                        .background(if (isActive) Sky400.copy(alpha = 0.15f) else Slate700)
+                        .then(
+                            if (isActive) Modifier.border(2.dp, SuccessGreen, CircleShape)
+                            else Modifier
+                        ),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -361,30 +381,14 @@ fun ProfileItem(
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = profile.name,
+                            text = profile.name.replaceFirstChar { if (it.isLowerCase()) it.titlecase(java.util.Locale.getDefault()) else it.toString() },
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
                         )
-                        if (isActive) {
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(SuccessGreen)
-                                    .padding(horizontal = 6.dp, vertical = 2.dp)
-                            ) {
-                                Text(
-                                    text = stringResource(id = R.string.active_tag),
-                                    color = Color.White,
-                                    fontSize = 9.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
                     }
                     Text(
-                        text = stringResource(id = R.string.voice_pack_label, profile.gender),
+                        text = stringResource(id = R.string.voice_pack_label, if (profile.gender == "Male") stringResource(R.string.profile_male) else stringResource(R.string.profile_female)),
                         fontSize = 12.sp,
                         color = Slate300
                     )
@@ -395,6 +399,18 @@ fun ProfileItem(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
+                // Share Profile button (Only for active profile to keep it clean)
+                if (isActive) {
+                    IconButton(onClick = onShare) {
+                        Icon(
+                            imageVector = Icons.Default.Share,
+                            contentDescription = "Share Profile",
+                            tint = Sky400,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+
                 // Swap Voice Pack button
                 IconButton(onClick = onToggleGender) {
                     Icon(
@@ -453,6 +469,152 @@ private class MockProfileViewModel : IVoxaViewModel {
 fun ProfileScreenPreview() {
     VoxaTheme {
         ProfileScreen(viewModel = MockProfileViewModel(), onBack = {})
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ShareProfileBottomSheet(
+    profile: ChildProfile,
+    intents: List<com.example.voxa.data.EnrolledIntent>,
+    onDismiss: () -> Unit
+) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val sharingManager = remember { com.example.voxa.utils.ProfileSharingManager(context) }
+    val sharingState by sharingManager.sharingState.collectAsState()
+
+    val permissions = mutableListOf(
+        android.Manifest.permission.BLUETOOTH_ADVERTISE,
+        android.Manifest.permission.BLUETOOTH_CONNECT,
+        android.Manifest.permission.BLUETOOTH_SCAN,
+        android.Manifest.permission.ACCESS_FINE_LOCATION
+    )
+    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+        permissions.add(android.Manifest.permission.NEARBY_WIFI_DEVICES)
+    }
+
+    val permissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions()
+    ) { results ->
+        if (results.all { it.value }) {
+            sharingManager.startDiscovering()
+        } else {
+            android.widget.Toast.makeText(context, "Permissions required for sharing", android.widget.Toast.LENGTH_LONG).show()
+        }
+    }
+
+    // Start discovering as soon as the sheet opens
+    LaunchedEffect(Unit) {
+        val hasAllPermissions = permissions.all {
+            androidx.core.content.ContextCompat.checkSelfPermission(context, it) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        }
+        if (hasAllPermissions) {
+            sharingManager.startDiscovering()
+        } else {
+            permissionLauncher.launch(permissions.toTypedArray())
+        }
+    }
+
+    // Stop discovering when dismissed
+    DisposableEffect(Unit) {
+        onDispose {
+            sharingManager.disconnect()
+        }
+    }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = Slate900
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "Share ${profile.name.replaceFirstChar { if (it.isLowerCase()) it.titlecase(java.util.Locale.getDefault()) else it.toString() }}'s Profile",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = stringResource(com.example.voxa.R.string.profile_looking_for_nearby),
+                fontSize = 14.sp,
+                color = Slate400,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            when (val state = sharingState) {
+                is com.example.voxa.utils.ProfileSharingManager.SharingState.Idle,
+                is com.example.voxa.utils.ProfileSharingManager.SharingState.Discovering -> {
+                    CircularProgressIndicator(color = Sky400)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(stringResource(com.example.voxa.R.string.profile_searching), color = Sky400)
+                }
+                is com.example.voxa.utils.ProfileSharingManager.SharingState.EndpointFound -> {
+                    Text(stringResource(com.example.voxa.R.string.profile_found, state.name), color = SuccessGreen, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    CircularProgressIndicator(color = SuccessGreen)
+                    Text(stringResource(com.example.voxa.R.string.profile_connecting_auto), color = Slate400)
+                }
+                is com.example.voxa.utils.ProfileSharingManager.SharingState.Connecting -> {
+                    CircularProgressIndicator(color = Sky400)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(stringResource(com.example.voxa.R.string.profile_connecting_to, state.name), color = Slate400)
+                }
+                is com.example.voxa.utils.ProfileSharingManager.SharingState.Connected -> {
+                    Icon(Icons.Default.Check, contentDescription = null, tint = SuccessGreen, modifier = Modifier.size(48.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(stringResource(com.example.voxa.R.string.profile_connected_sending), color = SuccessGreen)
+                    
+                    // Trigger send
+                    LaunchedEffect(Unit) {
+                        val gson = com.google.gson.Gson()
+                        val caregiverName = com.example.voxa.data.EmergencyContactPrefs.getContactName(context)
+                        val caregiverPhone = com.example.voxa.data.EmergencyContactPrefs.getContactPhone(context)
+                        val caregiverRelation = com.example.voxa.data.EmergencyContactPrefs.getContactRelation(context)
+                        val dto = mapOf(
+                            "profile" to profile,
+                            "intents" to intents,
+                            "caregiverName" to caregiverName,
+                            "caregiverPhone" to caregiverPhone,
+                            "caregiverRelation" to caregiverRelation
+                        )
+                        val json = gson.toJson(dto)
+                        val pcmFiles = intents.map { java.io.File(context.cacheDir, it.audioAssetPath) }
+                        sharingManager.sendProfileData(json, pcmFiles)
+                    }
+                }
+                is com.example.voxa.utils.ProfileSharingManager.SharingState.Transferring -> {
+                    CircularProgressIndicator(color = Sky400)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(stringResource(com.example.voxa.R.string.profile_transferring), color = Sky400)
+                }
+                is com.example.voxa.utils.ProfileSharingManager.SharingState.TransferComplete -> {
+                    Icon(Icons.Default.Check, contentDescription = null, tint = SuccessGreen, modifier = Modifier.size(48.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(stringResource(com.example.voxa.R.string.profile_shared_success), color = SuccessGreen, fontWeight = FontWeight.Bold)
+                }
+                is com.example.voxa.utils.ProfileSharingManager.SharingState.Error -> {
+                    Text(stringResource(com.example.voxa.R.string.profile_error, state.message), color = ErrorRed)
+                }
+                is com.example.voxa.utils.ProfileSharingManager.SharingState.Advertising -> {
+                    // Receiver mode, not used here
+                }
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+            Button(
+                onClick = onDismiss,
+                colors = ButtonDefaults.buttonColors(containerColor = Slate800)
+            ) {
+                Text(stringResource(com.example.voxa.R.string.profile_cancel), color = Color.White)
+            }
+        }
     }
 }
 

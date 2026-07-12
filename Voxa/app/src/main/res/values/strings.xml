@@ -1,6 +1,11 @@
 <resources>
     <string name="app_name">Voxa</string>
 
+    <string name="quests_role_parent_named">I\'m %1$s</string>
+    <string name="quests_rewards_add_some_parent">Add some rewards to motivate your child!</string>
+    <string name="profile_gender_male">Male</string>
+    <string name="profile_gender_female">Female</string>
+
     <!-- Navigation Screen Titles -->
     <string name="title_home">Home</string>
     <string name="title_enroll">Enroll</string>
@@ -8,16 +13,22 @@
     <string name="title_emergency">Emergency</string>
     <string name="title_profile">Profile</string>
     <string name="title_practice">Practice</string>
-
+    <string name="title_quests">Quests</string>
     <!-- Onboarding Walkthrough -->
-    <string name="onboarding_title_1">Welcome to Voxa</string>
-    <string name="onboarding_desc_1">Voxa translates your child\'s unique vocalizations into clear Egyptian Arabic voice output, helping them communicate their needs instantly.</string>
-    <string name="onboarding_title_2">Personalized Translation</string>
-    <string name="onboarding_desc_2">Caregivers record custom sound templates (e.g. custom hums or sounds) and pair them with standard meanings. Voxa uses offline similarity matching to recognize them.</string>
-    <string name="onboarding_title_3">System Permissions</string>
-    <string name="onboarding_desc_3">To monitor speech and notify you, Voxa requires Microphone, Notification, and GPS permissions. All audio is processed locally and never leaves this device.</string>
-    <string name="onboarding_title_4">Create First Profile</string>
-    <string name="onboarding_desc_4">Let\'s get started by creating a profile for your child. Enter their name and select a voice pack matching their gender.</string>
+    <string name="onboarding_title_1">👋 Welcome to Voxa</string>
+    <string name="onboarding_desc_1">An inclusive, AI-powered communication tool designed to translate your child\'s unique vocalizations into clear spoken words and notifications.</string>
+    <string name="onboarding_title_2">✨ How It Works</string>
+    <string name="onboarding_desc_2">1. Enroll custom vocal sounds or words that your child uses.\n2. Translate them into text and speech in real-time.\n3. Monitor voice signals locally &amp; securely without internet.</string>
+    <string name="onboarding_title_3">🔒 Permissions Gate</string>
+    <string name="onboarding_desc_3">Please enable the following permissions to activate Voxa features. All calculations are performed on-device.</string>
+    <string name="onboarding_title_4">👶 Child Setup</string>
+    <string name="onboarding_desc_4">Set up your child\'s profile. Selecting the correct gender adapts the voice feedback pitch.</string>
+    <string name="onboarding_avatar_title">Pick an Avatar</string>
+    <string name="onboarding_emergency_title">🚨 Emergency Contact</string>
+    <string name="onboarding_emergency_desc">Set up who to contact in case of an emergency.</string>
+    <string name="onboarding_emergency_msg_desc">This message will be sent when you trigger the emergency SMS action.</string>
+    <string name="onboarding_choose_lang">Choose Language</string>
+    <string name="onboarding_choose_lang_ar">اختر اللغة</string>
     <string name="btn_next">Next</string>
     <string name="btn_get_started">Get Started</string>
     <string name="btn_grant_permissions">Grant Permissions</string>
@@ -25,6 +36,8 @@
 
     <!-- Dashboard Screen -->
     <string name="header_live_translation">Live Translation</string>
+    <string name="timeline_system_update">System Update</string>
+    <string name="timeline_detected_vocalization">Detected Vocalization</string>
     <string name="listening_active">🎙️ Listening...</string>
     <string name="listening_ready">🎙️ Ready to Translate</string>
     <string name="listening_waiting">Waiting for child vocalizations...</string>
@@ -39,6 +52,113 @@
     <string name="sidebar_caregivers_info">👨‍👩‍👧 Caregivers Info</string>
     <string name="sidebar_settings">⚙️ Settings</string>
     <string name="sidebar_data_management">💾 Data Management</string>
+    <string name="emergency_actions_title">Emergency Actions</string>
+    <string name="emergency_actions_subtitle">Quick access to distress triggers.</string>
+    <string name="emergency_call_title">Call Emergency Contact</string>
+    <string name="emergency_hold_secs">Hold for 2 secs</string>
+    <string name="emergency_hold_siren">Hold for 2 seconds to play emergency siren</string>
+    <string name="emergency_release_mute">Release to mute siren</string>
+    <string name="emergency_send_gps">Send GPS pin via WhatsApp</string>
+    <string name="emergency_fetching_location">Getting location...</string>
+    <string name="emergency_sms_desc">Send SMS to %1$s</string>
+    <string name="emergency_contact_fallback">emergency contact</string>
+    <string name="emergency_whatsapp_call_title">WhatsApp Call</string>
+    <string name="emergency_whatsapp_call_desc">Call %1$s via WhatsApp</string>
+    <string name="emergency_whatsapp_msg_title">WhatsApp Message</string>
+    <string name="emergency_whatsapp_msg_desc">Send message to %1$s</string>
+    <string name="emergency_location_title">Send Current Location</string>
+    <string name="emergency_siren_title">Emergency Siren</string>
+    <string name="quests_who_is_playing">Who is playing? 🤔</string>
+    <string name="quests_caregiver_gateway">Caregiver Gateway 🛡️</string>
+    <string name="quests_pin_prompt">Create a 4-digit PIN to secure the parent dashboard.</string>
+    <string name="quests_caregiver_login">Caregiver Login</string>
+    <string name="quests_child_missions">Child\'s Missions!</string>
+    <string name="quests_my_missions">My Missions!</string>
+    <string name="quests_reward_label">Reward: </string>
+    <string name="quests_unfulfilled_reward">Unfulfilled Reward</string>
+    <string name="quests_child_spent">Child spent %1$d stars.</string>
+    
+    <!-- Quests Main Screen Roles -->
+    <string name="quests_role_parent">I\'m the Parent</string>
+    <string name="quests_role_parent_desc">Manage Quests &amp; Rewards</string>
+    <string name="quests_role_child">I am the Child</string>
+    <string name="quests_role_child_desc">Play Quests &amp; Get Stars!</string>
+    <string name="quests_exit">Exit Quests</string>
+    <string name="quests_set_pin_title">Set PIN</string>
+    <string name="quests_set_pin_label">Enter 4-digit PIN</string>
+    <string name="quests_confirm_pin_label">Confirm PIN</string>
+    <string name="quests_back_to_role">Back to Role Selection</string>
+    <string name="quests_enter_pin_label">Enter PIN</string>
+    <string name="quests_unlock_dashboard">Unlock Dashboard</string>
+    <string name="quests_forgot_pin">Forgot PIN? Reset it</string>
+    
+    <!-- Parent Dashboard -->
+    <string name="quests_parent_dashboard_title">Caregiver Dashboard 🛠️</string>
+    <string name="quests_parent_child_wallet">Child\'s Wallet</string>
+    <string name="quests_parent_points">%1$d Points</string>
+    <string name="quests_parent_pending_rewards">Pending Rewards to Fulfill 🎁</string>
+    <string name="quests_parent_actionable_quests">Actionable Quests</string>
+    <string name="quests_parent_all_caught_up">All caught up!</string>
+    <string name="quests_parent_completed_history">Completed History</string>
+    <string name="quests_parent_no_history">No history yet.</string>
+    <string name="quests_parent_reject">Reject</string>
+    <string name="quests_parent_approve">Approve</string>
+    <string name="quests_parent_mark_given">Mark as Given ✅</string>
+    <string name="quests_parent_new_quest">New Quest 🎯</string>
+    <string name="quests_parent_task_title">Task Title</string>
+    <string name="quests_parent_task_desc">Description</string>
+    <string name="quests_parent_points_reward">Points Reward</string>
+    <string name="quests_parent_select_emoji">Select Emoji:</string>
+    <string name="quests_parent_cancel">Cancel</string>
+    <string name="quests_parent_assign">Assign</string>
+
+    <!-- Rewards Store -->
+    <string name="quests_rewards_title">Rewards Store 🎁</string>
+    <string name="quests_rewards_available_stars">Available Stars</string>
+    <string name="quests_rewards_empty_store">Store is empty!</string>
+    <string name="quests_rewards_ask_caregiver">Ask your caregiver to add rewards.</string>
+    <string name="quests_rewards_new_reward">New Reward 🎁</string>
+    <string name="quests_rewards_reward_name">Reward Name</string>
+    <string name="quests_rewards_cost_stars">Cost (Stars)</string>
+    <string name="quests_rewards_select_emoji">Select Emoji:</string>
+    <string name="quests_rewards_cancel">Cancel</string>
+    <string name="quests_rewards_add">Add</string>
+    <string name="quests_rewards_cost_format">%1$d ⭐</string>
+
+    <!-- Speech Practice Screen -->
+    <string name="speech_practice_title">🎮 Speech Practice</string>
+    <string name="speech_practice_desc">Tap a word, hold the mic to speak, and earn stars!</string>
+    <string name="speech_practice_no_profile">Please create or activate a child profile first\nto start practicing! 🧒</string>
+    <string name="speech_practice_choose_word">Choose a word:</string>
+    <string name="speech_practice_listen_example">🔊 Listen to example</string>
+    <string name="speech_practice_recent">📊 Recent Practice</string>
+
+    <!-- Dashboard Screen -->
+    <string name="dashboard_manage_profiles">Manage Profiles</string>
+    <string name="dashboard_edit_caregiver">Edit Caregiver Info</string>
+    <string name="dashboard_caregiver_name">Name</string>
+    <string name="dashboard_caregiver_phone">Phone Number</string>
+    <string name="dashboard_save">Save</string>
+    <string name="dashboard_cancel">Cancel</string>
+    <string name="dashboard_edit_emergency">Edit Emergency Contact</string>
+    <string name="dashboard_contact_name">Contact Name</string>
+    <string name="dashboard_relation">Relation with Child</string>
+    <string name="dashboard_phone_error">Phone number must be exactly 11 digits</string>
+    <string name="dashboard_emergency_msg">Emergency Message</string>
+    <string name="dashboard_listening">🎙️ Listening...</string>
+    <string name="dashboard_ready_translate">🎙️ Ready to Translate</string>
+    <string name="language_toggle">Language / اللغة</string>
+    <string name="continuous_listening">Continuous Listening: ON</string>
+    <string name="no_emergency_contact_set">No emergency contact set</string>
+    <string name="translated_prefix">Translated:</string>
+    <string name="confidence_prefix">Confidence:</string>
+    <string name="voice_pack_prefix">Voice Pack:</string>
+    <string name="none">None</string>
+    <string name="relation_prefix">Relation:</string>
+    <string name="phone_prefix">Phone:</string>
+    <string name="message_prefix">Message:</string>
+    <string name="conf_abbr">Conf</string>
+    <string name="sound_prefix">Sound:</string>
     <string name="btn_manage_profiles">Manage Profiles</string>
     <string name="btn_edit_caregiver">✏️ Edit Caregiver Details</string>
     <string name="btn_export_profile">📤 Export Profile &amp; Intents</string>
@@ -53,7 +173,7 @@
 
     <!-- Library Screen -->
     <string name="library_title">📚 Word Dictionary Library</string>
-    <string name="library_desc">Manage custom sound meanings for %1$s.</string>
+    <string name="library_desc">Manage custom sound meanings for the child.</string>
     <string name="library_no_profile">Please create or activate a child profile first\nto view or manage their dictionary.</string>
     <string name="library_empty">No custom words enrolled yet.\nTap + Add Sound below to record the first word!</string>
     <string name="btn_add_sound">+ Add Sound</string>
@@ -82,20 +202,107 @@
     <string name="dialog_suggestions_desc">Select a commonly used word or phrase to auto-populate the details below:</string>
 
     <!-- Emergency Screen -->
-    <string name="emergency_title">Emergency Actions</string>
-    <string name="emergency_desc">Quick access to distress triggers.</string>
-    <string name="emergency_call_services">Call Emergency Services</string>
-    <string name="emergency_call_desc">Instantly dial emergency number (112)</string>
-    <string name="emergency_sms">Emergency SMS</string>
-    <string name="emergency_sms_desc">Send SMS notification to caregivers</string>
-    <string name="emergency_siren">Emergency Siren</string>
-    <string name="emergency_siren_hold">Hold for 2 seconds to play emergency siren</string>
-    <string name="emergency_siren_release">Release to mute siren</string>
-    <string name="emergency_caregiver_alert">Alert Primary Caregiver</string>
-    <string name="emergency_caregiver_desc">Dial caregiver phone number directly</string>
-    <string name="emergency_whatsapp">Send WhatsApp Location</string>
-    <string name="emergency_whatsapp_desc">Send location to caregivers via WhatsApp (Recommended)</string>
+
     <string name="caregiver_contacts_title">Caregiver Contact List</string>
+
+    <!-- Profile Sharing -->
+    <string name="profile_looking_for_nearby">Looking for nearby users with Voxa open...</string>
+    <string name="profile_searching">Searching...</string>
+    <string name="profile_found">Found: %1$s</string>
+    <string name="profile_connecting_auto">Connecting automatically...</string>
+    <string name="profile_connecting_to">Connecting to %1$s...</string>
+    <string name="profile_connected_sending">Connected! Sending data...</string>
+    <string name="profile_transferring">Transferring Intents...</string>
+    <string name="profile_shared_success">Profile Shared Successfully!</string>
+    <string name="profile_error">Error: %1$s</string>
+    <string name="profile_cancel">Cancel</string>
+
+    <string name="dashboard_waiting_vocalizations">Waiting for child vocalizations...</string>
+    <string name="dashboard_tap_mic">Tap mic to start monitoring</string>
+    <string name="emergency_call_desc">Instantly dial %1$s</string>
+    <string name="emergency_sms_title">Emergency SMS</string>
+    <string name="onboarding_dismiss">Dismiss</string>
+    <string name="onboarding_back">Back</string>
+    <string name="onboarding_next">Next</string>
+    <string name="onboarding_child_name">Child\'s Name</string>
+    <string name="onboarding_contact_name">Contact Name</string>
+    <string name="onboarding_relation">Relation (e.g. Mother)</string>
+    <string name="onboarding_relation_hint">e.g. Father, Grandma</string>
+    <string name="onboarding_phone_number">Phone Number</string>
+    <string name="onboarding_phone_hint">11-digit mobile number</string>
+    <string name="onboarding_emergency_sms">Emergency SMS Text</string>
+    <string name="onboarding_english">English</string>
+    <string name="onboarding_arabic">Arabic</string>
+    <string name="dashboard_caregiver_default_name">Caregiver</string>
+    <!-- Quests -->
+    <string name="quests_main_title">Quests</string>
+    <string name="quests_child_wallet_title">My Star Wallet 🌟</string>
+    <string name="quests_great_job">Great Job! 🌟</string>
+    <string name="quests_all_missions_done">All missions done.</string>
+    <string name="quests_get_rewards">Go get your rewards! 🎁</string>
+    <string name="quests_need_help">I Need Help 🙋🏽‍♀️</string>
+    <string name="quests_i_did_it">I Did It! 🎉</string>
+    <string name="quests_parent_badge_needs_verification">Needs Verification</string>
+    <string name="quests_parent_badge_needs_help">Child Needs Help</string>
+    <string name="quests_parent_badge_awaiting">Awaiting Child</string>
+    <string name="quests_parent_btn_cancel">Cancel Task</string>
+    <string name="quests_parent_btn_ack_delete">Acknowledge &amp; Delete</string>
+    <string name="quests_notification_new_task_title">New Task Assigned!</string>
+    <string name="quests_notification_new_task_desc">You have a new task: %1$s</string>
+    <string name="quests_notification_task_done_title">Task Completed! 🎉</string>
+    <string name="quests_notification_task_done_desc">Child has finished: %1$s</string>
+    <!-- Speech Practice -->
+
+    <string name="speech_practice_subtitle">Tap a word, hold the mic to speak, and earn stars!</string>
+    <string name="speech_choose_word">Choose a word:</string>
+    <string name="speech_listen_example">Listen to example</string>
+    <string name="speech_recording">Recording... release to score!</string>
+    <string name="speech_scoring">Scoring your pronunciation...</string>
+    <string name="speech_hold_mic">Hold the mic and say the word!</string>
+    <string name="speech_practice_again">Practice Again! 🎮</string>
+    <string name="speech_try_again">Try Again! 💪</string>
+    <string name="speech_error_loud">Could not process audio. Try speaking louder! 🔊</string>
+    <string name="speech_error_generic">Something went wrong. Let\'s try again! 🔄</string>
+    
+    <string-array name="speech_msg_3_stars">
+        <item>Amazing! You\'re a superstar! 🎉</item>
+        <item>WOW! Perfect pronunciation! 🏆</item>
+        <item>You nailed it! Champion! 👑</item>
+        <item>Incredible! You sound perfect! ✨</item>
+        <item>Bravo! That was flawless! 🌟</item>
+    </string-array>
+    
+    <string-array name="speech_msg_2_stars">
+        <item>Great job! Almost perfect! 💪</item>
+        <item>So close to perfect! Keep it up! 🚀</item>
+        <item>Wonderful work! You\'re getting better! ⭐</item>
+        <item>Really good! Just a tiny bit more! 🎯</item>
+        <item>Impressive! You\'re nearly there! 🌈</item>
+    </string-array>
+    
+    <string-array name="speech_msg_1_star">
+        <item>Good try! Keep practicing! 😊</item>
+        <item>Nice effort! You\'re learning fast! 📚</item>
+        <item>You\'re on the right track! 🌱</item>
+        <item>Keep going! Practice makes perfect! 💡</item>
+        <item>That\'s a great start! Try again! 🎵</item>
+    </string-array>
+    
+    <string-array name="speech_msg_0_stars">
+        <item>Let\'s try again! You can do it! 🌈</item>
+        <item>Don\'t give up! Practice makes perfect! 💫</item>
+        <item>One more time! You\'ve got this! 🎯</item>
+        <item>Keep trying! Every attempt counts! 🦋</item>
+        <item>You\'re brave for trying! Go again! 🌟</item>
+    </string-array>
+    
+    <!-- Word Cards -->
+    <string name="word_water">Water</string>
+    <string name="word_milk">Milk</string>
+    <string name="word_bread">Bread</string>
+    <string name="word_help">Help</string>
+    <string name="word_mom">Mom</string>
+    <string name="word_dad">Dad</string>
 
     <!-- Profile Screen -->
     <string name="profile_title">Child Profile Settings</string>
@@ -128,4 +335,11 @@
     <string name="feedback_try_again">Nice attempt! Let\'s try again. 🌟</string>
     <string name="history_title">Recent Game Attempts</string>
     <string name="history_empty">No practice attempts recorded yet.</string>
+    <string name="onboarding_get_started">Get Started</string>
+    <string name="onboarding_mic_title">Microphone (Required)</string>
+    <string name="onboarding_mic_desc">To capture and recognize child speech</string>
+    <string name="onboarding_notif_title">Notifications (Required)</string>
+    <string name="onboarding_notif_desc">To run background speech listening service</string>
+    <string name="onboarding_gps_title">GPS Location (Required)</string>
+    <string name="onboarding_gps_desc">To find child and send caregiver coordinates</string>
 </resources>

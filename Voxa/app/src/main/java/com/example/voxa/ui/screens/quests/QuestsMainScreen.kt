@@ -1,5 +1,7 @@
 package com.example.voxa.ui.screens.quests
 
+import androidx.compose.ui.res.stringResource
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -8,8 +10,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Person // ADDED: Person Icon Import
+import androidx.compose.material.icons.filled.SupervisorAccount
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -39,7 +44,9 @@ fun QuestsMainScreen(
     // Automatically skip role selection if parent is already authenticated
     var selectedRole by remember { mutableStateOf(if (isParentAuthenticated) RoleSelection.FATHER else RoleSelection.NONE) }
 
-    when (selectedRole) {
+    val layoutDir = if (java.util.Locale.getDefault().language == "ar") androidx.compose.ui.unit.LayoutDirection.Rtl else androidx.compose.ui.unit.LayoutDirection.Ltr
+    androidx.compose.runtime.CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides layoutDir) {
+        when (selectedRole) {
         RoleSelection.NONE -> {
             RoleSelectionScreen(
                 activeProfileName = activeProfile?.name ?: "Child",
@@ -64,6 +71,10 @@ fun QuestsMainScreen(
                     onBack = { selectedRole = RoleSelection.NONE }
                 )
             } else {
+                BackHandler {
+                    viewModel.logoutParent()
+                    selectedRole = RoleSelection.NONE 
+                }
                 ParentDashboardScreen(
                     viewModel = viewModel,
                     onLogout = { 
@@ -72,6 +83,7 @@ fun QuestsMainScreen(
                     }
                 )
             }
+        }
         }
     }
 }
@@ -92,71 +104,116 @@ fun RoleSelectionScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
+        val context = androidx.compose.ui.platform.LocalContext.current
+        val prefs = context.getSharedPreferences("voxa_settings", android.content.Context.MODE_PRIVATE)
+        val caregiverName = prefs.getString("caregiver_name", stringResource(com.example.voxa.R.string.dashboard_caregiver_default_name)) ?: stringResource(com.example.voxa.R.string.dashboard_caregiver_default_name)
+
+        // Catchy Title
         Text(
-            text = "Who is playing? 🤔",
-            color = Color.White,
-            fontSize = 32.sp,
+            text = stringResource(com.example.voxa.R.string.quests_main_title),
+            fontSize = 48.sp,
             fontWeight = FontWeight.ExtraBold,
-            textAlign = TextAlign.Center
+            color = QuestTeal,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(bottom = 40.dp)
         )
-        Spacer(modifier = Modifier.height(48.dp))
 
         // Father Button
-        Card(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(160.dp)
-                .clickable { onSelectFather() },
-            colors = CardDefaults.cardColors(containerColor = Slate800),
-            shape = RoundedCornerShape(24.dp)
+                .clickable { onSelectFather() }
+                .padding(vertical = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Row(
-                modifier = Modifier.fillMaxSize().padding(24.dp),
-                verticalAlignment = Alignment.CenterVertically
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.size(160.dp)
             ) {
-                Box(modifier = Modifier.size(80.dp).background(QuestTeal.copy(alpha = 0.2f), CircleShape), contentAlignment = Alignment.Center) {
-                    // FIXED: Using Icons.Default.Person
-                    Icon(Icons.Default.Person, contentDescription = "Parent", tint = QuestTeal, modifier = Modifier.size(40.dp))
-                }
-                Spacer(modifier = Modifier.width(24.dp))
-                Column {
-                    Text("I'm the Parent", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text("Manage Quests & Rewards", color = Slate400, fontSize = 16.sp)
+                // Glow effect
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            brush = Brush.radialGradient(
+                                colors = listOf(QuestTeal.copy(alpha = 0.4f), Color.Transparent)
+                            ),
+                            shape = CircleShape
+                        )
+                )
+                // Circle
+                Box(
+                    modifier = Modifier
+                        .size(110.dp)
+                        .background(QuestTeal.copy(alpha = 0.2f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.SupervisorAccount, contentDescription = "Parent", tint = QuestTeal, modifier = Modifier.size(56.dp))
                 }
             }
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = stringResource(com.example.voxa.R.string.quests_role_parent_named, caregiverName), 
+                color = QuestTeal, 
+                fontSize = 24.sp, 
+                fontWeight = FontWeight.ExtraBold,
+                style = TextStyle(
+                    shadow = Shadow(
+                        color = QuestTeal.copy(alpha = 0.6f),
+                        blurRadius = 12f
+                    )
+                )
+            )
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(32.dp))
 
         // Child Button
-        Card(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(160.dp)
-                .clickable { onSelectChild() },
-            colors = CardDefaults.cardColors(containerColor = Slate800),
-            shape = RoundedCornerShape(24.dp)
+                .clickable { onSelectChild() }
+                .padding(vertical = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Row(
-                modifier = Modifier.fillMaxSize().padding(24.dp),
-                verticalAlignment = Alignment.CenterVertically
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.size(160.dp)
             ) {
-                Box(modifier = Modifier.size(80.dp).background(QuestPurple.copy(alpha = 0.2f), CircleShape), contentAlignment = Alignment.Center) {
-                    Text(activeProfileEmoji, fontSize = 48.sp)
-                }
-                Spacer(modifier = Modifier.width(24.dp))
-                Column {
-                    Text("I'm $activeProfileName", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text("Play Quests & Get Stars!", color = Slate400, fontSize = 16.sp)
+                // Glow effect
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            brush = Brush.radialGradient(
+                                colors = listOf(QuestPurple.copy(alpha = 0.4f), Color.Transparent)
+                            ),
+                            shape = CircleShape
+                        )
+                )
+                // Circle
+                Box(
+                    modifier = Modifier
+                        .size(110.dp)
+                        .background(QuestPurple.copy(alpha = 0.2f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(activeProfileEmoji, fontSize = 56.sp)
                 }
             }
-        }
-
-        Spacer(modifier = Modifier.height(48.dp))
-        TextButton(onClick = onNavigateBack) {
-            Text("Exit Quests", color = Slate500, fontSize = 18.sp, fontWeight = FontWeight.Medium)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = stringResource(com.example.voxa.R.string.quests_role_child), 
+                color = QuestPurple, 
+                fontSize = 24.sp, 
+                fontWeight = FontWeight.ExtraBold,
+                style = TextStyle(
+                    shadow = Shadow(
+                        color = QuestPurple.copy(alpha = 0.6f),
+                        blurRadius = 12f
+                    )
+                )
+            )
         }
     }
 }
@@ -204,7 +261,7 @@ fun PinSetupScreen(viewModel: QuestsViewModel, onBack: () -> Unit) {
         )
         Spacer(modifier = Modifier.height(24.dp))
         Text(
-            text = "Caregiver Gateway 🛡️",
+            text = stringResource(com.example.voxa.R.string.quests_caregiver_gateway),
             color = Color.White,
             fontSize = 28.sp,
             fontWeight = FontWeight.ExtraBold,
@@ -212,7 +269,7 @@ fun PinSetupScreen(viewModel: QuestsViewModel, onBack: () -> Unit) {
         )
         Spacer(modifier = Modifier.height(12.dp))
         Text(
-            text = "Create a 4-digit PIN to secure the parent dashboard.",
+            text = stringResource(com.example.voxa.R.string.quests_pin_prompt),
             color = Slate300,
             fontSize = 16.sp,
             textAlign = TextAlign.Center
@@ -222,7 +279,7 @@ fun PinSetupScreen(viewModel: QuestsViewModel, onBack: () -> Unit) {
         OutlinedTextField(
             value = pin,
             onValueChange = { if (it.length <= 4 && it.all { char -> char.isDigit() }) pin = it },
-            label = { Text("Enter 4-digit PIN", color = Slate400) },
+            label = { Text(stringResource(com.example.voxa.R.string.quests_set_pin_label), color = Slate400) },
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.NumberPassword),
             colors = OutlinedTextFieldDefaults.colors(
@@ -239,7 +296,7 @@ fun PinSetupScreen(viewModel: QuestsViewModel, onBack: () -> Unit) {
         OutlinedTextField(
             value = confirmPin,
             onValueChange = { if (it.length <= 4 && it.all { char -> char.isDigit() }) confirmPin = it },
-            label = { Text("Confirm PIN", color = Slate400) },
+            label = { Text(stringResource(com.example.voxa.R.string.quests_confirm_pin_label), color = Slate400) },
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.NumberPassword),
             colors = OutlinedTextFieldDefaults.colors(
@@ -273,12 +330,12 @@ fun PinSetupScreen(viewModel: QuestsViewModel, onBack: () -> Unit) {
             shape = RoundedCornerShape(16.dp),
             modifier = Modifier.fillMaxWidth().height(60.dp)
         ) {
-            Text("Set PIN", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            Text(stringResource(com.example.voxa.R.string.quests_set_pin_title), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
         }
 
         Spacer(modifier = Modifier.height(16.dp))
         TextButton(onClick = onBack) {
-            Text("Back to Role Selection", color = Slate400, fontSize = 16.sp)
+            Text(stringResource(com.example.voxa.R.string.quests_back_to_role), color = Slate400, fontSize = 16.sp)
         }
     }
 }
@@ -319,7 +376,7 @@ fun PinEntryScreen(
         )
         Spacer(modifier = Modifier.height(24.dp))
         Text(
-            text = "Caregiver Login",
+            text = stringResource(com.example.voxa.R.string.quests_caregiver_login),
             color = Color.White,
             fontSize = 28.sp,
             fontWeight = FontWeight.ExtraBold
@@ -329,7 +386,7 @@ fun PinEntryScreen(
         OutlinedTextField(
             value = pin,
             onValueChange = { if (it.length <= 4 && it.all { char -> char.isDigit() }) pin = it },
-            label = { Text("Enter PIN", color = Slate400) },
+            label = { Text(stringResource(com.example.voxa.R.string.quests_enter_pin_label), color = Slate400) },
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.NumberPassword),
             colors = OutlinedTextFieldDefaults.colors(
@@ -362,19 +419,19 @@ fun PinEntryScreen(
             shape = RoundedCornerShape(16.dp),
             modifier = Modifier.fillMaxWidth().height(60.dp)
         ) {
-            Text("Unlock Dashboard", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            Text(stringResource(com.example.voxa.R.string.quests_unlock_dashboard), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
         }
 
         Spacer(modifier = Modifier.height(24.dp))
         
         TextButton(onClick = { viewModel.resetPin() }) {
-            Text("Forgot PIN? Reset it", color = ErrorRed, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Text(stringResource(com.example.voxa.R.string.quests_forgot_pin), color = ErrorRed, fontSize = 14.sp, fontWeight = FontWeight.Bold)
         }
 
         Spacer(modifier = Modifier.height(8.dp))
         
         TextButton(onClick = onBack) {
-            Text("Back to Role Selection", color = Slate400, fontSize = 16.sp)
+            Text(stringResource(com.example.voxa.R.string.quests_back_to_role), color = Slate400, fontSize = 16.sp)
         }
     }
 }
