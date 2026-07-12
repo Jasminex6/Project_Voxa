@@ -197,13 +197,11 @@ class VoxaClassifierEngine(
 
             // ── Step 7: Evaluate OOD Gate + Margin Gate ──
             val result = PrototypicalMatcher.evaluateGates(scores)
-            if (result.isMatch) {
-                return result // Return first valid match
-            }
-            // If not a match, log and continue to next segment
-            Log.d(TAG, "Segment rejected: ${result.reason}")
+            // Always return the first fully-scored result (match or rejection)
+            // so the service can log the reason in the UI timeline for debugging.
+            return result
         }
 
-        return null // No segment matched
+        return null // No segment reached the scoring stage
     }
 }
