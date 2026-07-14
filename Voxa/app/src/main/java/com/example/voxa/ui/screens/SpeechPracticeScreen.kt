@@ -310,11 +310,14 @@ fun SpeechPracticeScreen(viewModel: IVoxaViewModel) {
     // UI LAYOUT
     // ═══════════════════════════════════════════════════════════
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Slate900)
+    androidx.compose.runtime.CompositionLocalProvider(
+        androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Rtl
     ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Slate900)
+        ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -659,6 +662,7 @@ fun SpeechPracticeScreen(viewModel: IVoxaViewModel) {
             }
         }
     }
+}
 }
 
 // ═══════════════════════════════════════════════════════════════

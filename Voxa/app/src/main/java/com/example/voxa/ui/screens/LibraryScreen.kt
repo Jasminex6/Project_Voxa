@@ -34,101 +34,105 @@ fun LibraryScreen(viewModel: IVoxaViewModel, onNavigateToEnrollment: () -> Unit)
     val activeProfile by viewModel.activeProfile.collectAsState()
     val intents by viewModel.enrolledIntents.collectAsState()
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Slate900)
+    androidx.compose.runtime.CompositionLocalProvider(
+        androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Rtl
     ) {
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp)
+                .background(Slate900)
         ) {
-            Text(
-                text = stringResource(id = R.string.library_title),
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
-            )
-            Text(
-                text = if (activeProfile != null) {
-                    stringResource(id = R.string.library_desc)
-                } else {
-                    stringResource(id = R.string.library_no_profile)
-                },
-                fontSize = 13.sp,
-                color = Slate400,
-                modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
-            )
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
+            ) {
+                Text(
+                    text = stringResource(id = R.string.library_title),
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+                Text(
+                    text = if (activeProfile != null) {
+                        stringResource(id = R.string.library_desc)
+                    } else {
+                        stringResource(id = R.string.library_no_profile)
+                    },
+                    fontSize = 13.sp,
+                    color = Slate400,
+                    modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
+                )
 
-            if (activeProfile == null) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = stringResource(id = R.string.library_no_profile),
-                        color = Slate400,
-                        textAlign = TextAlign.Center
-                    )
-                }
-            } else if (intents.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = stringResource(id = R.string.library_empty),
-                        color = Slate400,
-                        textAlign = TextAlign.Center,
-                        lineHeight = 20.sp
-                    )
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                    contentPadding = PaddingValues(bottom = 80.dp) // Space for floating button
-                ) {
-                    items(intents, key = { it.id }) { intent ->
-                        LibraryIntentItem(
-                            intent = intent,
-                            onPlayPreview = { viewModel.playRecordedSample(intent) },
-                            onDelete = { viewModel.deleteIntent(intent) }
+                if (activeProfile == null) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = stringResource(id = R.string.library_no_profile),
+                            color = Slate400,
+                            textAlign = TextAlign.Center
                         )
+                    }
+                } else if (intents.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = stringResource(id = R.string.library_empty),
+                            color = Slate400,
+                            textAlign = TextAlign.Center,
+                            lineHeight = 20.sp
+                        )
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        contentPadding = PaddingValues(bottom = 80.dp) // Space for floating button
+                    ) {
+                        items(intents, key = { it.id }) { intent ->
+                            LibraryIntentItem(
+                                intent = intent,
+                                onPlayPreview = { viewModel.playRecordedSample(intent) },
+                                onDelete = { viewModel.deleteIntent(intent) }
+                            )
+                        }
                     }
                 }
             }
-        }
 
-        // ── Floating "+ Add Sound" button at bottom center with gradient fade ──
-        if (activeProfile != null) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .height(100.dp)
-                    .background(
-                        brush = androidx.compose.ui.graphics.Brush.verticalGradient(
-                            colors = listOf(Color.Transparent, Slate900.copy(alpha = 0.95f)),
-                            startY = 0f,
-                            endY = 200f
-                        )
-                    ),
-                contentAlignment = Alignment.BottomCenter
-            ) {
-                Button(
-                    onClick = onNavigateToEnrollment,
-                    colors = ButtonDefaults.buttonColors(containerColor = Sky400),
-                    contentPadding = PaddingValues(horizontal = 28.dp, vertical = 12.dp),
-                    shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier.padding(bottom = 20.dp)
+            // ── Floating "+ Add Sound" button at bottom center with gradient fade ──
+            if (activeProfile != null) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .height(100.dp)
+                        .background(
+                            brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+                                colors = listOf(Color.Transparent, Slate900.copy(alpha = 0.95f)),
+                                startY = 0f,
+                                endY = 200f
+                            )
+                        ),
+                    contentAlignment = Alignment.BottomCenter
                 ) {
-                    Text(stringResource(id = R.string.btn_add_sound), color = Slate900, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Button(
+                        onClick = onNavigateToEnrollment,
+                        colors = ButtonDefaults.buttonColors(containerColor = Sky400),
+                        contentPadding = PaddingValues(horizontal = 28.dp, vertical = 12.dp),
+                        shape = RoundedCornerShape(14.dp),
+                        modifier = Modifier.padding(bottom = 20.dp)
+                    ) {
+                        Text(stringResource(id = R.string.btn_add_sound), color = Slate900, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    }
                 }
             }
         }

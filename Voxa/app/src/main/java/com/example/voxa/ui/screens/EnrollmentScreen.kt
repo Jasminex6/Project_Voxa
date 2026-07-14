@@ -410,8 +410,8 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                                 fontWeight = FontWeight.Medium
                             )
                             Text(
-                                text = "Min: 10 / Target: 15",
-                                color = if (recordedSamplesCount >= 10) SuccessGreen else Slate400,
+                                text = "Min: 5 / Target: 15",
+                                color = if (recordedSamplesCount >= 5) SuccessGreen else Slate400,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -484,7 +484,7 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                             onClick = {
                                 showSaveDialog = true
                             },
-                            enabled = recordedSamplesCount >= 10,
+                            enabled = recordedSamplesCount >= 5,
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = SuccessGreen,
                                 disabledContainerColor = Slate700
