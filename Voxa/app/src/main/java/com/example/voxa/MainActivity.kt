@@ -32,6 +32,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import android.content.Context
 import androidx.core.content.ContextCompat
+import android.app.Activity
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
 import com.example.voxa.services.VoxaListenerService
 import com.example.voxa.ui.*
 import com.example.voxa.ui.screens.DashboardScreen
@@ -70,6 +74,17 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
+            val view = LocalView.current
+
+            SideEffect {
+                val window = (view.context as Activity).window
+                window.statusBarColor = Color(0xFF0B1326).toArgb()
+                window.navigationBarColor = Color(0xFF0B1326).toArgb()
+
+                WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
+                WindowCompat.getInsetsController(window, view).isAppearanceLightNavigationBars = false
+            }
+
             androidx.compose.runtime.CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr) {
                 VoxaTheme {
                     Surface(
