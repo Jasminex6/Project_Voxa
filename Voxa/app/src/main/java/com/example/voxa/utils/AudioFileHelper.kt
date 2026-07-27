@@ -72,6 +72,15 @@ object AudioFileHelper {
     }
 
     /**
+     * Non-throwing version of validateDuration for the live classifier engine.
+     * Returns true if the PCM data duration is between 200ms and 2500ms.
+     */
+    fun isDurationValid(pcmData: ShortArray): Boolean {
+        val durationMs = (pcmData.size.toFloat() / SAMPLE_RATE) * 1000f
+        return durationMs in 200f..2500f
+    }
+
+    /**
      * Saves a PCM ShortArray to a file in the internal cache directory.
      * Returns the absolute path to the saved file.
      */

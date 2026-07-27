@@ -155,8 +155,8 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
 
                 val rawPcm = pcmBufferList.toShortArray()
                 
-                // Use the exact same VAD engine as live listening to extract the segment, 
-                // preserving the natural trailing room noise required for YAMNet matching.
+                // Use the exact same VAD engine as live listening to extract the segment,
+                // ensuring enrollment templates match the preprocessing applied during live classification.
                 val vad = com.example.voxa.ai.VoxaVAD()
                 val segments = vad.processAudio(rawPcm)
                 
@@ -192,13 +192,13 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                         }
 
                         Toast.makeText(context, "Sample $recordedSamplesCount saved successfully!", Toast.LENGTH_SHORT).show()
-                        if (recordedSamplesCount == 15) {
+                        if (recordedSamplesCount == 5) {
                             showSaveDialog = true
                         } else {
                             // Auto-advance: launch a coroutine to start next sample recording after 1.5 seconds
                             scope.launch {
                                 delay(1500)
-                                if (recordedSamplesCount < 15) {
+                                if (recordedSamplesCount < 5) {
                                     isRecordingSample = true
                                 }
                             }
@@ -390,7 +390,7 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
 
                         // Progress Step Indicators (Linear Progress)
                         LinearProgressIndicator(
-                            progress = recordedSamplesCount / 15f,
+                            progress = recordedSamplesCount / 5f,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(8.dp)
@@ -410,8 +410,8 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                                 fontWeight = FontWeight.Medium
                             )
                             Text(
-                                text = "Min: 5 / Target: 15",
-                                color = if (recordedSamplesCount >= 5) SuccessGreen else Slate400,
+                                text = "Min: 3 / Target: 5",
+                                color = if (recordedSamplesCount >= 3) SuccessGreen else Slate400,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -440,12 +440,12 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                             }
                         } else {
                             Text(
-                                text = if (recordedSamplesCount > 0 && recordedSamplesCount < 15) {
+                                text = if (recordedSamplesCount > 0 && recordedSamplesCount < 5) {
                                     stringResource(id = R.string.enroll_timer_progress)
                                 } else {
                                     stringResource(id = R.string.enroll_guideline_tap)
                                 },
-                                color = if (recordedSamplesCount > 0 && recordedSamplesCount < 15) SuccessGreen else Slate400,
+                                color = if (recordedSamplesCount > 0 && recordedSamplesCount < 5) SuccessGreen else Slate400,
                                 fontSize = 11.sp,
                                 textAlign = TextAlign.Center
                             )
@@ -459,7 +459,7 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                                 if (intentName.isBlank() || outputPhrase.isBlank()) return@Button
                                 isRecordingSample = !isRecordingSample
                             },
-                            enabled = intentName.isNotBlank() && outputPhrase.isNotBlank() && recordedSamplesCount < 15,
+                            enabled = intentName.isNotBlank() && outputPhrase.isNotBlank() && recordedSamplesCount < 5,
                             contentPadding = PaddingValues(0.dp), // Clear default margins for comfy circle text
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = if (isRecordingSample) ErrorRed else Sky500,
@@ -484,7 +484,7 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                             onClick = {
                                 showSaveDialog = true
                             },
-                            enabled = recordedSamplesCount >= 5,
+                            enabled = recordedSamplesCount >= 3,
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = SuccessGreen,
                                 disabledContainerColor = Slate700
