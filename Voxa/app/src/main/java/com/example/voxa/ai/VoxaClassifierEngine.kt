@@ -47,10 +47,11 @@ class VoxaClassifierEngine(
         // for this duration. Prevents echo/reverb from the same utterance re-triggering the VAD
         // and producing ghost matches on a different word.
         //
-        // Why 1500ms: A typical child vocalization is 300–800ms. After the VAD completes a segment,
-        // room reverb + mic ring can sustain above the energy threshold for another 200–400ms.
-        // 1500ms covers: utterance tail + reverb + safety margin.
-        private const val COOLDOWN_MS = 1500L
+        // Why 3500ms: A typical child vocalization is 300–800ms, plus TTS playback of the
+        // translated phrase takes 1–2s. The mic picks up the speaker output and the VAD
+        // re-triggers on it, producing false matches. 3500ms covers:
+        //   utterance tail (~400ms) + TTS latency (~200ms) + TTS playback (~1.5s) + safety margin (~1.4s)
+        private const val COOLDOWN_MS = 3500L
     }
 
     // Energy-based VAD for speech segment extraction (same VAD as enrollment recording)
@@ -64,6 +65,17 @@ class VoxaClassifierEngine(
 
     // Cooldown state: timestamp of the last classification result (match or reject)
     private var lastResultTimeMs: Long = 0L
+
+    /**
+     * Externally extends the cooldown window.
+     * Called by VoxaListenerService when TTS/audio playback begins, to prevent the mic
+     * from hearing the speaker output and re-classifying it as a new utterance.
+     */
+    fun notifyAudioPlaybackStarted() {
+        lastResultTimeMs = System.currentTimeMillis()
+        vad.reset()
+        Log.d(TAG, "Cooldown extended — audio playback started")
+    }
 
     /**
      * Parses serialized MFCC template features from AcousticTemplate.templateFeatures.
