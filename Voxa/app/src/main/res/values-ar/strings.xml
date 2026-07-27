@@ -279,7 +279,7 @@
     <string name="field_meaning">معنى الصوت / الكلمة (مثال: ماء)</string>
     <string name="field_translation">الترجمة باللهجة المصرية (مثال: أنا عايز ميّه)</string>
     <string name="enroll_progress_title">تقدم تسجيل العينات</string>
-    <string name="enroll_collected_count">تم جمع: %1$d / 15 عينات</string>
+    <string name="enroll_collected_count">تم جمع: %1$d / 5 عينات</string>
     <string name="enroll_timer_progress">استعد العينة التالية تبدأ خلال 1.5 ثانية...</string>
     <string name="enroll_guideline_tap">اضغط على \'تسجيل عينة\' للبدء، واضغط مرة أخرى للإيقاف.</string>
     <string name="btn_record">تسجيل\nالعينة</string>
