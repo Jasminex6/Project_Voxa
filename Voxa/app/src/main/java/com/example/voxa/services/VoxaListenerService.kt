@@ -40,6 +40,11 @@ class VoxaListenerService : Service() {
     
     // A control flag used by the background thread to safely start and stop the infinite recording loop.
     private var isRecording = false
+
+    // When true, all classification results are suppressed. Set immediately on service destroy
+    // to prevent ghost results from queued audio during push-to-talk release teardown.
+    @Volatile
+    private var suppressResults = false
     
     // The background thread where the blocking microphone reading loop executes.
     private var recordingThread: Thread? = null
@@ -210,11 +215,11 @@ class VoxaListenerService : Service() {
 
                         // Feed audio directly to classifier — VAD segments internally
                         val engine = classifierEngine
-                        if (engine != null) {
+                        if (engine != null && !suppressResults) {
                             try {
                                 val pcmBlock = audioData.copyOfRange(0, readResult)
                                 val result = engine.processAudioBlock(pcmBlock)
-                                if (result != null) {
+                                if (result != null && !suppressResults) {
                                     handleClassificationResult(result)
                                 }
                             } catch (e: Exception) {
@@ -260,6 +265,10 @@ class VoxaListenerService : Service() {
 
         // Play translation audio on match
         if (result.isMatch && result.audioAssetPath != null && result.outputPhrase != null) {
+            // Extend cooldown BEFORE playback starts — the mic will pick up the speaker output
+            // and the VAD would re-trigger on the TTS audio, producing false ghost matches.
+            classifierEngine?.notifyAudioPlaybackStarted()
+
             val dao = VoxaDatabase.getDatabase(applicationContext).voxaDao()
             serviceScope.launch {
                 val profile = dao.getActiveProfile()
@@ -320,7 +329,11 @@ class VoxaListenerService : Service() {
         Log.d("VoxaService", "Service Destroyed")
         isRunning = false
 
-        // 1. Flip the loop flag to false, which breaks the background thread's while loop
+        // 1. Immediately suppress all classification results to prevent ghost output
+        // during recording thread teardown (critical for push-to-talk release)
+        suppressResults = true
+
+        // 2. Flip the loop flag to false, which breaks the background thread's while loop
         isRecording = false
         recordingThread = null
         

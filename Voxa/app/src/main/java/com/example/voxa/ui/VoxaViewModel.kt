@@ -31,8 +31,8 @@ class VoxaViewModel(application: Application) : AndroidViewModel(application), I
     // Access door to the database queries.
     private val voxaDao = VoxaDatabase.getDatabase(application).voxaDao()
 
-    // YAMNet encoder for prototypical matching enrollment
-    private val yamnetEncoder = com.example.voxa.ai.YamnetEncoder(application)
+    // MFCC extractor for DTW template enrollment (same instance config as live classifier)
+    private val mfccExtractor = com.example.voxa.ai.MfccExtractor()
 
     // ── 👤 CHILD PROFILE STATES ──
 
@@ -220,58 +220,73 @@ class VoxaViewModel(application: Application) : AndroidViewModel(application), I
         viewModelScope.launch {
             try {
                 android.util.Log.e("VoxaDebug", "Starting enrollment coroutine for ${intentName.trim()}")
-                // Clear any previous warning
-                _bifurcationWarningTriggered.value = null
 
-                // 1. Load and process all PCM recordings to extract YAMNet embeddings
-                val embeddings = mutableListOf<FloatArray>()
-                for (path in tempFilePaths) {
-                    try {
-                        val pcmData = com.example.voxa.utils.AudioFileHelper.readPcmFile(java.io.File(path))
-                        // Extract embedding using the YamnetEncoder helper directly (pcmData is already VAD-extracted)
-                        val emb = yamnetEncoder.extractFromPcm(pcmData)
-                        embeddings.add(emb)
-                    } catch (e: Exception) {
-                        android.util.Log.e("VoxaViewModel", "Embedding extraction failed for $path: ${e.message}")
-                    }
-                }
-
-                if (embeddings.isEmpty()) {
-                    android.util.Log.e("VoxaViewModel", "No valid audio embeddings extracted for enrollment")
-                    return@launch
-                }
-
-                // 2. Run the PrototypicalMatcher's enrollment centroid pipeline
-                val protoResult = com.example.voxa.ai.PrototypicalMatcher.computeEnrollmentCentroids(embeddings)
-
-                // 3. Create and insert the EnrolledIntent
+                // 1. Create and insert the EnrolledIntent
                 val intent = EnrolledIntent(
                     profileId = profile.id,
                     intentName = intentName.trim(),
                     outputPhrase = outputPhrase.trim(),
                     audioAssetPath = audioAssetPath,
-                    oodThreshold = protoResult.oodThreshold
+                    oodThreshold = 7.80f // DTW absolute distance threshold (not used per-intent, kept for schema compat)
                 )
                 val intentId = voxaDao.insertIntent(intent)
 
-                // 4. Serialize centroids and store in AcousticTemplate
-                val serializedCentroids = com.example.voxa.ai.PrototypicalMatcher.serializeCentroids(protoResult.centroids)
-                val template = AcousticTemplate(
-                    intentId = intentId,
-                    templateFeatures = serializedCentroids
-                )
-                voxaDao.insertTemplate(template)
+                // 2. Extract MFCC features from each PCM file and store as serialized JSON
+                //    ⚠️ PARITY: The preprocessing chain here MUST match VoxaClassifierEngine.processAudioBlock():
+                //       - PCM files are already VAD-extracted by EnrollmentScreen
+                //       - Apply trimSilence() to match live pipeline Step 2
+                //       - Apply MfccExtractor.extract() to match live pipeline Step 3
+                var storedCount = 0
+                for (path in tempFilePaths) {
+                    try {
+                        val pcmData = com.example.voxa.utils.AudioFileHelper.readPcmFile(java.io.File(path))
 
-                // 5. If K-Means bifurcation was triggered, notify UI
-                if (protoResult.bifurcated) {
-                    _bifurcationWarningTriggered.value = "These recordings sound very different. For best results, try recording when ${profile.name} is calm, or record the stressed version separately."
+                        // Apply same silence trimming as live classifier engine
+                        val trimmedPcm = com.example.voxa.utils.AudioFileHelper.trimSilence(pcmData)
+
+                        val features = mfccExtractor.extract(trimmedPcm) // Array<FloatArray> [T x 40]
+                        if (features.isEmpty()) {
+                            android.util.Log.w("VoxaViewModel", "MFCC extraction produced empty features for $path — skipping")
+                            continue
+                        }
+
+                        val serialized = serializeMfccFeatures(features)
+                        val template = AcousticTemplate(
+                            intentId = intentId,
+                            templateFeatures = serialized
+                        )
+                        voxaDao.insertTemplate(template)
+                        storedCount++
+                    } catch (e: Exception) {
+                        android.util.Log.e("VoxaViewModel", "MFCC extraction failed for $path: ${e.message}")
+                    }
                 }
 
-                android.util.Log.d("VoxaViewModel", "Successfully enrolled intent '$intentName' with ${protoResult.centroids.size} centroids (bifurcated=${protoResult.bifurcated})")
+                android.util.Log.d("VoxaViewModel", "Successfully enrolled intent '$intentName' with $storedCount MFCC templates")
             } catch (e: Exception) {
                 android.util.Log.e("VoxaViewModel", "Failed to enroll intent: ${e.message}", e)
             }
         }
+    }
+
+    /**
+     * Serializes an Array<FloatArray> [T x 40] into a flat JSON array string for Room storage.
+     * Format: "[f0_0,f0_1,...,f0_39,f1_0,f1_1,...,fT_39]"
+     *
+     * ⚠️ PARITY: VoxaClassifierEngine.parseTemplateFeatures() must deserialize this same format.
+     */
+    private fun serializeMfccFeatures(features: Array<FloatArray>): String {
+        val sb = StringBuilder("[")
+        var first = true
+        for (frame in features) {
+            for (value in frame) {
+                if (!first) sb.append(",")
+                sb.append(value)
+                first = false
+            }
+        }
+        sb.append("]")
+        return sb.toString()
     }
 
     // Deletes an enrolled intent. The database will automatically cascade and delete its associated templates.

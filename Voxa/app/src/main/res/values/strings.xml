@@ -148,7 +148,7 @@
     <string name="dashboard_listening">🎙️ Listening...</string>
     <string name="dashboard_ready_translate">🎙️ Ready to Translate</string>
     <string name="language_toggle">Language / اللغة</string>
-    <string name="continuous_listening">Continuous Listening: ON</string>
+    <string name="continuous_listening">Continuous Listening</string>
     <string name="no_emergency_contact_set">No emergency contact set</string>
     <string name="translated_prefix">Translated:</string>
     <string name="confidence_prefix">Confidence:</string>
@@ -342,4 +342,14 @@
     <string name="onboarding_notif_desc">To run background speech listening service</string>
     <string name="onboarding_gps_title">GPS Location (Required)</string>
     <string name="onboarding_gps_desc">To find child and send caregiver coordinates</string>
+    <string name="quests_parent_clear_history">Clear History</string>
+    <string name="quests_parent_clear_history_confirm_title">Clear Completed History?</string>
+    <string name="quests_parent_clear_history_confirm_msg">This will permanently delete all completed tasks from the history. This action cannot be undone.</string>
+    <string name="quests_parent_clear_confirm">Clear All</string>
+    <string name="quests_parent_clear_cancel">Cancel</string>
+    <string name="mic_mode_label">Mic Mode</string>
+    <string name="mic_mode_hold">Hold</string>
+    <string name="mic_mode_continuous">Always On</string>
+    <string name="dashboard_hold_mic">Hold mic to listen</string>
+    <string name="dashboard_release_to_stop">Release to stop…</string>
 </resources>
