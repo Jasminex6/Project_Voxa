@@ -410,7 +410,7 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                                 fontWeight = FontWeight.Medium
                             )
                             Text(
-                                text = "Min: 3 / Target: 5",
+                                text = "Target: 5",
                                 color = if (recordedSamplesCount >= 3) SuccessGreen else Slate400,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold
