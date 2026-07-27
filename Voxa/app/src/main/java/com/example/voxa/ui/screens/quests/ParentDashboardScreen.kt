@@ -2,8 +2,12 @@ package com.example.voxa.ui.screens.quests
 
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.res.stringResource
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -15,6 +19,8 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -46,6 +52,8 @@ fun ParentDashboardScreen(
     val scope = rememberCoroutineScope()
     var showCreateSheet by remember { mutableStateOf(false) }
     var showRewards by remember { mutableStateOf(false) }
+    var historyExpanded by remember { mutableStateOf(false) }
+    var showClearHistoryDialog by remember { mutableStateOf(false) }
 
     val layoutDir = if (java.util.Locale.getDefault().language == "ar") androidx.compose.ui.unit.LayoutDirection.Rtl else androidx.compose.ui.unit.LayoutDirection.Ltr
     CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides layoutDir) {
@@ -234,7 +242,12 @@ fun ParentDashboardScreen(
 
                     item {
                         Spacer(modifier = Modifier.height(12.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { historyExpanded = !historyExpanded }
+                        ) {
                             Text(
                                 stringResource(com.example.voxa.R.string.quests_parent_completed_history), 
                                 color = Color.White, 
@@ -255,22 +268,49 @@ fun ParentDashboardScreen(
                                     fontWeight = FontWeight.Bold
                                 )
                             }
+                            Spacer(modifier = Modifier.weight(1f))
+                            if (historyExpanded && approvedQuests.isNotEmpty()) {
+                                IconButton(
+                                    onClick = { showClearHistoryDialog = true },
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.Delete,
+                                        contentDescription = "Clear History",
+                                        tint = ErrorRed.copy(alpha = 0.7f),
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(4.dp))
+                            }
+                            Icon(
+                                imageVector = if (historyExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                contentDescription = if (historyExpanded) "Collapse" else "Expand",
+                                tint = Slate400,
+                                modifier = Modifier.size(24.dp)
+                            )
                         }
                     }
 
-                    if (approvedQuests.isEmpty()) {
-                        item {
-                            Text(
-                                stringResource(com.example.voxa.R.string.quests_parent_no_history), 
-                                color = Slate500, 
-                                fontSize = 14.sp,
-                                modifier = Modifier.padding(bottom = 80.dp)
-                            )
+                    if (historyExpanded) {
+                        if (approvedQuests.isEmpty()) {
+                            item {
+                                Text(
+                                    stringResource(com.example.voxa.R.string.quests_parent_no_history), 
+                                    color = Slate500, 
+                                    fontSize = 14.sp,
+                                    modifier = Modifier.padding(bottom = 80.dp)
+                                )
+                            }
+                        } else {
+                            items(approvedQuests) { quest ->
+                                QuestParentCard(quest = quest, viewModel = viewModel, isActionable = false)
+                            }
+                            item {
+                                Spacer(modifier = Modifier.height(80.dp))
+                            }
                         }
                     } else {
-                        items(approvedQuests) { quest ->
-                            QuestParentCard(quest = quest, viewModel = viewModel, isActionable = false)
-                        }
                         item {
                             Spacer(modifier = Modifier.height(80.dp))
                         }
@@ -303,6 +343,51 @@ fun ParentDashboardScreen(
                         }
                     )
                 }
+            }
+
+            // Clear History Confirmation Dialog
+            if (showClearHistoryDialog) {
+                AlertDialog(
+                    onDismissRequest = { showClearHistoryDialog = false },
+                    title = { 
+                        Text(
+                            stringResource(com.example.voxa.R.string.quests_parent_clear_history_confirm_title), 
+                            color = Color.White, 
+                            fontWeight = FontWeight.Bold
+                        ) 
+                    },
+                    text = { 
+                        Text(
+                            stringResource(com.example.voxa.R.string.quests_parent_clear_history_confirm_msg), 
+                            color = Slate300
+                        ) 
+                    },
+                    containerColor = Slate800,
+                    confirmButton = {
+                        Button(
+                            onClick = {
+                                viewModel.clearCompletedHistory()
+                                showClearHistoryDialog = false
+                                historyExpanded = false
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = ErrorRed)
+                        ) {
+                            Text(
+                                stringResource(com.example.voxa.R.string.quests_parent_clear_confirm), 
+                                color = Color.White, 
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showClearHistoryDialog = false }) {
+                            Text(
+                                stringResource(com.example.voxa.R.string.quests_parent_clear_cancel), 
+                                color = Slate400
+                            )
+                        }
+                    }
+                )
             }
         } // Closes the `else` block for `if (showRewards)`
     } // Closes CompositionLocalProvider
