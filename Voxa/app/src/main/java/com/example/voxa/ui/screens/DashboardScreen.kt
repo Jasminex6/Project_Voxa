@@ -4,6 +4,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -114,6 +116,8 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
     var caregiverName by remember { mutableStateOf("Parent / Caregiver") }
     var caregiverPhone by remember { mutableStateOf("+1 234 567 890") }
     val context = LocalContext.current
+    val prefs = context.getSharedPreferences("voxa_settings", Context.MODE_PRIVATE)
+    var micMode by remember { mutableStateOf(prefs.getString("mic_mode", "hold") ?: "hold") }
 
     // Emergency contact data from SharedPreferences
     var ecName by remember { mutableStateOf(EmergencyContactPrefs.getContactName(context)) }
@@ -225,7 +229,25 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
                             color = if (isListening) Color(0xFF00F2FE) else Slate700,
                             shape = CircleShape
                         )
-                        .clickable { viewModel.toggleListening() },
+                        .then(
+                            if (micMode == "hold") {
+                                Modifier.pointerInput(Unit) {
+                                    detectTapGestures(
+                                        onPress = {
+                                            if (!isListening) {
+                                                viewModel.toggleListening()
+                                            }
+                                            val released = tryAwaitRelease()
+                                            if (released && isListening) {
+                                                viewModel.toggleListening()
+                                            }
+                                        }
+                                    )
+                                }
+                            } else {
+                                Modifier.clickable { viewModel.toggleListening() }
+                            }
+                        ),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -298,7 +320,13 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
 
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = if (isListening) stringResource(com.example.voxa.R.string.dashboard_waiting_vocalizations) else stringResource(com.example.voxa.R.string.dashboard_tap_mic),
+                            text = if (isListening) {
+                                if (micMode == "hold") stringResource(com.example.voxa.R.string.dashboard_release_to_stop)
+                                else stringResource(com.example.voxa.R.string.dashboard_waiting_vocalizations)
+                            } else {
+                                if (micMode == "hold") stringResource(com.example.voxa.R.string.dashboard_hold_mic)
+                                else stringResource(com.example.voxa.R.string.dashboard_tap_mic)
+                            },
                             color = Slate400,
                             fontSize = 12.sp,
                             textAlign = TextAlign.Center
@@ -583,7 +611,6 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Column(modifier = Modifier.padding(10.dp)) {
-                                val prefs = context.getSharedPreferences("voxa_settings", Context.MODE_PRIVATE)
                                 val currentLang = prefs.getString("app_language", "en") ?: "en"
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
@@ -637,11 +664,70 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
                                     }
                                 }
                                 Spacer(modifier = Modifier.height(12.dp))
-                                Text(
-                                    text = stringResource(com.example.voxa.R.string.continuous_listening),
-                                    color = Color.White,
-                                    fontSize = 11.sp
-                                )
+                                // Mic Mode Toggle
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = stringResource(com.example.voxa.R.string.mic_mode_label),
+                                        color = Color.White,
+                                        fontSize = 11.sp
+                                    )
+                                    Row(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(20.dp))
+                                            .background(Slate800)
+                                            .padding(4.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(16.dp))
+                                                .background(if (micMode == "hold") Sky400 else Color.Transparent)
+                                                .clickable {
+                                                    if (micMode != "hold") {
+                                                        // If switching from continuous to hold, stop the service if running
+                                                        if (isListening) {
+                                                            viewModel.toggleListening()
+                                                        }
+                                                        micMode = "hold"
+                                                        prefs.edit().putString("mic_mode", "hold").apply()
+                                                    }
+                                                }
+                                                .padding(horizontal = 12.dp, vertical = 6.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                stringResource(com.example.voxa.R.string.mic_mode_hold),
+                                                color = if (micMode == "hold") Slate900 else Slate400,
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                        Box(
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(16.dp))
+                                                .background(if (micMode == "continuous") Sky400 else Color.Transparent)
+                                                .clickable {
+                                                    if (micMode != "continuous") {
+                                                        micMode = "continuous"
+                                                        prefs.edit().putString("mic_mode", "continuous").apply()
+                                                    }
+                                                }
+                                                .padding(horizontal = 12.dp, vertical = 6.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                stringResource(com.example.voxa.R.string.mic_mode_continuous),
+                                                color = if (micMode == "continuous") Slate900 else Slate400,
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                    }
+                                }
                             }
                         }
 

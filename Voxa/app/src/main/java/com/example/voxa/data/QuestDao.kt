@@ -35,6 +35,9 @@ interface QuestDao {
     @Query("UPDATE quests SET status = :status, parentNote = :note WHERE id = :questId")
     suspend fun updateQuestStatus(questId: Long, status: QuestStatus, note: String?)
 
+    @Query("DELETE FROM quests WHERE profileId = :profileId AND status = :status")
+    suspend fun deleteQuestsByStatus(profileId: Long, status: QuestStatus)
+
     // ==========================================
     // 🎁 REWARD QUERIES
     // ==========================================

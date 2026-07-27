@@ -197,6 +197,13 @@ class QuestsViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    fun clearCompletedHistory() {
+        val profileId = activeProfile.value?.id ?: return
+        viewModelScope.launch {
+            questDao.deleteQuestsByStatus(profileId, QuestStatus.APPROVED)
+        }
+    }
+
     fun createReward(title: String, cost: Int, icon: String) {
         val profileId = activeProfile.value?.id ?: return
         viewModelScope.launch {
