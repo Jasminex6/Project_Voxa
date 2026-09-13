@@ -21,6 +21,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -32,6 +33,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.MicOff
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -43,6 +45,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -206,6 +209,8 @@ fun SayAndEarnScreen(
     var streakCount by remember { mutableIntStateOf(0) }
     var micRmsLevel by remember { mutableFloatStateOf(0f) }
     var bonusAwarded by remember { mutableStateOf(false) }
+    val prefs = remember { context.getSharedPreferences("voxa_settings", Context.MODE_PRIVATE) }
+    var micMode by remember { mutableStateOf(prefs.getString("mic_mode", "hold") ?: "hold") }
 
     // Audio Player instance for authentic pronunciation playback
     val audioPlayer = remember { AudioPlayer(context) }
@@ -284,6 +289,7 @@ fun SayAndEarnScreen(
             android.util.Log.w("SayAndEarn", "Error stopping listening: ${e.message}")
         }
         isListening = false
+        micRmsLevel = 0f
     }
 
     fun startListeningInternal() {
@@ -351,6 +357,7 @@ fun SayAndEarnScreen(
                 android.util.Log.d("SayAndEarn", "SpeechRecognizer: End of speech")
                 isListening = false
                 isProcessing = true
+                micRmsLevel = 0f
             }
 
             override fun onError(error: Int) {
@@ -358,6 +365,7 @@ fun SayAndEarnScreen(
                 android.util.Log.e("SayAndEarn", "SpeechRecognizer onError: $error ($errorName)")
                 isListening = false
                 isProcessing = false
+                micRmsLevel = 0f
 
                 val errorMsg = when (error) {
                     SpeechRecognizer.ERROR_NO_MATCH ->
@@ -395,6 +403,7 @@ fun SayAndEarnScreen(
             override fun onResults(results: Bundle?) {
                 isListening = false
                 isProcessing = false
+                micRmsLevel = 0f
                 val candidates = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION) ?: arrayListOf()
                 android.util.Log.d("SayAndEarn", "SpeechRecognizer onResults candidates: $candidates")
 
@@ -517,25 +526,47 @@ fun SayAndEarnScreen(
         }
     }
 
-    // Pulse animation for recording ring
-    val infiniteTransition = rememberInfiniteTransition(label = "pulseRing")
-    val pulseScale by infiniteTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = 1.25f,
+    // Infinite ripple animations for listening button (replicated from Home tab)
+    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+
+    // Ripple 1
+    val rippleScale1 by infiniteTransition.animateFloat(
+        initialValue = 1.0f,
+        targetValue = 1.6f,
         animationSpec = infiniteRepeatable(
-            animation = tween(800, easing = EaseInOutCubic),
-            repeatMode = RepeatMode.Reverse
+            animation = tween(1800, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
         ),
-        label = "pulseScale"
+        label = "rippleScale1"
     )
-    val pulseAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.2f,
-        targetValue = 0.6f,
+    val rippleAlpha1 by infiniteTransition.animateFloat(
+        initialValue = 0.4f,
+        targetValue = 0.0f,
         animationSpec = infiniteRepeatable(
-            animation = tween(800, easing = EaseInOutCubic),
-            repeatMode = RepeatMode.Reverse
+            animation = tween(1800, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
         ),
-        label = "pulseAlpha"
+        label = "rippleAlpha1"
+    )
+
+    // Ripple 2
+    val rippleScale2 by infiniteTransition.animateFloat(
+        initialValue = 1.0f,
+        targetValue = 1.3f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "rippleScale2"
+    )
+    val rippleAlpha2 by infiniteTransition.animateFloat(
+        initialValue = 0.5f,
+        targetValue = 0.0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "rippleAlpha2"
     )
 
     // Layout
@@ -825,19 +856,29 @@ fun SayAndEarnScreen(
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // 🎙️ BIG INTERACTIVE MICROPHONE BUTTON WITH FLOATING COIN CELEBRATION
+                    // ── PULSING LISTENING CONTROL (Exact replication of Home tab mic button) ──
                     Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier.size(150.dp)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(180.dp),
+                        contentAlignment = Alignment.Center
                     ) {
-                        // Pulsing outer ripple when listening
                         if (isListening) {
+                            // Pulsing ripple 1
                             Box(
                                 modifier = Modifier
-                                    .size(140.dp)
-                                    .scale(pulseScale + micRmsLevel * 0.2f)
+                                    .size(100.dp)
+                                    .scale(rippleScale1)
                                     .clip(CircleShape)
-                                    .background(QuestOrange.copy(alpha = pulseAlpha))
+                                    .background(Color(0xFF00F2FE).copy(alpha = rippleAlpha1))
+                            )
+                            // Pulsing ripple 2
+                            Box(
+                                modifier = Modifier
+                                    .size(100.dp)
+                                    .scale(rippleScale2)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFF00F2FE).copy(alpha = rippleAlpha2))
                             )
                         }
 
@@ -860,31 +901,50 @@ fun SayAndEarnScreen(
                             )
                         }
 
-                        // The Mic button
                         Box(
                             modifier = Modifier
-                                .size(100.dp)
-                                .shadow(
-                                    elevation = if (isListening) 16.dp else 6.dp,
-                                    shape = CircleShape,
-                                    ambientColor = if (isListening) QuestOrange else QuestTeal,
-                                    spotColor = if (isListening) QuestOrange else QuestTeal
-                                )
+                                .size(110.dp)
                                 .clip(CircleShape)
                                 .background(
-                                    brush = if (isListening) {
-                                        Brush.radialGradient(listOf(QuestOrange, Color(0xFFc2410c)))
-                                    } else {
-                                        Brush.radialGradient(listOf(QuestTeal, Sky500))
-                                    }
+                                    if (isListening) Color(0xFF0F1E2E) else Slate800
                                 )
-                                .clickable { handleMicTap() },
+                                .border(
+                                    width = 2.dp,
+                                    color = if (isListening) Color(0xFF00F2FE) else Slate700,
+                                    shape = CircleShape
+                                )
+                                .then(
+                                    if (micMode == "hold") {
+                                        Modifier.pointerInput(Unit) {
+                                            detectTapGestures(
+                                                onPress = {
+                                                    val wasListening = isListening
+                                                    val pressStart = System.currentTimeMillis()
+                                                    if (!wasListening) {
+                                                        handleMicTap()
+                                                    }
+                                                    val released = tryAwaitRelease()
+                                                    val pressDuration = System.currentTimeMillis() - pressStart
+                                                    if (released) {
+                                                        if (wasListening) {
+                                                            stopListening()
+                                                        } else if (isListening && pressDuration > 300) {
+                                                            stopListening()
+                                                        }
+                                                    }
+                                                }
+                                            )
+                                        }
+                                    } else {
+                                        Modifier.clickable { handleMicTap() }
+                                    }
+                                ),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                Icons.Default.Mic,
-                                contentDescription = "Mic",
-                                tint = Color.White,
+                                imageVector = if (isListening) Icons.Default.Mic else Icons.Default.MicOff,
+                                contentDescription = if (isListening) "Listening Active" else "Listening Paused",
+                                tint = if (isListening) Color(0xFF00F2FE) else Slate400,
                                 modifier = Modifier.size(44.dp)
                             )
                         }
@@ -899,10 +959,33 @@ fun SayAndEarnScreen(
                             else -> if (selectedLanguage == "en") "Tap mic & say the word!" else stringResource(R.string.say_and_earn_tap_to_speak)
                         },
                         fontSize = 14.sp,
-                        color = if (isListening) QuestOrange else Slate300,
+                        color = if (isListening) Color(0xFF00F2FE) else Slate300,
                         fontWeight = if (isListening) FontWeight.Bold else FontWeight.Normal,
                         textAlign = TextAlign.Center
                     )
+
+                    // Volume indicator bar (replicated from Home tab)
+                    if (isListening) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth(0.6f)
+                                .height(6.dp)
+                                .clip(RoundedCornerShape(3.dp))
+                                .background(Slate900)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth(micRmsLevel.coerceIn(0.05f, 1f))
+                                    .fillMaxHeight()
+                                    .background(
+                                        Brush.horizontalGradient(
+                                            colors = listOf(Color(0xFF00F2FE), Sky400)
+                                        )
+                                    )
+                            )
+                        }
+                    }
 
                     // Partial speech transcription live indicator
                     if (partialSpokenText.isNotBlank()) {
