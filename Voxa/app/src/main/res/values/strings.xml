@@ -132,8 +132,6 @@
     <string name="speech_practice_choose_word">Choose a word:</string>
     <string name="speech_practice_listen_example">🔊 Listen to example</string>
     <string name="speech_practice_recent">📊 Recent Practice</string>
-    <string name="tab_dtw_lab">🔬 Pronunciation Lab</string>
-    <string name="tab_say_and_earn">🪙 Say &amp; Earn</string>
     <string name="say_and_earn_title">🪙 Say &amp; Earn</string>
     <string name="say_and_earn_desc">Listen to the word, say it clearly, and earn coins!</string>
     <string name="say_and_earn_streak">🔥 %1$d Streak</string>

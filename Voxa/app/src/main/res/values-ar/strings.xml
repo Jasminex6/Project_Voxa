@@ -68,8 +68,6 @@
     <string name="speech_try_again">حاول مجدداً 💪</string>
     <string name="speech_error_loud">تعذر معالجة الصوت. حاول التحدث بصوت أعلى 🔊</string>
     <string name="speech_error_generic">حدث خطأ ما. دعنا نحاول مجدداً 🔄</string>
-    <string name="tab_dtw_lab">🔬 معمل النطق</string>
-    <string name="tab_say_and_earn">🪙 انطق واكسب</string>
     <string name="say_and_earn_title">🪙 انطق واكسب</string>
     <string name="say_and_earn_desc">استمع للكلمة، وانطقها بوضوح واكسب النجوم والعملات!</string>
     <string name="say_and_earn_streak">🔥 تتابع %1$d</string>

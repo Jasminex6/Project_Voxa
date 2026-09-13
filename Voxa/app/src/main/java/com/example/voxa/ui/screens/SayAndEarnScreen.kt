@@ -66,20 +66,94 @@ data class SayAndEarnWord(
     val english: String,
     val arabic: String,
     val emoji: String,
+    val englishAliases: List<String> = emptyList(),
+    val arabicAliases: List<String> = emptyList(),
     val aliases: List<String> = emptyList(),
     val audioAssetPath: String? = null
-)
+) {
+    fun getAliases(language: String): List<String> {
+        val isEn = language.equals("en", ignoreCase = true)
+        return if (isEn) {
+            if (englishAliases.isNotEmpty()) englishAliases else aliases.filter { it.none { c -> c in '\u0600'..'\u06FF' } }
+        } else {
+            if (arabicAliases.isNotEmpty()) arabicAliases else aliases.filter { it.any { c -> c in '\u0600'..'\u06FF' } }
+        }
+    }
+}
 
 val DEFAULT_SAY_AND_EARN_WORDS = listOf(
-    SayAndEarnWord("Water", "مايه", "💧", listOf("مية", "ماية", "ماء", "مي", "مويه", "امبو", "مبو", "واوا", "water", "wawa"), "water.mp3"),
-    SayAndEarnWord("Milk", "لبن", "🥛", listOf("حليب", "اللبن", "لبنو", "مم", "milk", "mimi"), "milk.mp3"),
-    SayAndEarnWord("Bread", "عيش", "🍞", listOf("خبز", "العيش", "عيشو", "نمنم", "bread"), "bread.mp3"),
-    SayAndEarnWord("Help", "مساعدة", "🆘", listOf("ساعدني", "مساعده", "الحقني", "انقذني", "help"), "help.mp3"),
-    SayAndEarnWord("Mom", "ماما", "👩", listOf("امي", "ام", "أم", "مامي", "ماما", "mom", "mama", "mother"), "mama.mp3"),
-    SayAndEarnWord("Dad", "بابا", "👨", listOf("ابي", "اب", "أب", "بابي", "بابا", "dad", "baba", "father"), "baba.mp3"),
-    SayAndEarnWord("Food", "أكل", "🍎", listOf("اكل", "طعام", "هم", "مم", "نمنم", "عايز اكل", "food", "eat"), null),
-    SayAndEarnWord("Bathroom", "حمام", "🚽", listOf("الحمام", "تواليت", "بيبي", "حمام", "bathroom", "toilet", "pee"), null),
-    SayAndEarnWord("Sleep", "نام", "🛌", listOf("انام", "نوم", "نعسان", "توتو", "sleep", "bed"), null)
+    SayAndEarnWord(
+        english = "Water",
+        arabic = "مايه",
+        emoji = "💧",
+        englishAliases = listOf("water", "wawa", "watr", "wata", "a water"),
+        arabicAliases = listOf("مية", "ماية", "ماء", "مي", "مويه", "امبو", "مبو", "واوا"),
+        audioAssetPath = "water.mp3"
+    ),
+    SayAndEarnWord(
+        english = "Milk",
+        arabic = "لبن",
+        emoji = "🥛",
+        englishAliases = listOf("milk", "milky", "mimi", "milkk"),
+        arabicAliases = listOf("حليب", "اللبن", "لبنو", "مم"),
+        audioAssetPath = "milk.mp3"
+    ),
+    SayAndEarnWord(
+        english = "Bread",
+        arabic = "عيش",
+        emoji = "🍞",
+        englishAliases = listOf("bread", "toast", "bun"),
+        arabicAliases = listOf("خبز", "العيش", "عيشو", "نمنم"),
+        audioAssetPath = "bread.mp3"
+    ),
+    SayAndEarnWord(
+        english = "Help",
+        arabic = "مساعدة",
+        emoji = "🆘",
+        englishAliases = listOf("help", "help me", "sos", "please"),
+        arabicAliases = listOf("ساعدني", "مساعده", "الحقني", "انقذني"),
+        audioAssetPath = "help.mp3"
+    ),
+    SayAndEarnWord(
+        english = "Mom",
+        arabic = "ماما",
+        emoji = "👩",
+        englishAliases = listOf("mom", "mama", "mommy", "mother", "mum"),
+        arabicAliases = listOf("امي", "ام", "أم", "مامي", "ماما"),
+        audioAssetPath = "mama.mp3"
+    ),
+    SayAndEarnWord(
+        english = "Dad",
+        arabic = "بابا",
+        emoji = "👨",
+        englishAliases = listOf("dad", "daddy", "father", "papa", "baba"),
+        arabicAliases = listOf("ابي", "اب", "أب", "بابي", "بابا"),
+        audioAssetPath = "baba.mp3"
+    ),
+    SayAndEarnWord(
+        english = "Food",
+        arabic = "أكل",
+        emoji = "🍎",
+        englishAliases = listOf("food", "eat", "eating", "yummy", "hungry"),
+        arabicAliases = listOf("اكل", "طعام", "هم", "مم", "نمنم", "عايز اكل"),
+        audioAssetPath = null
+    ),
+    SayAndEarnWord(
+        english = "Bathroom",
+        arabic = "حمام",
+        emoji = "🚽",
+        englishAliases = listOf("bathroom", "toilet", "restroom", "potty", "pee"),
+        arabicAliases = listOf("الحمام", "تواليت", "بيبي", "حمام"),
+        audioAssetPath = null
+    ),
+    SayAndEarnWord(
+        english = "Sleep",
+        arabic = "نام",
+        emoji = "🛌",
+        englishAliases = listOf("sleep", "bed", "sleepy", "nap", "sleeping"),
+        arabicAliases = listOf("انام", "نوم", "نعسان", "توتو"),
+        audioAssetPath = null
+    )
 )
 
 /**
@@ -141,14 +215,19 @@ fun SayAndEarnScreen(
         }
     }
 
-    // Play word audio helper
+    // Play word audio helper (authentic English or Arabic TTS/audio)
     fun playWordAudio() {
         val gender = activeProfile?.gender ?: "Male"
-        if (currentWord.audioAssetPath != null) {
-            audioPlayer.playTranslation(currentWord.audioAssetPath, gender, currentWord.arabic)
+        if (selectedLanguage == "en") {
+            // Authentic English Text-To-Speech
+            audioPlayer.speakWord(text = currentWord.english, language = "en", gender = gender)
         } else {
-            // TTS fallback with Egyptian Arabic Tashkeel
-            audioPlayer.playTranslation("dummy.mp3", gender, currentWord.arabic)
+            // Arabic pronunciation (prefer recorded audio asset if available, else Arabic TTS)
+            if (currentWord.audioAssetPath != null) {
+                audioPlayer.playTranslation(currentWord.audioAssetPath, gender, currentWord.arabic)
+            } else {
+                audioPlayer.speakWord(text = currentWord.arabic, language = "ar", gender = gender)
+            }
         }
     }
 
@@ -181,38 +260,6 @@ fun SayAndEarnScreen(
                     animationSpec = tween(300)
                 )
             }
-        }
-    }
-
-    // Quick Simulation helper for testing matching, coins & celebration
-    fun simulateSpokenWord(simulatedText: String) {
-        showResult = false
-        val allTargetAliases = currentWord.aliases + listOf(currentWord.arabic, currentWord.english)
-        val result = FuzzyMatcher.matchWord(
-            candidates = listOf(simulatedText),
-            primaryTarget = if (selectedLanguage == "en") currentWord.english else currentWord.arabic,
-            aliases = allTargetAliases,
-            maxDistance = 2
-        )
-        matchResult = result
-        showResult = true
-
-        if (result.isMatched) {
-            var totalCoins = result.coinsEarned
-            streakCount += 1
-
-            if (streakCount % 3 == 0) {
-                totalCoins += 2
-                bonusAwarded = true
-            }
-
-            viewModel.addPracticeCoins(totalCoins)
-            viewModel.recordPracticeAttempt(
-                word = currentWord.english,
-                score = if (result.isExact) 100 else 80,
-                stars = if (result.isExact) 3 else 2
-            )
-            triggerCoinBurst()
         }
     }
 
@@ -364,16 +411,18 @@ fun SayAndEarnScreen(
                     return
                 }
 
-                // Accept both Arabic and English targets regardless of active language toggle
-                val allAliases = currentWord.aliases + listOf(currentWord.arabic, currentWord.english)
+                // Evaluate against target word and aliases corresponding to selected language
+                val isEn = selectedLanguage == "en"
+                val primaryTarget = if (isEn) currentWord.english else currentWord.arabic
+                val targetAliases = currentWord.getAliases(selectedLanguage)
+
                 val result = FuzzyMatcher.matchWord(
                     candidates = candidates,
-                    primaryTarget = if (selectedLanguage == "en") currentWord.english else currentWord.arabic,
-                    aliases = allAliases,
-                    maxDistance = 2
+                    primaryTarget = primaryTarget,
+                    aliases = targetAliases
                 )
 
-                android.util.Log.d("SayAndEarn", "Match result: isMatched=${result.isMatched}, isExact=${result.isExact}, best='${result.bestCandidate}', dist=${result.editDistance}")
+                android.util.Log.d("SayAndEarn", "Match result ($selectedLanguage): isMatched=${result.isMatched}, isExact=${result.isExact}, percent=${result.matchPercent}%, stars=${result.starsEarned}, best='${result.bestCandidate}'")
 
                 matchResult = result
                 showResult = true
@@ -392,8 +441,8 @@ fun SayAndEarnScreen(
                     viewModel.addPracticeCoins(totalCoins)
                     viewModel.recordPracticeAttempt(
                         word = currentWord.english,
-                        score = if (result.isExact) 100 else 80,
-                        stars = if (result.isExact) 3 else 2
+                        score = result.matchPercent.toInt(),
+                        stars = result.starsEarned
                     )
 
                     // Trigger celebration
@@ -414,13 +463,18 @@ fun SayAndEarnScreen(
             override fun onEvent(eventType: Int, params: Bundle?) {}
         })
 
+        val isEn = selectedLanguage == "en"
+        val langTag = if (isEn) "en-US" else "ar-EG"
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
             putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, context.packageName)
-            val langTag = if (selectedLanguage == "en") "en-US" else "ar-EG"
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, langTag)
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, langTag)
-            putExtra("android.speech.extra.EXTRA_ADDITIONAL_LANGUAGES", arrayOf("ar-EG", "ar-SA", "en-US", "en"))
+            if (isEn) {
+                putExtra("android.speech.extra.EXTRA_ADDITIONAL_LANGUAGES", arrayOf("en-US", "en-GB", "en"))
+            } else {
+                putExtra("android.speech.extra.EXTRA_ADDITIONAL_LANGUAGES", arrayOf("ar-EG", "ar-SA", "ar"))
+            }
             putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 5)
             putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
             // DO NOT set EXTRA_PREFER_OFFLINE so network/offline hybrid works seamlessly
@@ -516,7 +570,7 @@ fun SayAndEarnScreen(
                     }
                     Column(modifier = Modifier.padding(end = 8.dp)) {
                         Text(
-                            text = stringResource(R.string.say_and_earn_title),
+                            text = if (selectedLanguage == "en") "Say & Earn 🪙" else stringResource(R.string.say_and_earn_title),
                             fontSize = 20.sp,
                             fontWeight = FontWeight.ExtraBold,
                             color = Color.White,
@@ -524,7 +578,7 @@ fun SayAndEarnScreen(
                             overflow = TextOverflow.Ellipsis
                         )
                         Text(
-                            text = stringResource(R.string.say_and_earn_desc),
+                            text = if (selectedLanguage == "en") "Listen to the word, say it clearly, and earn coins!" else stringResource(R.string.say_and_earn_desc),
                             fontSize = 12.sp,
                             color = Slate400,
                             maxLines = 1,
@@ -558,12 +612,12 @@ fun SayAndEarnScreen(
                 }
             }
 
-            // ── LANGUAGE SELECTOR & SIMULATION ROW ──
+            // ── LANGUAGE SELECTOR ROW ──
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.Start,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Language toggle pills
@@ -578,9 +632,13 @@ fun SayAndEarnScreen(
                             .clip(RoundedCornerShape(8.dp))
                             .background(if (selectedLanguage == "ar") QuestTeal else Color.Transparent)
                             .clickable {
-                                selectedLanguage = "ar"
-                                showResult = false
-                                matchResult = null
+                                if (selectedLanguage != "ar") {
+                                    stopListening()
+                                    selectedLanguage = "ar"
+                                    showResult = false
+                                    matchResult = null
+                                    partialSpokenText = ""
+                                }
                             }
                             .padding(horizontal = 10.dp, vertical = 5.dp)
                     ) {
@@ -596,9 +654,13 @@ fun SayAndEarnScreen(
                             .clip(RoundedCornerShape(8.dp))
                             .background(if (selectedLanguage == "en") Sky500 else Color.Transparent)
                             .clickable {
-                                selectedLanguage = "en"
-                                showResult = false
-                                matchResult = null
+                                if (selectedLanguage != "en") {
+                                    stopListening()
+                                    selectedLanguage = "en"
+                                    showResult = false
+                                    matchResult = null
+                                    partialSpokenText = ""
+                                }
                             }
                             .padding(horizontal = 10.dp, vertical = 5.dp)
                     ) {
@@ -609,24 +671,6 @@ fun SayAndEarnScreen(
                             color = if (selectedLanguage == "en") Color.White else Slate400
                         )
                     }
-                }
-
-                // Quick test simulation button
-                OutlinedButton(
-                    onClick = {
-                        val wordToSimulate = if (selectedLanguage == "en") currentWord.english else currentWord.arabic
-                        simulateSpokenWord(wordToSimulate)
-                    },
-                    shape = RoundedCornerShape(10.dp),
-                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                    border = BorderStroke(1.dp, QuestTeal.copy(alpha = 0.5f))
-                ) {
-                    Text(
-                        text = "🧪 " + if (selectedLanguage == "en") "Test Match" else "تجربة سريعة",
-                        fontSize = 11.sp,
-                        color = QuestTeal,
-                        fontWeight = FontWeight.SemiBold
-                    )
                 }
             }
 
@@ -666,7 +710,7 @@ fun SayAndEarnScreen(
 
             // ── WORD SELECTOR (Horizontal Row) ──
             Text(
-                text = stringResource(R.string.speech_practice_choose_word),
+                text = if (selectedLanguage == "en") "Choose a word to practice:" else stringResource(R.string.speech_practice_choose_word),
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = Slate300,
@@ -708,14 +752,14 @@ fun SayAndEarnScreen(
                             Text(text = word.emoji, fontSize = 32.sp)
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = word.arabic,
+                                text = if (selectedLanguage == "en") word.english else word.arabic,
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = if (isSelected) QuestTeal else Color.White,
                                 textAlign = TextAlign.Center
                             )
                             Text(
-                                text = word.english,
+                                text = if (selectedLanguage == "en") word.arabic else word.english,
                                 fontSize = 11.sp,
                                 color = Slate400,
                                 textAlign = TextAlign.Center
@@ -740,18 +784,18 @@ fun SayAndEarnScreen(
                         .padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // Word representation
+                    // Word representation (adapts dynamically to selected language)
                     Text(text = currentWord.emoji, fontSize = 72.sp)
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = currentWord.arabic,
+                        text = if (selectedLanguage == "en") currentWord.english else currentWord.arabic,
                         fontSize = 36.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = Color.White
                     )
                     Text(
-                        text = currentWord.english,
-                        fontSize = 16.sp,
+                        text = if (selectedLanguage == "en") currentWord.arabic else currentWord.english,
+                        fontSize = 18.sp,
                         color = Slate400
                     )
 
@@ -772,7 +816,7 @@ fun SayAndEarnScreen(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = stringResource(R.string.speech_practice_listen_example),
+                            text = if (selectedLanguage == "en") "Listen to example" else stringResource(R.string.speech_practice_listen_example),
                             color = QuestTeal,
                             fontWeight = FontWeight.Bold,
                             fontSize = 13.sp
@@ -799,8 +843,10 @@ fun SayAndEarnScreen(
 
                         // Floating coin burst animation
                         if (coinAnimAlpha.value > 0f) {
+                            val earnedStars = matchResult?.coinsEarned ?: 5
+                            val burstTotal = earnedStars + if (bonusAwarded) 2 else 0
                             Text(
-                                text = if (bonusAwarded) "+7 ⭐🔥" else "+5 ⭐",
+                                text = if (bonusAwarded) "+$burstTotal ⭐🔥" else "+$burstTotal ⭐",
                                 fontSize = 32.sp,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = QuestGold,
@@ -848,9 +894,9 @@ fun SayAndEarnScreen(
 
                     Text(
                         text = when {
-                            isListening -> stringResource(R.string.say_and_earn_listening)
-                            isProcessing -> stringResource(R.string.say_and_earn_processing)
-                            else -> stringResource(R.string.say_and_earn_tap_to_speak)
+                            isListening -> if (selectedLanguage == "en") "Listening... Speak in English! 🎙️" else stringResource(R.string.say_and_earn_listening)
+                            isProcessing -> if (selectedLanguage == "en") "Checking pronunciation... ✨" else stringResource(R.string.say_and_earn_processing)
+                            else -> if (selectedLanguage == "en") "Tap mic & say the word!" else stringResource(R.string.say_and_earn_tap_to_speak)
                         },
                         fontSize = 14.sp,
                         color = if (isListening) QuestOrange else Slate300,
@@ -900,24 +946,50 @@ fun SayAndEarnScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = if (result.isExact) "🎉🎉🎉" else if (isSuccess) "🌟🌟" else "💪",
+                            text = when (result.starsEarned) {
+                                5 -> "⭐⭐⭐⭐⭐"
+                                4 -> "⭐⭐⭐⭐"
+                                3 -> "⭐⭐⭐"
+                                1 -> "⭐"
+                                else -> "💪"
+                            },
                             fontSize = 36.sp
                         )
 
                         Spacer(modifier = Modifier.height(6.dp))
 
                         Text(
-                            text = if (result.isExact)
-                                stringResource(R.string.say_and_earn_perfect)
-                            else if (isSuccess)
-                                stringResource(R.string.say_and_earn_good)
-                            else
-                                result.feedbackMessage,
+                            text = when (result.starsEarned) {
+                                5 -> if (selectedLanguage == "ar") "نطق مثالي ومطابق 100%! 🏆" else "Awesome! Exact match! 🏆"
+                                4 -> if (selectedLanguage == "ar") "نطق ممتاز جداً! 🌟🌟" else "Excellent pronunciation! 🌟"
+                                3 -> if (selectedLanguage == "ar") "أحسنت! قريب جداً! 🌟" else "Great effort! Very close! 🌟"
+                                1 -> if (selectedLanguage == "ar") "محاولة جيدة! استمر! ⭐" else "Good try! Keep practicing! ⭐"
+                                else -> if (selectedLanguage == "ar") "حاول مرة أخرى! يمكنك فعلها! 💪" else "Keep trying! You can do it! 💪"
+                            },
                             fontSize = 20.sp,
                             fontWeight = FontWeight.ExtraBold,
                             color = if (isSuccess) SuccessGreen else Color.White,
                             textAlign = TextAlign.Center
                         )
+
+                        // Match percentage chip
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = if (isSuccess) SuccessGreen.copy(alpha = 0.15f) else Slate700,
+                            border = BorderStroke(1.dp, if (isSuccess) SuccessGreen.copy(alpha = 0.4f) else Slate600),
+                            modifier = Modifier.padding(top = 6.dp)
+                        ) {
+                            Text(
+                                text = if (selectedLanguage == "ar")
+                                    "نسبة التطابق: ${result.matchPercent.toInt()}%"
+                                else
+                                    "Match: ${result.matchPercent.toInt()}%",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isSuccess) SuccessGreen else Slate300,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                            )
+                        }
 
                         if (result.bestCandidate.isNotBlank()) {
                             Spacer(modifier = Modifier.height(4.dp))
@@ -945,7 +1017,7 @@ fun SayAndEarnScreen(
                                 modifier = Modifier.weight(1f)
                             ) {
                                 Text(
-                                    text = stringResource(R.string.say_and_earn_try_again),
+                                    text = if (selectedLanguage == "en") "Try Again 🔄" else stringResource(R.string.say_and_earn_try_again),
                                     color = Slate300,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -965,7 +1037,7 @@ fun SayAndEarnScreen(
                                 modifier = Modifier.weight(1f)
                             ) {
                                 Text(
-                                    text = stringResource(R.string.say_and_earn_next_word),
+                                    text = if (selectedLanguage == "en") "Next Word ➡️" else stringResource(R.string.say_and_earn_next_word),
                                     color = Color.White,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -979,7 +1051,10 @@ fun SayAndEarnScreen(
 
             // Offline reminder tip footer
             Text(
-                text = stringResource(R.string.say_and_earn_offline_tip),
+                text = if (selectedLanguage == "en")
+                    "💡 Tip: Android Speech Recognition works offline when the English (US) offline speech package is installed in device settings."
+                else
+                    stringResource(R.string.say_and_earn_offline_tip),
                 fontSize = 11.sp,
                 color = Slate500,
                 textAlign = TextAlign.Center,

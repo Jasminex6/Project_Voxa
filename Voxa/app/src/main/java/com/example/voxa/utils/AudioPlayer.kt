@@ -102,39 +102,57 @@ class AudioPlayer(private val context: Context) {
     }
 
     /**
-     * Uses Android's Text-To-Speech engine to speak the Arabic phrase.
+     * Speaks the given word/phrase using Android's Text-To-Speech engine.
+     * Dynamically sets language to English (Locale.US) or Egyptian Arabic (Locale("ar", "EG")),
+     * applies Arabic Tashkeel when appropriate, and selects a gender-matching voice.
      */
-    private fun speakWithTts(text: String, gender: String) {
+    fun speakWord(text: String, language: String = "ar", gender: String = "Male") {
+        releaseMediaPlayer()
         if (isTtsReady && tts != null) {
+            val isEn = language.equals("en", ignoreCase = true)
+            val targetLocale = if (isEn) Locale.US else Locale("ar", "EG")
+            tts?.language = targetLocale
+
             val voices = tts?.voices
             if (voices != null) {
                 val isFemale = gender.equals("Female", ignoreCase = true)
+                val langPrefix = if (isEn) "en" else "ar"
                 val matchVoice = voices.find { voice ->
                     val locale = voice.locale
-                    (locale.language == "ar") && (
+                    locale.language.startsWith(langPrefix, ignoreCase = true) && (
                         if (isFemale) {
                             voice.name.contains("female", ignoreCase = true) ||
                             voice.name.contains("are", ignoreCase = true) ||
-                            voice.name.contains("arf", ignoreCase = true)
+                            voice.name.contains("arf", ignoreCase = true) ||
+                            voice.name.contains("en-us-x-sfg", ignoreCase = true)
                         } else {
                             voice.name.contains("male", ignoreCase = true) ||
                             voice.name.contains("ard", ignoreCase = true) ||
-                            voice.name.contains("arc", ignoreCase = true)
+                            voice.name.contains("arc", ignoreCase = true) ||
+                            voice.name.contains("en-us-x-iol", ignoreCase = true)
                         }
                     )
-                }
+                } ?: voices.find { it.locale.language.startsWith(langPrefix, ignoreCase = true) }
+
                 if (matchVoice != null) {
                     tts?.voice = matchVoice
-                    Log.d(TAG, "Selected TTS Voice: ${matchVoice.name}")
+                    Log.d(TAG, "Selected TTS Voice for $language: ${matchVoice.name}")
                 }
             }
 
-            val vocalizedText = applyTashkeel(text)
-            tts?.speak(vocalizedText, TextToSpeech.QUEUE_FLUSH, null, "voxa_translation")
-            Log.d(TAG, "TTS speaking (Tashkeel applied): $vocalizedText")
+            val textToSpeak = if (!isEn) applyTashkeel(text) else text
+            tts?.speak(textToSpeak, TextToSpeech.QUEUE_FLUSH, null, "voxa_speech")
+            Log.d(TAG, "TTS speaking ($language): $textToSpeak")
         } else {
             Log.w(TAG, "TTS not ready, cannot speak: $text")
         }
+    }
+
+    /**
+     * Uses Android's Text-To-Speech engine to speak the Arabic phrase (backward compat).
+     */
+    private fun speakWithTts(text: String, gender: String) {
+        speakWord(text = text, language = "ar", gender = gender)
     }
 
     private fun releaseMediaPlayer() {

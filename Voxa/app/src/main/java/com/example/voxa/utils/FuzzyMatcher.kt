@@ -84,24 +84,44 @@ object FuzzyMatcher {
     }
 
     /**
+     * Computes percentage similarity between two normalized strings:
+     * 100.0% for exact match, scaled by Levenshtein edit distance over max string length.
+     */
+    fun computeSimilarity(s1: String, s2: String): Double {
+        if (s1 == s2) return 100.0
+        val maxLen = maxOf(s1.length, s2.length)
+        if (maxLen == 0) return 100.0
+        val dist = levenshtein(s1, s2)
+        return maxOf(0.0, ((maxLen - dist).toDouble() / maxLen.toDouble()) * 100.0)
+    }
+
+    /**
      * Result of matching child speech against target word.
      */
     data class MatchResult(
         val isMatched: Boolean,
         val isExact: Boolean,
-        val editDistance: Int,
-        val bestCandidate: String,
-        val coinsEarned: Int,
-        val feedbackMessage: String
+        val matchPercent: Double = 0.0,
+        val starsEarned: Int = 0,
+        val editDistance: Int = 999,
+        val bestCandidate: String = "",
+        val coinsEarned: Int = 0,
+        val feedbackMessage: String = ""
     )
 
     /**
      * Evaluates a list of STT speech candidate transcripts against target word(s).
      *
+     * Scoring Rules:
+     * - 5 Stars / Coins: Word matches exactly (100% match)
+     * - 4 Stars / Coins: > 90% match
+     * - 3 Stars / Coins: > 80% match (and <= 90%)
+     * - 1 Star  / Coin : > 70% match (and <= 80%)
+     * - 0 Stars / Coins: <= 70% match ("nothing for less")
+     *
      * @param candidates The list of recognized phrases returned by Android SpeechRecognizer
      * @param primaryTarget The main target word (e.g. "مايه")
      * @param aliases Alternative acceptable variants (e.g. listOf("مية", "ماية", "ماء", "water"))
-     * @param maxDistance Maximum edit distance for a close match (default 2)
      */
     fun matchWord(
         candidates: List<String>,
@@ -113,6 +133,8 @@ object FuzzyMatcher {
             return MatchResult(
                 isMatched = false,
                 isExact = false,
+                matchPercent = 0.0,
+                starsEarned = 0,
                 editDistance = 999,
                 bestCandidate = "",
                 coinsEarned = 0,
@@ -128,6 +150,8 @@ object FuzzyMatcher {
             return MatchResult(
                 isMatched = false,
                 isExact = false,
+                matchPercent = 0.0,
+                starsEarned = 0,
                 editDistance = 999,
                 bestCandidate = candidates.firstOrNull() ?: "",
                 coinsEarned = 0,
@@ -135,64 +159,102 @@ object FuzzyMatcher {
             )
         }
 
+        // 1. STRICT EXACT MATCH CHECK (100% match only)
+        // 5 stars is ONLY given if at least one candidate exactly matches the target or an alias
+        for (rawCand in candidates) {
+            val normCand = normalize(rawCand)
+            if (normCand.isBlank()) continue
+
+            if (allTargets.any { target -> normCand == target }) {
+                return MatchResult(
+                    isMatched = true,
+                    isExact = true,
+                    matchPercent = 100.0,
+                    starsEarned = 5,
+                    editDistance = 0,
+                    bestCandidate = rawCand,
+                    coinsEarned = 5,
+                    feedbackMessage = "Awesome! Exact match! 🏆"
+                )
+            }
+        }
+
+        // 2. FUZZY PERCENTAGE EVALUATION FOR NON-EXACT SPEECH
+        var bestPercent = 0.0
+        var bestCandidate = candidates.first()
         var bestDist = Int.MAX_VALUE
-        var closestCandidate = candidates.first()
 
         for (rawCand in candidates) {
             val normCand = normalize(rawCand)
             if (normCand.isBlank()) continue
 
-            // Split into individual words in case child uttered a phrase like "عايز مايه" or "مايه يا ماما"
             val tokens = normCand.split(" ").filter { it.isNotBlank() }
 
             for (target in allTargets) {
-                // 1. Direct comparison with full candidate
+                // A. Direct full candidate comparison
                 val fullDist = levenshtein(normCand, target)
-                if (fullDist < bestDist) {
+                val fullSim = computeSimilarity(normCand, target)
+                if (fullSim > bestPercent) {
+                    bestPercent = fullSim
+                    bestCandidate = rawCand
                     bestDist = fullDist
-                    closestCandidate = rawCand
                 }
 
-                // 2. Token-level comparison for each word in candidate phrase
-                for (token in tokens) {
-                    val tokenDist = levenshtein(token, target)
-                    if (tokenDist < bestDist) {
-                        bestDist = tokenDist
-                        closestCandidate = token
-                    }
-                }
-
-                // 3. Substring match (e.g., target contained in phrase or close token contained in target)
-                if (normCand.contains(target) || tokens.any { it.contains(target) || (target.contains(it) && it.length >= 2 && it.length >= target.length - 1) }) {
-                    if (bestDist > 0) {
-                        bestDist = 0
-                        closestCandidate = rawCand
+                // B. Token-level comparison for multi-word phrases (e.g., child says "عايز مايه")
+                if (tokens.size > 1) {
+                    for (token in tokens) {
+                        val tokenDist = levenshtein(token, target)
+                        var tokenSim = computeSimilarity(token, target)
+                        // If token matches target 100%, but is embedded in a phrase,
+                        // cap at 85.0% so 5 stars is strictly preserved for exact standalone matches
+                        if (tokenSim >= 100.0) {
+                            tokenSim = 85.0
+                        }
+                        if (tokenSim > bestPercent) {
+                            bestPercent = tokenSim
+                            bestCandidate = token
+                            bestDist = tokenDist
+                        }
                     }
                 }
             }
         }
 
-        val isExact = bestDist == 0
-        val isMatched = isExact || (bestDist <= maxDistance)
+        // Non-exact matches can NEVER reach 100%
+        if (bestPercent >= 100.0) {
+            bestPercent = 99.0
+        }
 
-        val coins = when {
-            isExact -> 5
-            isMatched -> 3
+        // Star & Coin Scoring Tiers:
+        // - 5 Stars: ONLY if 100% exact match (handled above)
+        // - 4 Stars: > 90% match
+        // - 3 Stars: > 80% match
+        // - 1 Star : > 70% match
+        // - 0 Stars: <= 70% match (nothing for less)
+        val stars = when {
+            bestPercent >= 90.0 -> 4
+            bestPercent >= 80.0 -> 3
+            bestPercent > 70.0 -> 1
             else -> 0
         }
 
-        val feedback = when {
-            isExact -> "Awesome! Exact match! 🎉"
-            isMatched -> "Great pronunciation! Very close! 🌟"
+        val isMatched = stars > 0
+
+        val feedback = when (stars) {
+            4 -> "Excellent pronunciation! 🌟"
+            3 -> "Great effort! Very close! 🌟"
+            1 -> "Good try! Keep practicing! ⭐"
             else -> "Keep trying! You can do it! 💪"
         }
 
         return MatchResult(
             isMatched = isMatched,
-            isExact = isExact,
+            isExact = false,
+            matchPercent = bestPercent,
+            starsEarned = stars,
             editDistance = if (bestDist == Int.MAX_VALUE) 999 else bestDist,
-            bestCandidate = closestCandidate,
-            coinsEarned = coins,
+            bestCandidate = bestCandidate,
+            coinsEarned = stars,
             feedbackMessage = feedback
         )
     }
