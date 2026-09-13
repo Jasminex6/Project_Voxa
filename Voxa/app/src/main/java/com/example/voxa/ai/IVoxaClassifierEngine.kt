@@ -28,4 +28,10 @@ interface IVoxaClassifierEngine {
      * @return ClassificationResult with match details, or a rejection reason
      */
     fun processAudioBlock(pcmData: ShortArray): ClassificationResult?
+
+    /**
+     * Notifies the engine that audio playback has started (e.g. text-to-speech).
+     * The engine can use this to suppress classification of its own audio output.
+     */
+    fun notifyAudioPlaybackStarted()
 }
