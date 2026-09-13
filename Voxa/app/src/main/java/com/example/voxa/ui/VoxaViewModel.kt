@@ -100,6 +100,10 @@ class VoxaViewModel(application: Application) : AndroidViewModel(application), I
     private val _volumeLevel = MutableStateFlow(0f)
     override val volumeLevel: StateFlow<Float> = _volumeLevel.asStateFlow()
 
+    // ── 🪙 CHILD REWARD POINTS STATE ──
+    private val _childPoints = MutableStateFlow(0)
+    override val childPoints: StateFlow<Int> = _childPoints.asStateFlow()
+
     // ── ⚠️ BIFURCATION WARNING STATE ──
     private val _bifurcationWarningTriggered = MutableStateFlow<String?>(null)
     override val bifurcationWarningTriggered: StateFlow<String?> = _bifurcationWarningTriggered.asStateFlow()
@@ -148,6 +152,17 @@ class VoxaViewModel(application: Application) : AndroidViewModel(application), I
             
             // Sync initial background service state
             _isListening.value = VoxaListenerService.isRunning
+        }
+
+        // Keep child points synchronized when active profile changes
+        viewModelScope.launch {
+            activeProfile.collect { profile ->
+                if (profile != null) {
+                    _childPoints.value = com.example.voxa.data.QuestPrefs.getChildPoints(getApplication(), profile.id)
+                } else {
+                    _childPoints.value = 0
+                }
+            }
         }
 
         // Register broadcast receiver for real-time events and volume levels
@@ -573,5 +588,11 @@ class VoxaViewModel(application: Application) : AndroidViewModel(application), I
             voxaDao.updateProfile(updated)
             _activeProfile.value = updated
         }
+    }
+
+    override fun addPracticeCoins(coins: Int) {
+        val profile = _activeProfile.value ?: return
+        com.example.voxa.data.QuestPrefs.addPoints(getApplication(), profile.id, coins)
+        _childPoints.value = com.example.voxa.data.QuestPrefs.getChildPoints(getApplication(), profile.id)
     }
 }

@@ -129,6 +129,12 @@ private fun getScoreColor(stars: Int): Color {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// PRACTICE TAB MODES
+// ═══════════════════════════════════════════════════════════════
+
+enum class PracticeTabMode { SAY_AND_EARN, DTW_LAB }
+
+// ═══════════════════════════════════════════════════════════════
 // MAIN COMPOSABLE
 // ═══════════════════════════════════════════════════════════════
 
@@ -138,6 +144,9 @@ fun SpeechPracticeScreen(viewModel: IVoxaViewModel) {
     val scope = rememberCoroutineScope()
     val activeProfile by viewModel.activeProfile.collectAsState()
     val practiceStats by viewModel.practiceStats.collectAsState()
+
+    // ── Mode Switcher State (Default: Say & Earn) ──
+    var practiceTabMode by remember { mutableStateOf(PracticeTabMode.SAY_AND_EARN) }
 
     // ── State ──
     var selectedWordIndex by remember { mutableIntStateOf(0) }
@@ -286,6 +295,15 @@ fun SpeechPracticeScreen(viewModel: IVoxaViewModel) {
 
                     // Persist to database
                     viewModel.recordPracticeAttempt(word = englishWordTitle, score = score, stars = stars)
+                    val coinsEarned = when (stars) {
+                        3 -> 5
+                        2 -> 3
+                        1 -> 1
+                        else -> 0
+                    }
+                    if (coinsEarned > 0) {
+                        viewModel.addPracticeCoins(coinsEarned)
+                    }
                 }
             } catch (e: Exception) {
                 android.util.Log.e("SpeechPractice", "Recording/scoring failed: ${e.message}", e)
@@ -311,19 +329,72 @@ fun SpeechPracticeScreen(viewModel: IVoxaViewModel) {
     // ═══════════════════════════════════════════════════════════
 
     androidx.compose.runtime.CompositionLocalProvider(
-        androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Rtl
+        androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr
     ) {
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Slate900)
         ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)
-                .verticalScroll(rememberScrollState())
-        ) {
+            // ── TOP TAB SWITCHER ──
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(Slate800)
+                    .padding(4.dp),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(if (practiceTabMode == PracticeTabMode.SAY_AND_EARN) QuestTeal else Color.Transparent)
+                        .clickable { practiceTabMode = PracticeTabMode.SAY_AND_EARN }
+                        .padding(vertical = 8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = stringResource(com.example.voxa.R.string.tab_say_and_earn),
+                        fontWeight = FontWeight.Bold,
+                        color = if (practiceTabMode == PracticeTabMode.SAY_AND_EARN) Color.White else Slate400,
+                        fontSize = 13.sp
+                    )
+                }
+
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(if (practiceTabMode == PracticeTabMode.DTW_LAB) PracticeViolet else Color.Transparent)
+                        .clickable { practiceTabMode = PracticeTabMode.DTW_LAB }
+                        .padding(vertical = 8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = stringResource(com.example.voxa.R.string.tab_dtw_lab),
+                        fontWeight = FontWeight.Bold,
+                        color = if (practiceTabMode == PracticeTabMode.DTW_LAB) Color.White else Slate400,
+                        fontSize = 13.sp
+                    )
+                }
+            }
+
+            if (practiceTabMode == PracticeTabMode.SAY_AND_EARN) {
+                SayAndEarnScreen(viewModel = viewModel)
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Slate900)
+                ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp)
+                        .verticalScroll(rememberScrollState())
+                ) {
             // ── HEADER ──
             Text(
                 text = stringResource(com.example.voxa.R.string.speech_practice_title),
@@ -663,7 +734,10 @@ fun SpeechPracticeScreen(viewModel: IVoxaViewModel) {
         }
     }
 }
+        }
+    }
 }
+
 
 // ═══════════════════════════════════════════════════════════════
 // PRACTICE HISTORY ITEM
@@ -728,7 +802,9 @@ private fun PracticeHistoryItem(stat: PracticeStats) {
                     text = "${stat.score}%",
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
-                    color = scoreColor
+                    color = scoreColor,
+                    maxLines = 1,
+                    softWrap = false
                 )
             }
         }
@@ -758,7 +834,7 @@ private fun loadReferenceTemplate(
             val features = mfccExtractor.extract(pcmData)
             if (features.isNotEmpty()) return features
         }
-    } catch (_: Exception) {
+    } catch (e: Exception) {
         // Asset not found or decode failed — fall through to synthetic template
     }
 
@@ -960,6 +1036,7 @@ private class MockPracticeViewModel : IVoxaViewModel {
     override val isListening = kotlinx.coroutines.flow.MutableStateFlow(false)
     override val recentEvents = kotlinx.coroutines.flow.MutableStateFlow(emptyList<LogEvent>())
     override val volumeLevel = kotlinx.coroutines.flow.MutableStateFlow(0f)
+    override val childPoints = kotlinx.coroutines.flow.MutableStateFlow(42)
     override val practiceStats = kotlinx.coroutines.flow.MutableStateFlow(
         listOf(
             PracticeStats(id = 1, profileId = 1, word = "Water", score = 100, stars = 3),

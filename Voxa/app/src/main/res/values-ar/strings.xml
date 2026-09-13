@@ -68,6 +68,24 @@
     <string name="speech_try_again">حاول مجدداً 💪</string>
     <string name="speech_error_loud">تعذر معالجة الصوت. حاول التحدث بصوت أعلى 🔊</string>
     <string name="speech_error_generic">حدث خطأ ما. دعنا نحاول مجدداً 🔄</string>
+    <string name="tab_dtw_lab">🔬 معمل النطق</string>
+    <string name="tab_say_and_earn">🪙 انطق واكسب</string>
+    <string name="say_and_earn_title">🪙 انطق واكسب</string>
+    <string name="say_and_earn_desc">استمع للكلمة، وانطقها بوضوح واكسب النجوم والعملات!</string>
+    <string name="say_and_earn_streak">🔥 تتابع %1$d</string>
+    <string name="say_and_earn_streak_bonus">مكافأة السلسلة! +2 🪙</string>
+    <string name="say_and_earn_tap_to_speak">اضغط الميكروفون وانطق الكلمة!</string>
+    <string name="say_and_earn_listening">جاري الاستماع... انطق الآن! 🎙️</string>
+    <string name="say_and_earn_processing">جاري فحص النطق... ✨</string>
+    <string name="say_and_earn_next_word">الكلمة التالية ➡️</string>
+    <string name="say_and_earn_try_again">حاول مجدداً 🔄</string>
+    <string name="say_and_earn_heard">تم سماع: \"%1$s\"</string>
+    <string name="say_and_earn_perfect">نطق ممتاز! +5 🪙</string>
+    <string name="say_and_earn_good">أحسنت جداً! +3 🪙</string>
+    <string name="say_and_earn_no_speech">لم نسمع بوضوح. حاول مجدداً! 🎙️</string>
+    <string name="say_and_earn_mic_permission">إذن الميكروفون مطلوب لتدريب النطق.</string>
+    <string name="say_and_earn_coins_badge">%1$d 🪙</string>
+    <string name="say_and_earn_offline_tip">نصيحة: تأكد من تنزيل حزمة التعرف الصوتي على العربية للاستخدام بدون إنترنت.</string>
     
     <string-array name="speech_msg_3_stars">
         <item>مذهل أنت بطل 🎉</item>

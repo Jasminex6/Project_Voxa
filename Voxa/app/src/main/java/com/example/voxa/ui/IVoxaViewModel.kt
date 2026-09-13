@@ -31,6 +31,7 @@ interface IVoxaViewModel {
     val isListening: StateFlow<Boolean>
     val recentEvents: StateFlow<List<LogEvent>>
     val volumeLevel: StateFlow<Float>
+    val childPoints: StateFlow<Int> get() = kotlinx.coroutines.flow.MutableStateFlow(0)
     val bifurcationWarningTriggered: StateFlow<String?> get() = kotlinx.coroutines.flow.MutableStateFlow(null)
 
     fun clearBifurcationWarning() {}
@@ -52,4 +53,5 @@ interface IVoxaViewModel {
     fun updateProfileGender(profile: ChildProfile, newGender: String) {}
     fun recordPracticeAttempt(word: String, score: Int, stars: Int) {}
     fun updateCaregiverPhones(phone1: String, phone2: String, phone3: String) {}
+    fun addPracticeCoins(coins: Int) {}
 }
