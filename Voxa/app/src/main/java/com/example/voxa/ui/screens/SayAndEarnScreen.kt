@@ -26,10 +26,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Mic
@@ -578,15 +576,15 @@ fun SayAndEarnScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp)
-                .verticalScroll(rememberScrollState()),
+                .padding(horizontal = 16.dp)
+                .padding(top = 12.dp, bottom = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // ── TOP BAR / HEADER ──
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 12.dp),
+                    .padding(bottom = 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -601,7 +599,7 @@ fun SayAndEarnScreen(
                     }
                     Column(modifier = Modifier.padding(end = 8.dp)) {
                         Text(
-                            text = if (selectedLanguage == "en") "Say & Earn 🪙" else stringResource(R.string.say_and_earn_title),
+                            text = stringResource(R.string.say_and_earn_title),
                             fontSize = 20.sp,
                             fontWeight = FontWeight.ExtraBold,
                             color = Color.White,
@@ -609,7 +607,7 @@ fun SayAndEarnScreen(
                             overflow = TextOverflow.Ellipsis
                         )
                         Text(
-                            text = if (selectedLanguage == "en") "Listen to the word, say it clearly, and earn coins!" else stringResource(R.string.say_and_earn_desc),
+                            text = stringResource(R.string.say_and_earn_desc),
                             fontSize = 12.sp,
                             color = Slate400,
                             maxLines = 1,
@@ -618,7 +616,7 @@ fun SayAndEarnScreen(
                     }
                 }
 
-                // 🪙 Live Animated Child Wallet Badge (Non-wrapping single line)
+                // 🪙 Live Animated Child Wallet Badge
                 Surface(
                     shape = RoundedCornerShape(20.dp),
                     color = QuestGold.copy(alpha = 0.15f),
@@ -643,68 +641,6 @@ fun SayAndEarnScreen(
                 }
             }
 
-            // ── LANGUAGE SELECTOR ROW ──
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 12.dp),
-                horizontalArrangement = Arrangement.Start,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Language toggle pills
-                Row(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(Slate800)
-                        .padding(2.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(if (selectedLanguage == "ar") QuestTeal else Color.Transparent)
-                            .clickable {
-                                if (selectedLanguage != "ar") {
-                                    stopListening()
-                                    selectedLanguage = "ar"
-                                    showResult = false
-                                    matchResult = null
-                                    partialSpokenText = ""
-                                }
-                            }
-                            .padding(horizontal = 10.dp, vertical = 5.dp)
-                    ) {
-                        Text(
-                            text = "🇪🇬 عربي",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = if (selectedLanguage == "ar") Color.White else Slate400
-                        )
-                    }
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(if (selectedLanguage == "en") Sky500 else Color.Transparent)
-                            .clickable {
-                                if (selectedLanguage != "en") {
-                                    stopListening()
-                                    selectedLanguage = "en"
-                                    showResult = false
-                                    matchResult = null
-                                    partialSpokenText = ""
-                                }
-                            }
-                            .padding(horizontal = 10.dp, vertical = 5.dp)
-                    ) {
-                        Text(
-                            text = "🇬🇧 English",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = if (selectedLanguage == "en") Color.White else Slate400
-                        )
-                    }
-                }
-            }
-
             // Streak indicator banner
             if (streakCount > 0) {
                 Surface(
@@ -713,7 +649,7 @@ fun SayAndEarnScreen(
                     border = BorderStroke(1.dp, QuestOrange.copy(alpha = 0.4f)),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 12.dp)
+                        .padding(bottom = 8.dp)
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
@@ -741,17 +677,17 @@ fun SayAndEarnScreen(
 
             // ── WORD SELECTOR (Horizontal Row) ──
             Text(
-                text = if (selectedLanguage == "en") "Choose a word to practice:" else stringResource(R.string.speech_practice_choose_word),
+                text = stringResource(R.string.speech_practice_choose_word),
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = Slate300,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 8.dp)
+                    .padding(bottom = 6.dp)
             )
 
             LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 contentPadding = PaddingValues(horizontal = 2.dp),
                 state = rememberLazyListState()
             ) {
@@ -759,7 +695,7 @@ fun SayAndEarnScreen(
                     val isSelected = index == selectedWordIndex
 
                     Card(
-                        shape = RoundedCornerShape(16.dp),
+                        shape = RoundedCornerShape(14.dp),
                         colors = CardDefaults.cardColors(
                             containerColor = if (isSelected) QuestTeal.copy(alpha = 0.2f) else Slate800
                         ),
@@ -768,7 +704,7 @@ fun SayAndEarnScreen(
                         else
                             BorderStroke(1.dp, Slate700),
                         modifier = Modifier
-                            .width(100.dp)
+                            .width(88.dp)
                             .clickable {
                                 selectedWordIndex = index
                                 showResult = false
@@ -777,373 +713,358 @@ fun SayAndEarnScreen(
                             }
                     ) {
                         Column(
-                            modifier = Modifier.padding(10.dp),
+                            modifier = Modifier.padding(8.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Text(text = word.emoji, fontSize = 32.sp)
-                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(text = word.emoji, fontSize = 26.sp)
+                            Spacer(modifier = Modifier.height(2.dp))
                             Text(
-                                text = if (selectedLanguage == "en") word.english else word.arabic,
-                                fontSize = 14.sp,
+                                text = word.arabic,
+                                fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = if (isSelected) QuestTeal else Color.White,
-                                textAlign = TextAlign.Center
+                                textAlign = TextAlign.Center,
+                                maxLines = 1
                             )
                             Text(
-                                text = if (selectedLanguage == "en") word.arabic else word.english,
-                                fontSize = 11.sp,
+                                text = word.english,
+                                fontSize = 10.sp,
                                 color = Slate400,
+                                textAlign = TextAlign.Center,
+                                maxLines = 1
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // ── CENTRAL AREA: Practice card with result overlay ──
+            // This Box uses weight(1f) to fill remaining space,
+            // keeping the mic button area in a stable position.
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                contentAlignment = Alignment.Center
+            ) {
+                if (showResult && matchResult != null) {
+                    val result = matchResult!!
+                    val isSuccess = result.isMatched
+
+                    Card(
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = Slate800
+                        ),
+                        border = BorderStroke(
+                            1.5.dp,
+                            if (isSuccess) SuccessGreen.copy(alpha = 0.6f) else ErrorRed.copy(alpha = 0.6f)
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = when (result.starsEarned) {
+                                    5 -> "⭐⭐⭐⭐⭐"
+                                    4 -> "⭐⭐⭐⭐"
+                                    3 -> "⭐⭐⭐"
+                                    1 -> "⭐"
+                                    else -> "💪"
+                                },
+                                fontSize = 28.sp
+                            )
+
+                            Spacer(modifier = Modifier.height(4.dp))
+
+                            Text(
+                                text = when (result.starsEarned) {
+                                    5 -> "نطق مثالي ومطابق 100%! 🏆"
+                                    4 -> "نطق ممتاز جداً! 🌟🌟"
+                                    3 -> "أحسنت! قريب جداً! 🌟"
+                                    1 -> "محاولة جيدة! استمر! ⭐"
+                                    else -> "حاول مرة أخرى! يمكنك فعلها! 💪"
+                                },
+                                fontSize = 17.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = if (isSuccess) SuccessGreen else Color.White,
                                 textAlign = TextAlign.Center
                             )
-                        }
-                    }
-                }
-            }
 
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // ── CENTRAL MAIN PRACTICE CARD ──
-            Card(
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = Slate800),
-                border = BorderStroke(1.5.dp, Slate700),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    // Word representation (adapts dynamically to selected language)
-                    Text(text = currentWord.emoji, fontSize = 72.sp)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = if (selectedLanguage == "en") currentWord.english else currentWord.arabic,
-                        fontSize = 36.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = Color.White
-                    )
-                    Text(
-                        text = if (selectedLanguage == "en") currentWord.arabic else currentWord.english,
-                        fontSize = 18.sp,
-                        color = Slate400
-                    )
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    // 🔊 "Listen to example" Button
-                    Button(
-                        onClick = { playWordAudio() },
-                        colors = ButtonDefaults.buttonColors(containerColor = QuestTeal.copy(alpha = 0.15f)),
-                        shape = RoundedCornerShape(12.dp),
-                        border = BorderStroke(1.dp, QuestTeal.copy(alpha = 0.5f))
-                    ) {
-                        Icon(
-                            Icons.Default.VolumeUp,
-                            contentDescription = "Listen",
-                            tint = QuestTeal,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = if (selectedLanguage == "en") "Listen to example" else stringResource(R.string.speech_practice_listen_example),
-                            color = QuestTeal,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    // ── PULSING LISTENING CONTROL (Exact replication of Home tab mic button) ──
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(180.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        if (isListening) {
-                            // Pulsing ripple 1
-                            Box(
-                                modifier = Modifier
-                                    .size(100.dp)
-                                    .scale(rippleScale1)
-                                    .clip(CircleShape)
-                                    .background(Color(0xFF00F2FE).copy(alpha = rippleAlpha1))
-                            )
-                            // Pulsing ripple 2
-                            Box(
-                                modifier = Modifier
-                                    .size(100.dp)
-                                    .scale(rippleScale2)
-                                    .clip(CircleShape)
-                                    .background(Color(0xFF00F2FE).copy(alpha = rippleAlpha2))
-                            )
-                        }
-
-                        // Floating coin burst animation
-                        if (coinAnimAlpha.value > 0f) {
-                            val earnedStars = matchResult?.coinsEarned ?: 5
-                            val burstTotal = earnedStars + if (bonusAwarded) 2 else 0
-                            Text(
-                                text = if (bonusAwarded) "+$burstTotal ⭐🔥" else "+$burstTotal ⭐",
-                                fontSize = 32.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = QuestGold,
-                                modifier = Modifier
-                                    .graphicsLayer {
-                                        translationY = coinAnimY.value
-                                        alpha = coinAnimAlpha.value
-                                        scaleX = coinAnimScale.value
-                                        scaleY = coinAnimScale.value
-                                    }
-                            )
-                        }
-
-                        Box(
-                            modifier = Modifier
-                                .size(110.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    if (isListening) Color(0xFF0F1E2E) else Slate800
+                            // Match percentage chip
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = if (isSuccess) SuccessGreen.copy(alpha = 0.15f) else Slate700,
+                                border = BorderStroke(1.dp, if (isSuccess) SuccessGreen.copy(alpha = 0.4f) else Slate600),
+                                modifier = Modifier.padding(top = 6.dp)
+                            ) {
+                                Text(
+                                    text = "نسبة التطابق: ${result.matchPercent.toInt()}%",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (isSuccess) SuccessGreen else Slate300,
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                                 )
-                                .border(
-                                    width = 2.dp,
-                                    color = if (isListening) Color(0xFF00F2FE) else Slate700,
-                                    shape = CircleShape
+                            }
+
+                            if (result.bestCandidate.isNotBlank()) {
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = stringResource(R.string.say_and_earn_heard, result.bestCandidate),
+                                    fontSize = 12.sp,
+                                    color = Slate400,
+                                    textAlign = TextAlign.Center
                                 )
-                                .then(
-                                    if (micMode == "hold") {
-                                        Modifier.pointerInput(Unit) {
-                                            detectTapGestures(
-                                                onPress = {
-                                                    val wasListening = isListening
-                                                    val pressStart = System.currentTimeMillis()
-                                                    if (!wasListening) {
-                                                        handleMicTap()
-                                                    }
-                                                    val released = tryAwaitRelease()
-                                                    val pressDuration = System.currentTimeMillis() - pressStart
-                                                    if (released) {
-                                                        if (wasListening) {
-                                                            stopListening()
-                                                        } else if (isListening && pressDuration > 300) {
-                                                            stopListening()
-                                                        }
-                                                    }
-                                                }
-                                            )
-                                        }
-                                    } else {
-                                        Modifier.clickable { handleMicTap() }
-                                    }
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = if (isListening) Icons.Default.Mic else Icons.Default.MicOff,
-                                contentDescription = if (isListening) "Listening Active" else "Listening Paused",
-                                tint = if (isListening) Color(0xFF00F2FE) else Slate400,
-                                modifier = Modifier.size(44.dp)
-                            )
-                        }
-                    }
+                            }
 
-                    Spacer(modifier = Modifier.height(10.dp))
+                            Spacer(modifier = Modifier.height(14.dp))
 
-                    Text(
-                        text = when {
-                            isListening -> if (selectedLanguage == "en") "Listening... Speak in English! 🎙️" else stringResource(R.string.say_and_earn_listening)
-                            isProcessing -> if (selectedLanguage == "en") "Checking pronunciation... ✨" else stringResource(R.string.say_and_earn_processing)
-                            else -> if (selectedLanguage == "en") "Tap mic & say the word!" else stringResource(R.string.say_and_earn_tap_to_speak)
-                        },
-                        fontSize = 14.sp,
-                        color = if (isListening) Color(0xFF00F2FE) else Slate300,
-                        fontWeight = if (isListening) FontWeight.Bold else FontWeight.Normal,
-                        textAlign = TextAlign.Center
-                    )
-
-                    // Volume indicator bar (replicated from Home tab)
-                    if (isListening) {
-                        Spacer(modifier = Modifier.height(10.dp))
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth(0.6f)
-                                .height(6.dp)
-                                .clip(RoundedCornerShape(3.dp))
-                                .background(Slate900)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth(micRmsLevel.coerceIn(0.05f, 1f))
-                                    .fillMaxHeight()
-                                    .background(
-                                        Brush.horizontalGradient(
-                                            colors = listOf(Color(0xFF00F2FE), Sky400)
-                                        )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                OutlinedButton(
+                                    onClick = {
+                                        showResult = false
+                                        matchResult = null
+                                        handleMicTap()
+                                    },
+                                    shape = RoundedCornerShape(12.dp),
+                                    border = BorderStroke(1.dp, Slate600),
+                                    modifier = Modifier.weight(1f),
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp)
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.say_and_earn_try_again),
+                                        color = Slate300,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 13.sp
                                     )
-                            )
+                                }
+
+                                Button(
+                                    onClick = {
+                                        showResult = false
+                                        matchResult = null
+                                        partialSpokenText = ""
+                                        selectedWordIndex = (selectedWordIndex + 1) % allWords.size
+                                    },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (isSuccess) QuestTeal else Slate700
+                                    ),
+                                    shape = RoundedCornerShape(12.dp),
+                                    modifier = Modifier.weight(1f),
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp)
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.say_and_earn_next_word),
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 13.sp
+                                    )
+                                }
+                            }
                         }
                     }
-
-                    // Partial speech transcription live indicator
-                    if (partialSpokenText.isNotBlank()) {
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(
-                            text = "\"$partialSpokenText\"",
-                            fontSize = 13.sp,
-                            color = Slate400,
-                            fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // ── RESULT / REWARD FEEDBACK CARD ──
-            AnimatedVisibility(
-                visible = showResult && matchResult != null,
-                enter = fadeIn() + slideInVertically { it / 2 },
-                exit = fadeOut()
-            ) {
-                val result = matchResult ?: return@AnimatedVisibility
-                val isSuccess = result.isMatched
-
-                Card(
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (isSuccess) SuccessGreen.copy(alpha = 0.12f) else ErrorRed.copy(alpha = 0.12f)
-                    ),
-                    border = BorderStroke(
-                        1.5.dp,
-                        if (isSuccess) SuccessGreen.copy(alpha = 0.5f) else ErrorRed.copy(alpha = 0.5f)
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
+                } else {
+                    // Practice card (shown when result is not displayed)
                     Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(20.dp),
+                        modifier = Modifier.fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
+                        // Word representation
+                        Text(text = currentWord.emoji, fontSize = 56.sp)
+                        Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = when (result.starsEarned) {
-                                5 -> "⭐⭐⭐⭐⭐"
-                                4 -> "⭐⭐⭐⭐"
-                                3 -> "⭐⭐⭐"
-                                1 -> "⭐"
-                                else -> "💪"
-                            },
-                            fontSize = 36.sp
-                        )
-
-                        Spacer(modifier = Modifier.height(6.dp))
-
-                        Text(
-                            text = when (result.starsEarned) {
-                                5 -> if (selectedLanguage == "ar") "نطق مثالي ومطابق 100%! 🏆" else "Awesome! Exact match! 🏆"
-                                4 -> if (selectedLanguage == "ar") "نطق ممتاز جداً! 🌟🌟" else "Excellent pronunciation! 🌟"
-                                3 -> if (selectedLanguage == "ar") "أحسنت! قريب جداً! 🌟" else "Great effort! Very close! 🌟"
-                                1 -> if (selectedLanguage == "ar") "محاولة جيدة! استمر! ⭐" else "Good try! Keep practicing! ⭐"
-                                else -> if (selectedLanguage == "ar") "حاول مرة أخرى! يمكنك فعلها! 💪" else "Keep trying! You can do it! 💪"
-                            },
-                            fontSize = 20.sp,
+                            text = currentWord.arabic,
+                            fontSize = 32.sp,
                             fontWeight = FontWeight.ExtraBold,
-                            color = if (isSuccess) SuccessGreen else Color.White,
-                            textAlign = TextAlign.Center
+                            color = Color.White
+                        )
+                        Text(
+                            text = currentWord.english,
+                            fontSize = 16.sp,
+                            color = Slate400
                         )
 
-                        // Match percentage chip
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = if (isSuccess) SuccessGreen.copy(alpha = 0.15f) else Slate700,
-                            border = BorderStroke(1.dp, if (isSuccess) SuccessGreen.copy(alpha = 0.4f) else Slate600),
-                            modifier = Modifier.padding(top = 6.dp)
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // 🔊 "Listen to example" Button
+                        Button(
+                            onClick = { playWordAudio() },
+                            colors = ButtonDefaults.buttonColors(containerColor = QuestTeal.copy(alpha = 0.15f)),
+                            shape = RoundedCornerShape(12.dp),
+                            border = BorderStroke(1.dp, QuestTeal.copy(alpha = 0.5f)),
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
                         ) {
+                            Icon(
+                                Icons.Default.VolumeUp,
+                                contentDescription = "Listen",
+                                tint = QuestTeal,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = if (selectedLanguage == "ar")
-                                    "نسبة التطابق: ${result.matchPercent.toInt()}%"
-                                else
-                                    "Match: ${result.matchPercent.toInt()}%",
-                                fontSize = 12.sp,
+                                text = stringResource(R.string.speech_practice_listen_example),
+                                color = QuestTeal,
                                 fontWeight = FontWeight.Bold,
-                                color = if (isSuccess) SuccessGreen else Slate300,
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                                fontSize = 12.sp
                             )
-                        }
-
-                        if (result.bestCandidate.isNotBlank()) {
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = stringResource(R.string.say_and_earn_heard, result.bestCandidate),
-                                fontSize = 13.sp,
-                                color = Slate400,
-                                textAlign = TextAlign.Center
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            OutlinedButton(
-                                onClick = {
-                                    showResult = false
-                                    handleMicTap()
-                                },
-                                shape = RoundedCornerShape(12.dp),
-                                border = BorderStroke(1.dp, Slate600),
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text(
-                                    text = if (selectedLanguage == "en") "Try Again 🔄" else stringResource(R.string.say_and_earn_try_again),
-                                    color = Slate300,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-
-                            Button(
-                                onClick = {
-                                    showResult = false
-                                    matchResult = null
-                                    partialSpokenText = ""
-                                    selectedWordIndex = (selectedWordIndex + 1) % allWords.size
-                                },
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (isSuccess) QuestTeal else Slate700
-                                ),
-                                shape = RoundedCornerShape(12.dp),
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text(
-                                    text = if (selectedLanguage == "en") "Next Word ➡️" else stringResource(R.string.say_and_earn_next_word),
-                                    color = Color.White,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
                         }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-            // Offline reminder tip footer
+            // ── MIC BUTTON AREA (Fixed at bottom, never shifts) ──
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(140.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                if (isListening) {
+                    // Pulsing ripple 1
+                    Box(
+                        modifier = Modifier
+                            .size(90.dp)
+                            .scale(rippleScale1)
+                            .clip(CircleShape)
+                            .background(Color(0xFF00F2FE).copy(alpha = rippleAlpha1))
+                    )
+                    // Pulsing ripple 2
+                    Box(
+                        modifier = Modifier
+                            .size(90.dp)
+                            .scale(rippleScale2)
+                            .clip(CircleShape)
+                            .background(Color(0xFF00F2FE).copy(alpha = rippleAlpha2))
+                    )
+                }
+
+                // Floating coin burst animation
+                if (coinAnimAlpha.value > 0f) {
+                    val earnedStars = matchResult?.coinsEarned ?: 5
+                    val burstTotal = earnedStars + if (bonusAwarded) 2 else 0
+                    Text(
+                        text = if (bonusAwarded) "+$burstTotal ⭐🔥" else "+$burstTotal ⭐",
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = QuestGold,
+                        modifier = Modifier
+                            .graphicsLayer {
+                                translationY = coinAnimY.value
+                                alpha = coinAnimAlpha.value
+                                scaleX = coinAnimScale.value
+                                scaleY = coinAnimScale.value
+                            }
+                    )
+                }
+
+                Box(
+                    modifier = Modifier
+                        .size(100.dp)
+                        .clip(CircleShape)
+                        .background(
+                            if (isListening) Color(0xFF0F1E2E) else Slate800
+                        )
+                        .border(
+                            width = 2.dp,
+                            color = if (isListening) Color(0xFF00F2FE) else Slate700,
+                            shape = CircleShape
+                        )
+                        .then(
+                            if (micMode == "hold") {
+                                Modifier.pointerInput(Unit) {
+                                    detectTapGestures(
+                                        onPress = {
+                                            val wasListening = isListening
+                                            val pressStart = System.currentTimeMillis()
+                                            if (!wasListening) {
+                                                handleMicTap()
+                                            }
+                                            val released = tryAwaitRelease()
+                                            val pressDuration = System.currentTimeMillis() - pressStart
+                                            if (released) {
+                                                if (wasListening) {
+                                                    stopListening()
+                                                } else if (isListening && pressDuration > 300) {
+                                                    stopListening()
+                                                }
+                                            }
+                                        }
+                                    )
+                                }
+                            } else {
+                                Modifier.clickable { handleMicTap() }
+                            }
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = if (isListening) Icons.Default.Mic else Icons.Default.MicOff,
+                        contentDescription = if (isListening) "Listening Active" else "Listening Paused",
+                        tint = if (isListening) Color(0xFF00F2FE) else Slate400,
+                        modifier = Modifier.size(40.dp)
+                    )
+                }
+            }
+
+            // Status text below mic
             Text(
-                text = if (selectedLanguage == "en")
-                    "💡 Tip: Android Speech Recognition works offline when the English (US) offline speech package is installed in device settings."
-                else
-                    stringResource(R.string.say_and_earn_offline_tip),
-                fontSize = 11.sp,
-                color = Slate500,
-                textAlign = TextAlign.Center,
-                lineHeight = 16.sp,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                text = when {
+                    isListening -> stringResource(R.string.say_and_earn_listening)
+                    isProcessing -> stringResource(R.string.say_and_earn_processing)
+                    else -> stringResource(R.string.say_and_earn_tap_to_speak)
+                },
+                fontSize = 13.sp,
+                color = if (isListening) Color(0xFF00F2FE) else Slate300,
+                fontWeight = if (isListening) FontWeight.Bold else FontWeight.Normal,
+                textAlign = TextAlign.Center
             )
+
+            // Volume indicator bar
+            if (isListening) {
+                Spacer(modifier = Modifier.height(6.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(0.5f)
+                        .height(5.dp)
+                        .clip(RoundedCornerShape(3.dp))
+                        .background(Slate900)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(micRmsLevel.coerceIn(0.05f, 1f))
+                            .fillMaxHeight()
+                            .background(
+                                Brush.horizontalGradient(
+                                    colors = listOf(Color(0xFF00F2FE), Sky400)
+                                )
+                            )
+                    )
+                }
+            }
+
+            // Partial speech transcription live indicator
+            if (partialSpokenText.isNotBlank()) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "\"$partialSpokenText\"",
+                    fontSize = 12.sp,
+                    color = Slate400,
+                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                )
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
         }
     }
 }
