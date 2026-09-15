@@ -306,7 +306,47 @@
     <string name="dialog_suggestions_title">💡 اقتراحات نطق شائعة</string>
     <string name="dialog_suggestions_desc">اختر كلمة أو عبارة شائعة لتعبئة التفاصيل تلقائياً:</string>
 
-    
+    <!-- Emergency Screen -->
+    <string name="emergency_btn_call">اتصال</string>
+    <string name="emergency_btn_sms">رسالة نصية</string>
+    <string name="emergency_btn_location">الموقع</string>
+    <string name="emergency_btn_getting_location">جاري التحديد...</string>
+    <string name="emergency_btn_siren">صافرة إنذار</string>
+    <string name="emergency_btn_siren_on">الإنذار يعمل</string>
+    <string name="emergency_siren_toast_activated">تم تشغيل صافرة الإنذار!</string>
+    <string name="emergency_siren_toast_stopped">تم إيقاف صافرة الإنذار</string>
+    <string name="emergency_dialer_failed">تعذر فتح لوحة الاتصال</string>
+    <string name="emergency_sms_failed">تعذر فتح تطبيق الرسائل</string>
+    <string name="emergency_location_failed">تعذر الحصول على الموقع. حاول مرة أخرى.</string>
+    <string name="emergency_location_permission_denied">إذن الموقع غير مفعّل</string>
+    <string name="emergency_location_error">خطأ في تحديد الموقع: %1$s</string>
+    <string name="emergency_default_alert_msg">تنبيه طوارئ: يرجى تقديم المساعدة فوراً.</string>
+    <string name="emergency_current_location_msg">هذا هو موقعي الحالي:\n%1$s</string>
+    <string name="emergency_log_siren_activated">🆘 تم تفعيل صافرة الإنذار</string>
+    <string name="emergency_log_siren_paused">🆘 تم إيقاف صافرة الإنذار</string>
+    <string name="emergency_log_dialer">🆘 تم فتح لوحة الاتصال للطوارئ.</string>
+    <string name="emergency_log_sms">🆘 تم فتح تطبيق الرسائل للطوارئ.</string>
+    <string name="emergency_log_location">🆘 تم إرسال الموقع الحالي عبر الرسائل القصيرة.</string>
+    <string name="btn_edit_emergency">✏️ تعديل بيانات الطوارئ</string>
+
+    <string name="dashboard_manage_profiles">إدارة الملفات الشخصية</string>
+    <string name="dashboard_edit_caregiver">تعديل بيانات مقدم الرعاية</string>
+    <string name="dashboard_caregiver_name">الاسم</string>
+    <string name="dashboard_caregiver_phone">رقم الهاتف</string>
+    <string name="dashboard_save">حفظ</string>
+    <string name="dashboard_cancel">إلغاء</string>
+    <string name="dashboard_edit_emergency">تعديل جهة اتصال الطوارئ</string>
+    <string name="dashboard_contact_name">اسم جهة الاتصال</string>
+    <string name="dashboard_relation">صلة القرابة بالطفل</string>
+    <string name="dashboard_phone_error">يجب أن يتكون رقم الهاتف من 11 رقمًا بالضبط</string>
+    <string name="dashboard_emergency_msg">رسالة الطوارئ</string>
+    <string name="profile_gender_male">ذكر</string>
+    <string name="profile_gender_female">أنثى</string>
+    <string name="speech_practice_choose_word">اختر كلمة:</string>
+    <string name="speech_practice_listen_example">🔊 استمع للمثال</string>
+    <string name="speech_practice_no_profile">يرجى إنشاء أو تفعيل ملف شخصي أولاً\nلبدء التدريب! 🧒</string>
+    <string name="speech_practice_recent">📊 سجل التدريب الأخير</string>
+    <string name="speech_practice_subtitle">اضغط على كلمة، واستمر بالضغط على الميكروفون للتحدث، واكسب النجوم!</string>
 
     <string name="caregiver_contacts_title">قائمة مقدمي الرعاية</string>
 

@@ -40,6 +40,8 @@ import androidx.compose.ui.unit.sp
 import com.example.voxa.ui.IVoxaViewModel
 import com.example.voxa.ui.theme.*
 import com.example.voxa.data.EmergencyContactPrefs
+import androidx.compose.ui.res.stringResource
+import com.example.voxa.R
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
@@ -59,7 +61,8 @@ fun EmergencyScreen(viewModel: IVoxaViewModel) {
     var ringtonePlayer: MediaPlayer? by remember { mutableStateOf(null) }
 
     // Load saved emergency contact data
-    val emergencyPhone = "+2" + remember { EmergencyContactPrefs.getContactPhone(context) }
+    val rawPhone = remember { EmergencyContactPrefs.getContactPhone(context) }
+    val emergencyPhone = if (rawPhone.isNotBlank()) "+2$rawPhone" else "112"
     val emergencyMessage = remember { EmergencyContactPrefs.getEmergencyMessage(context) }
     val emergencyContactName = remember { EmergencyContactPrefs.getContactName(context) }
 
@@ -78,8 +81,8 @@ fun EmergencyScreen(viewModel: IVoxaViewModel) {
             }
             if (alarmProgress >= 1f) {
                 isAlarmActive = true
-                Toast.makeText(context, "Emergency Siren Activated!", Toast.LENGTH_SHORT).show()
-                viewModel.addLogSystemEvent("🆘 Emergency Siren Activated")
+                Toast.makeText(context, context.getString(R.string.emergency_siren_toast_activated), Toast.LENGTH_SHORT).show()
+                viewModel.addLogSystemEvent(context.getString(R.string.emergency_log_siren_activated))
                 
                 val resId = context.resources.getIdentifier("emergency_siren", "raw", context.packageName)
                 if (resId != 0) {
@@ -100,7 +103,7 @@ fun EmergencyScreen(viewModel: IVoxaViewModel) {
             alarmProgress = 0f
             if (isAlarmActive) {
                 isAlarmActive = false
-                viewModel.addLogSystemEvent("🆘 Emergency Siren Paused")
+                viewModel.addLogSystemEvent(context.getString(R.string.emergency_log_siren_paused))
                 
                 if (ringtonePlayer != null) {
                     try {
@@ -113,7 +116,7 @@ fun EmergencyScreen(viewModel: IVoxaViewModel) {
                 } else {
                     SirenPlayer.stop()
                 }
-                Toast.makeText(context, "Siren Stopped", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.emergency_siren_toast_stopped), Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -130,113 +133,118 @@ fun EmergencyScreen(viewModel: IVoxaViewModel) {
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Slate900)
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        Row(
-            modifier = Modifier.weight(1f).fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            EmergencyBigButton(
-                modifier = Modifier.weight(1f).fillMaxHeight(),
-                title = "Call",
-                icon = Icons.Default.Phone,
-                color = Color(0xFF2196F3),
-                onClick = {
-                    try {
-                        val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$emergencyPhone"))
-                        context.startActivity(intent)
-                        viewModel.addLogSystemEvent("🆘 Launched emergency dialer.")
-                    } catch (e: Exception) {
-                        Toast.makeText(context, "Failed to launch phone dialer", Toast.LENGTH_SHORT).show()
-                    }
-                }
-            )
+    val isArabic = java.util.Locale.getDefault().language == "ar"
+    val layoutDir = if (isArabic) androidx.compose.ui.unit.LayoutDirection.Rtl else androidx.compose.ui.unit.LayoutDirection.Ltr
 
-            EmergencyBigButton(
-                modifier = Modifier.weight(1f).fillMaxHeight(),
-                title = "SMS",
-                icon = Icons.Default.Mail,
-                color = Color(0xFF4CAF50),
-                onClick = {
-                    try {
-                        val smsPhone = emergencyPhone.ifBlank { "112" }
-                        val smsBody = emergencyMessage.ifBlank { "Emergency alert: Please assist immediately." }
-                        val intent = Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:$smsPhone")).apply {
-                            putExtra("sms_body", smsBody)
+    CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides layoutDir) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Slate900)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.weight(1f).fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                EmergencyBigButton(
+                    modifier = Modifier.weight(1f).fillMaxHeight(),
+                    title = stringResource(R.string.emergency_btn_call),
+                    icon = Icons.Default.Phone,
+                    color = Color(0xFF2196F3),
+                    onClick = {
+                        try {
+                            val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$emergencyPhone"))
+                            context.startActivity(intent)
+                            viewModel.addLogSystemEvent(context.getString(R.string.emergency_log_dialer))
+                        } catch (e: Exception) {
+                            Toast.makeText(context, context.getString(R.string.emergency_dialer_failed), Toast.LENGTH_SHORT).show()
                         }
-                        context.startActivity(intent)
-                        viewModel.addLogSystemEvent("🆘 Launched emergency SMS.")
-                    } catch (e: Exception) {
-                        Toast.makeText(context, "Failed to launch SMS app", Toast.LENGTH_SHORT).show()
                     }
-                }
-            )
-        }
+                )
 
-        Row(
-            modifier = Modifier.weight(1f).fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            EmergencyBigButton(
-                modifier = Modifier.weight(1f).fillMaxHeight(),
-                title = if (isFetchingLocation) "Getting..." else "Location",
-                icon = Icons.Default.LocationOn,
-                color = Color(0xFFFF9800),
-                onClick = {
-                    if (isFetchingLocation) return@EmergencyBigButton
-                    isFetchingLocation = true
-                    try {
-                        fusedLocationClient
-                            .getCurrentLocation(
-                                Priority.PRIORITY_HIGH_ACCURACY,
-                                CancellationTokenSource().token
-                            )
-                            .addOnSuccessListener { location ->
-                                isFetchingLocation = false
-                                if (location != null) {
-                                    val lat = location.latitude
-                                    val lng = location.longitude
-                                    val mapsLink = "https://maps.google.com/?q=$lat,$lng"
-                                    val smsPhone = emergencyPhone.ifBlank { "112" }
-                                    val locationMsg = "Here is my current location:\n$mapsLink"
-                                    try {
-                                        val intent = Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:$smsPhone")).apply {
-                                            putExtra("sms_body", locationMsg)
+                EmergencyBigButton(
+                    modifier = Modifier.weight(1f).fillMaxHeight(),
+                    title = stringResource(R.string.emergency_btn_sms),
+                    icon = Icons.Default.Mail,
+                    color = Color(0xFF4CAF50),
+                    onClick = {
+                        try {
+                            val smsPhone = emergencyPhone.ifBlank { "112" }
+                            val smsBody = emergencyMessage.ifBlank { context.getString(R.string.emergency_default_alert_msg) }
+                            val intent = Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:$smsPhone")).apply {
+                                putExtra("sms_body", smsBody)
+                            }
+                            context.startActivity(intent)
+                            viewModel.addLogSystemEvent(context.getString(R.string.emergency_log_sms))
+                        } catch (e: Exception) {
+                            Toast.makeText(context, context.getString(R.string.emergency_sms_failed), Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                )
+            }
+
+            Row(
+                modifier = Modifier.weight(1f).fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                EmergencyBigButton(
+                    modifier = Modifier.weight(1f).fillMaxHeight(),
+                    title = if (isFetchingLocation) stringResource(R.string.emergency_btn_getting_location) else stringResource(R.string.emergency_btn_location),
+                    icon = Icons.Default.LocationOn,
+                    color = Color(0xFFFF9800),
+                    onClick = {
+                        if (isFetchingLocation) return@EmergencyBigButton
+                        isFetchingLocation = true
+                        try {
+                            fusedLocationClient
+                                .getCurrentLocation(
+                                    Priority.PRIORITY_HIGH_ACCURACY,
+                                    CancellationTokenSource().token
+                                )
+                                .addOnSuccessListener { location ->
+                                    isFetchingLocation = false
+                                    if (location != null) {
+                                        val lat = location.latitude
+                                        val lng = location.longitude
+                                        val mapsLink = "https://maps.google.com/?q=$lat,$lng"
+                                        val smsPhone = emergencyPhone.ifBlank { "112" }
+                                        val locationMsg = context.getString(R.string.emergency_current_location_msg, mapsLink)
+                                        try {
+                                            val intent = Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:$smsPhone")).apply {
+                                                putExtra("sms_body", locationMsg)
+                                            }
+                                            context.startActivity(intent)
+                                            viewModel.addLogSystemEvent(context.getString(R.string.emergency_log_location))
+                                        } catch (e: Exception) {
+                                            Toast.makeText(context, context.getString(R.string.emergency_sms_failed), Toast.LENGTH_SHORT).show()
                                         }
-                                        context.startActivity(intent)
-                                        viewModel.addLogSystemEvent("🆘 Sent current location via SMS.")
-                                    } catch (e: Exception) {
-                                        Toast.makeText(context, "Failed to launch SMS", Toast.LENGTH_SHORT).show()
+                                    } else {
+                                        Toast.makeText(context, context.getString(R.string.emergency_location_failed), Toast.LENGTH_SHORT).show()
                                     }
-                                } else {
-                                    Toast.makeText(context, "Could not get location. Try again.", Toast.LENGTH_SHORT).show()
                                 }
-                            }
-                            .addOnFailureListener {
-                                isFetchingLocation = false
-                                Toast.makeText(context, "Location error: ${it.message}", Toast.LENGTH_SHORT).show()
-                            }
-                    } catch (e: SecurityException) {
-                        isFetchingLocation = false
-                        Toast.makeText(context, "Location permission not granted", Toast.LENGTH_SHORT).show()
+                                .addOnFailureListener {
+                                    isFetchingLocation = false
+                                    Toast.makeText(context, context.getString(R.string.emergency_location_error, it.message ?: ""), Toast.LENGTH_SHORT).show()
+                                }
+                        } catch (e: SecurityException) {
+                            isFetchingLocation = false
+                            Toast.makeText(context, context.getString(R.string.emergency_location_permission_denied), Toast.LENGTH_SHORT).show()
+                        }
                     }
-                }
-            )
+                )
 
-            EmergencyBigHoldButton(
-                modifier = Modifier.weight(1f).fillMaxHeight(),
-                title = if (isAlarmActive) "Siren ON" else "Siren",
-                icon = Icons.Default.NotificationsActive,
-                color = Color(0xFFF44336),
-                progress = alarmProgress,
-                isActive = isAlarmActive,
-                onHoldChange = { isHoldingAlarm = it }
-            )
+                EmergencyBigHoldButton(
+                    modifier = Modifier.weight(1f).fillMaxHeight(),
+                    title = if (isAlarmActive) stringResource(R.string.emergency_btn_siren_on) else stringResource(R.string.emergency_btn_siren),
+                    icon = Icons.Default.NotificationsActive,
+                    color = Color(0xFFF44336),
+                    progress = alarmProgress,
+                    isActive = isAlarmActive,
+                    onHoldChange = { isHoldingAlarm = it }
+                )
+            }
         }
     }
 }

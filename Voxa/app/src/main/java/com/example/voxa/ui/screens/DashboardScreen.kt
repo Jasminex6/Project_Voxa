@@ -587,7 +587,7 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
                                 }
                                 Spacer(modifier = Modifier.height(6.dp))
                                 Text(
-                                    text = stringResource(com.example.voxa.R.string.btn_edit_caregiver),
+                                    text = stringResource(com.example.voxa.R.string.btn_edit_emergency),
                                     color = Sky400,
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,

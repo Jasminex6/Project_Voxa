@@ -218,6 +218,27 @@
     <string name="dialog_suggestions_desc">Select a commonly used word or phrase to auto-populate the details below:</string>
 
     <!-- Emergency Screen -->
+    <string name="emergency_btn_call">Call</string>
+    <string name="emergency_btn_sms">SMS</string>
+    <string name="emergency_btn_location">Location</string>
+    <string name="emergency_btn_getting_location">Getting...</string>
+    <string name="emergency_btn_siren">Siren</string>
+    <string name="emergency_btn_siren_on">Siren ON</string>
+    <string name="emergency_siren_toast_activated">Emergency Siren Activated!</string>
+    <string name="emergency_siren_toast_stopped">Siren Stopped</string>
+    <string name="emergency_dialer_failed">Failed to launch phone dialer</string>
+    <string name="emergency_sms_failed">Failed to launch SMS app</string>
+    <string name="emergency_location_failed">Could not get location. Try again.</string>
+    <string name="emergency_location_permission_denied">Location permission not granted</string>
+    <string name="emergency_location_error">Location error: %1$s</string>
+    <string name="emergency_default_alert_msg">Emergency alert: Please assist immediately.</string>
+    <string name="emergency_current_location_msg">Here is my current location:\n%1$s</string>
+    <string name="emergency_log_siren_activated">🆘 Emergency Siren Activated</string>
+    <string name="emergency_log_siren_paused">🆘 Emergency Siren Paused</string>
+    <string name="emergency_log_dialer">🆘 Launched emergency dialer.</string>
+    <string name="emergency_log_sms">🆘 Launched emergency SMS.</string>
+    <string name="emergency_log_location">🆘 Sent current location via SMS.</string>
+    <string name="btn_edit_emergency">✏️ Edit Emergency Contact</string>
 
     <string name="caregiver_contacts_title">Caregiver Contact List</string>
 
