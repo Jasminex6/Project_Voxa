@@ -10,10 +10,13 @@ import androidx.lifecycle.viewModelScope
 import com.example.voxa.data.ChildProfile
 import com.example.voxa.data.EnrolledIntent
 import com.example.voxa.data.AcousticTemplate
+import com.example.voxa.data.P2PSharingDto
+import com.example.voxa.data.EmergencyContactPrefs
 import com.example.voxa.data.PracticeStats
 import com.example.voxa.data.VoxaDatabase
 import com.example.voxa.services.VoxaListenerService
 import android.widget.Toast
+import android.util.Log
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -594,5 +597,74 @@ class VoxaViewModel(application: Application) : AndroidViewModel(application), I
         val profile = _activeProfile.value ?: return
         com.example.voxa.data.QuestPrefs.addPoints(getApplication(), profile.id, coins)
         _childPoints.value = com.example.voxa.data.QuestPrefs.getChildPoints(getApplication(), profile.id)
+    }
+
+    override fun importP2PProfile(
+        dto: P2PSharingDto,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                // 1. Create the child profile (marked as NOT active initially)
+                val newProfile = ChildProfile(
+                    name = "${dto.childName} (Shared)",
+                    gender = dto.childGender,
+                    avatarEmoji = dto.childAvatarEmoji,
+                    speakerEmbedding = dto.speakerEmbedding,
+                    isActive = false,
+                    caregiverPhone1 = dto.caregiverPhone
+                )
+                val newProfileId = voxaDao.insertProfile(newProfile)
+
+                // 2. Insert each intent with isImported = true
+                for (intentDto in dto.intents) {
+                    val enrolledIntent = EnrolledIntent(
+                        profileId = newProfileId,
+                        intentName = intentDto.intentName,
+                        outputPhrase = intentDto.outputPhrase,
+                        audioAssetPath = intentDto.audioAssetPath,
+                        oodThreshold = intentDto.oodThreshold,
+                        isImported = true  // KEY: marks this as P2P-imported
+                    )
+                    val newIntentId = voxaDao.insertIntent(enrolledIntent)
+
+                    // 3. Insert all acoustic templates (centroids/MFCC vectors)
+                    //    These enable classification to work on this device
+                    for (templateFeatures in intentDto.templateFeatures) {
+                        val template = AcousticTemplate(
+                            intentId = newIntentId,
+                            templateFeatures = templateFeatures
+                        )
+                        voxaDao.insertTemplate(template)
+                    }
+                }
+
+                // 4. Store caregiver data in SharedPreferences
+                //    (only if the receiver doesn't already have a contact set)
+                val context = getApplication<Application>()
+                val existingPhone = EmergencyContactPrefs.getContactPhone(context)
+                if (existingPhone.isBlank()) {
+                    EmergencyContactPrefs.saveEmergencyContact(
+                        context = context,
+                        name = dto.caregiverName,
+                        relation = dto.caregiverRelation,
+                        phone = dto.caregiverPhone,
+                        message = ""
+                    )
+                }
+
+                // 5. Auto-select the imported profile
+                selectActiveProfile(newProfileId)
+                addLogSystemEvent(
+                    "P2P import: ${dto.childName}'s profile with ${dto.intents.size} intents"
+                )
+
+                withContext(Dispatchers.Main) { onSuccess() }
+            } catch (e: Exception) {
+                Log.e("VoxaViewModel", "P2P import failed: ${e.message}", e)
+                withContext(Dispatchers.Main) { onError(e.message ?: "Import failed") }
+            }
+        }
     }
 }

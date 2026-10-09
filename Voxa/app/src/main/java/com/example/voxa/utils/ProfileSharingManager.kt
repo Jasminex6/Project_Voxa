@@ -1,19 +1,17 @@
 package com.example.voxa.utils
 
 import android.content.Context
-import android.net.Uri
 import android.util.Log
 import com.google.android.gms.nearby.Nearby
 import com.google.android.gms.nearby.connection.*
 import com.google.gson.Gson
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import java.io.File
 
 /**
  * 📡 ProfileSharingManager
  * Manages peer-to-peer sharing of Child Profiles and Audio Intents
- * using Google Nearby Connections API (BLE + WiFi Direct).
+ * using Google Nearby Connections API (BLE + WiFi Direct) with 4-Digit Security PIN Verification.
  */
 class ProfileSharingManager(private val context: Context) {
 
@@ -26,18 +24,30 @@ class ProfileSharingManager(private val context: Context) {
     val sharingState: StateFlow<SharingState> = _sharingState
 
     private var currentEndpointId: String? = null
+    private var isSender: Boolean = false
+    private var expectedPin: String? = null
 
     // Callbacks
     private var onProfileReceived: ((String) -> Unit)? = null
+    private var onPinVerified: (() -> Unit)? = null
 
     fun setOnProfileReceivedListener(listener: (String) -> Unit) {
         onProfileReceived = listener
+    }
+
+    fun setExpectedPin(pin: String) {
+        expectedPin = pin
+    }
+
+    fun setOnPinVerifiedListener(listener: () -> Unit) {
+        onPinVerified = listener
     }
 
     // ==========================================
     // 📡 DISCOVERY (SENDER)
     // ==========================================
     fun startDiscovering() {
+        isSender = true
         _sharingState.value = SharingState.Discovering
         val options = DiscoveryOptions.Builder().setStrategy(Strategy.P2P_POINT_TO_POINT).build()
 
@@ -52,134 +62,178 @@ class ProfileSharingManager(private val context: Context) {
                 }
 
                 override fun onEndpointLost(endpointId: String) {
-                    _sharingState.value = SharingState.Discovering
+                    Log.d("VoxaSharing", "Endpoint lost: $endpointId")
+                    if (_sharingState.value !is SharingState.Connected && 
+                        _sharingState.value !is SharingState.WaitingForPin &&
+                        _sharingState.value !is SharingState.Transferring) {
+                        _sharingState.value = SharingState.Discovering
+                    }
                 }
             },
             options
         ).addOnFailureListener { e ->
+            Log.e("VoxaSharing", "Discovery failed: ${e.message}")
             _sharingState.value = SharingState.Error("Discovery failed: ${e.message}")
         }
     }
 
     fun stopDiscovering() {
         connectionsClient.stopDiscovery()
-        if (_sharingState.value !is SharingState.Connected) {
-            _sharingState.value = SharingState.Idle
-        }
     }
 
     // ==========================================
-    // 📻 ADVERTISING (RECEIVER)
+    // 📢 ADVERTISING (RECEIVER)
     // ==========================================
-    fun startAdvertising(receiverName: String) {
+    fun startAdvertising(deviceName: String = "Voxa Receiver") {
+        isSender = false
         _sharingState.value = SharingState.Advertising
         val options = AdvertisingOptions.Builder().setStrategy(Strategy.P2P_POINT_TO_POINT).build()
 
         connectionsClient.startAdvertising(
-            receiverName,
+            deviceName,
             SERVICE_ID,
             connectionLifecycleCallback,
             options
         ).addOnFailureListener { e ->
+            Log.e("VoxaSharing", "Advertising failed: ${e.message}")
             _sharingState.value = SharingState.Error("Advertising failed: ${e.message}")
         }
     }
 
     fun stopAdvertising() {
         connectionsClient.stopAdvertising()
-        if (_sharingState.value !is SharingState.Connected) {
-            _sharingState.value = SharingState.Idle
-        }
     }
 
     // ==========================================
-    // 🔗 CONNECTION LIFECYCLE
+    // 🤝 CONNECTION LIFECYCLE
     // ==========================================
-    private fun requestConnection(endpointId: String, myName: String) {
-        connectionsClient.requestConnection(myName, endpointId, connectionLifecycleCallback)
+    private fun requestConnection(endpointId: String, name: String) {
+        _sharingState.value = SharingState.Connecting(name)
+        connectionsClient.requestConnection(name, endpointId, connectionLifecycleCallback)
             .addOnFailureListener { e ->
+                Log.e("VoxaSharing", "Connection request failed: ${e.message}")
                 _sharingState.value = SharingState.Error("Connection request failed: ${e.message}")
             }
     }
 
     private val connectionLifecycleCallback = object : ConnectionLifecycleCallback() {
-        override fun onConnectionInitiated(endpointId: String, info: ConnectionInfo) {
-            Log.d("VoxaSharing", "Connection initiated with ${info.endpointName}")
-            // Automatically accept connection for one-tap flow
+        override fun onConnectionInitiated(endpointId: String, connectionInfo: ConnectionInfo) {
+            Log.d("VoxaSharing", "Connection initiated with: ${connectionInfo.endpointName}")
+            // Auto-accept connection on both sides
             connectionsClient.acceptConnection(endpointId, payloadCallback)
-            _sharingState.value = SharingState.Connecting(info.endpointName)
         }
 
-        override fun onConnectionResult(endpointId: String, result: ConnectionResolution) {
-            when (result.status.statusCode) {
-                ConnectionsStatusCodes.STATUS_OK -> {
-                    Log.d("VoxaSharing", "Connected to $endpointId")
-                    currentEndpointId = endpointId
-                    _sharingState.value = SharingState.Connected
+        override fun onConnectionResult(endpointId: String, resolution: ConnectionResolution) {
+            if (resolution.status.isSuccess) {
+                Log.d("VoxaSharing", "Connected to: $endpointId. isSender=$isSender")
+                currentEndpointId = endpointId
+                if (isSender) {
+                    val pin = expectedPin ?: "0000"
+                    _sharingState.value = SharingState.WaitingForPin(pin)
+                } else {
+                    _sharingState.value = SharingState.AwaitingPinEntry
                 }
-                ConnectionsStatusCodes.STATUS_CONNECTION_REJECTED -> {
-                    _sharingState.value = SharingState.Error("Connection rejected")
-                }
-                else -> {
-                    _sharingState.value = SharingState.Error("Connection failed")
-                }
+            } else {
+                Log.e("VoxaSharing", "Connection failed with status: ${resolution.status.statusCode}")
+                _sharingState.value = SharingState.Error("Connection failed")
             }
         }
 
         override fun onDisconnected(endpointId: String) {
-            Log.d("VoxaSharing", "Disconnected from $endpointId")
+            Log.d("VoxaSharing", "Disconnected from: $endpointId")
             currentEndpointId = null
-            _sharingState.value = SharingState.Idle
-        }
-    }
-
-    // ==========================================
-    // 📦 PAYLOAD TRANSFER
-    // ==========================================
-    fun sendProfileData(jsonPayload: String, pcmFiles: List<File>) {
-        val endpointId = currentEndpointId ?: return
-        
-        _sharingState.value = SharingState.Transferring
-
-        // 1. Send metadata JSON
-        val bytesPayload = Payload.fromBytes(jsonPayload.toByteArray(Charsets.UTF_8))
-        connectionsClient.sendPayload(endpointId, bytesPayload)
-
-        // 2. Send all associated PCM files
-        for (file in pcmFiles) {
-            if (file.exists()) {
-                try {
-                    val filePayload = Payload.fromFile(file)
-                    // We need a way to map the payload ID to the filename on the receiver side,
-                    // but for simplicity, we rely on the JSON metadata containing the filenames.
-                    // A proper implementation would send a manifest matching payload IDs to filenames.
-                    connectionsClient.sendPayload(endpointId, filePayload)
-                } catch (e: Exception) {
-                    Log.e("VoxaSharing", "Failed to send file: ${file.name}", e)
-                }
+            if (_sharingState.value !is SharingState.TransferComplete) {
+                _sharingState.value = SharingState.Idle
             }
         }
     }
 
+    // ==========================================
+    // 🔐 PIN VERIFICATION & SENDING PAYLOADS
+    // ==========================================
+    fun submitPin(enteredPin: String) {
+        val endpoint = currentEndpointId ?: run {
+            _sharingState.value = SharingState.Error("No active connection")
+            return
+        }
+        _sharingState.value = SharingState.VerifyingPin
+        val message = mapOf(
+            "action" to "VERIFY_PIN",
+            "pin" to enteredPin
+        )
+        val json = gson.toJson(message)
+        val payload = Payload.fromBytes(json.toByteArray(Charsets.UTF_8))
+        connectionsClient.sendPayload(endpoint, payload)
+    }
+
+    fun sendProfileData(profileJson: String) {
+        val endpoint = currentEndpointId ?: run {
+            _sharingState.value = SharingState.Error("No active connection to send data")
+            return
+        }
+        _sharingState.value = SharingState.Transferring
+
+        val message = mapOf(
+            "action" to "PROFILE_DATA",
+            "data" to profileJson
+        )
+        val json = gson.toJson(message)
+        val payload = Payload.fromBytes(json.toByteArray(Charsets.UTF_8))
+        connectionsClient.sendPayload(endpoint, payload).addOnFailureListener { e ->
+            Log.e("VoxaSharing", "Failed to send profile data: ${e.message}")
+            _sharingState.value = SharingState.Error("Failed to send: ${e.message}")
+        }
+    }
+
+    // ==========================================
+    // 📥 RECEIVING PAYLOADS
+    // ==========================================
     private val payloadCallback = object : PayloadCallback() {
         override fun onPayloadReceived(endpointId: String, payload: Payload) {
-            when (payload.type) {
-                Payload.Type.BYTES -> {
-                    val data = payload.asBytes()
-                    if (data != null) {
-                        val json = String(data, Charsets.UTF_8)
-                        Log.d("VoxaSharing", "Received JSON metadata")
-                        onProfileReceived?.invoke(json)
-                    }
-                }
-                Payload.Type.FILE -> {
-                    val payloadFile = payload.asFile()
-                    val javaFile = payloadFile?.asJavaFile()
-                    if (javaFile != null) {
-                        // The file is received in a temporary folder by Nearby Connections.
-                        // The JSON metadata processing will move/rename this file into the cacheDir.
-                        // (Requires tracking payload IDs, but we handle it simply here by scanning temp files or handling it in ViewModel)
-                        Log.d("VoxaSharing", "Received File payload: ${javaFile.absolutePath}")
+            if (payload.type == Payload.Type.BYTES) {
+                payload.asBytes()?.let { bytes ->
+                    val message = String(bytes, Charsets.UTF_8)
+                    Log.d("VoxaSharing", "Payload received: ${message.take(100)}...")
+
+                    try {
+                        val obj = org.json.JSONObject(message)
+                        val action = obj.optString("action")
+
+                        when (action) {
+                            "VERIFY_PIN" -> {
+                                val receivedPin = obj.optString("pin")
+                                Log.d("VoxaSharing", "Sender received VERIFY_PIN: $receivedPin (expected: $expectedPin)")
+                                if (receivedPin == expectedPin) {
+                                    val reply = org.json.JSONObject().apply { put("action", "PIN_ACCEPTED") }
+                                    connectionsClient.sendPayload(endpointId, Payload.fromBytes(reply.toString().toByteArray(Charsets.UTF_8)))
+                                    _sharingState.value = SharingState.PinVerified
+                                    onPinVerified?.invoke()
+                                } else {
+                                    val reply = org.json.JSONObject().apply { put("action", "PIN_REJECTED") }
+                                    connectionsClient.sendPayload(endpointId, Payload.fromBytes(reply.toString().toByteArray(Charsets.UTF_8)))
+                                }
+                            }
+                            "PIN_ACCEPTED" -> {
+                                Log.d("VoxaSharing", "PIN was accepted by sender!")
+                                _sharingState.value = SharingState.PinVerified
+                            }
+                            "PIN_REJECTED" -> {
+                                Log.w("VoxaSharing", "PIN was rejected by sender!")
+                                _sharingState.value = SharingState.PinFailed
+                            }
+                            "PROFILE_DATA" -> {
+                                val profileData = obj.optString("data")
+                                Log.d("VoxaSharing", "Received PROFILE_DATA, triggering onProfileReceived")
+                                _sharingState.value = SharingState.TransferComplete
+                                onProfileReceived?.invoke(profileData)
+                            }
+                            else -> {
+                                onProfileReceived?.invoke(message)
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Log.e("VoxaSharing", "Error parsing payload JSON: ${e.message}")
+                        onProfileReceived?.invoke(message)
                     }
                 }
             }
@@ -187,8 +241,10 @@ class ProfileSharingManager(private val context: Context) {
 
         override fun onPayloadTransferUpdate(endpointId: String, update: PayloadTransferUpdate) {
             if (update.status == PayloadTransferUpdate.Status.SUCCESS) {
-                Log.d("VoxaSharing", "Payload transfer successful")
-                _sharingState.value = SharingState.TransferComplete
+                Log.d("VoxaSharing", "Payload transfer update: SUCCESS")
+                if (_sharingState.value is SharingState.Transferring) {
+                    _sharingState.value = SharingState.TransferComplete
+                }
             } else if (update.status == PayloadTransferUpdate.Status.FAILURE) {
                 _sharingState.value = SharingState.Error("Transfer failed")
             }
@@ -199,9 +255,14 @@ class ProfileSharingManager(private val context: Context) {
         currentEndpointId?.let { connectionsClient.disconnectFromEndpoint(it) }
         stopDiscovering()
         stopAdvertising()
+        currentEndpointId = null
+        expectedPin = null
         _sharingState.value = SharingState.Idle
     }
 
+    // ==========================================
+    // 🚦 SHARING STATES
+    // ==========================================
     sealed class SharingState {
         object Idle : SharingState()
         object Discovering : SharingState()
@@ -209,6 +270,11 @@ class ProfileSharingManager(private val context: Context) {
         data class EndpointFound(val endpointId: String, val name: String) : SharingState()
         data class Connecting(val name: String) : SharingState()
         object Connected : SharingState()
+        data class WaitingForPin(val pin: String) : SharingState()
+        object AwaitingPinEntry : SharingState()
+        object VerifyingPin : SharingState()
+        object PinFailed : SharingState()
+        object PinVerified : SharingState()
         object Transferring : SharingState()
         object TransferComplete : SharingState()
         data class Error(val message: String) : SharingState()

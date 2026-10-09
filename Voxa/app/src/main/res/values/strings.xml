@@ -253,6 +253,27 @@
     <string name="profile_shared_success">Profile Shared Successfully!</string>
     <string name="profile_error">Error: %1$s</string>
     <string name="profile_cancel">Cancel</string>
+    <string name="p2p_section_title">📡 Profile Sharing</string>
+    <string name="p2p_send_button">Send Profile</string>
+    <string name="p2p_receive_button">Receive</string>
+    <string name="p2p_receive_title">📥 Receive Profile</string>
+    <string name="p2p_receive_desc">Open the Share screen on the other device.\nThis device is waiting for a connection…</string>
+    <string name="p2p_waiting_sender">Waiting for sender…</string>
+    <string name="p2p_receiving">Connected! Receiving data…</string>
+    <string name="p2p_success">Profile received successfully! ✅</string>
+    <string name="p2p_success_detail">The intent library is ready for classification.</string>
+    <string name="p2p_no_preview">Voice recording previews are not available.</string>
+    <string name="p2p_shared_badge">📡 Shared</string>
+    <string name="p2p_error">Import failed: %1$s</string>
+    <string name="p2p_pin_title">🔐 Pairing PIN</string>
+    <string name="p2p_pin_desc">Enter this 4-digit PIN on the receiver\'s device to authorize the transfer:</string>
+    <string name="p2p_enter_pin_title">🔐 Enter 4-Digit PIN</string>
+    <string name="p2p_enter_pin_desc">Enter the PIN shown on the sender\'s device to verify and receive the profile:</string>
+    <string name="p2p_verify_button">Verify &amp; Receive</string>
+    <string name="p2p_pin_incorrect">❌ Incorrect PIN. Please try again.</string>
+    <string name="p2p_pin_verifying">Verifying PIN…</string>
+    <string name="p2p_waiting_pin">Waiting for receiver to enter PIN…</string>
+    <string name="p2p_pin_verified">PIN verified! Transferring data…</string>
 
     <string name="dashboard_waiting_vocalizations">Waiting for child vocalizations...</string>
     <string name="dashboard_tap_mic">Tap mic to start monitoring</string>

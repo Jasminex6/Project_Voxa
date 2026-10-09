@@ -132,6 +132,27 @@
     <string name="profile_shared_success">تمت مشاركة الملف الشخصي بنجاح</string>
     <string name="profile_error">خطأ: %1$s</string>
     <string name="profile_cancel">إلغاء</string>
+    <string name="p2p_section_title">📡 مشاركة الملف الشخصي</string>
+    <string name="p2p_send_button">إرسال</string>
+    <string name="p2p_receive_button">استقبال</string>
+    <string name="p2p_receive_title">📥 استقبال ملف شخصي</string>
+    <string name="p2p_receive_desc">افتح شاشة المشاركة على الجهاز الآخر.\nهذا الجهاز ينتظر الاتصال…</string>
+    <string name="p2p_waiting_sender">في انتظار المرسل…</string>
+    <string name="p2p_receiving">متصل! جاري استقبال البيانات…</string>
+    <string name="p2p_success">تم استقبال الملف بنجاح! ✅</string>
+    <string name="p2p_success_detail">مكتبة الأصوات جاهزة للتعرف.</string>
+    <string name="p2p_no_preview">المعاينة الصوتية غير متاحة.</string>
+    <string name="p2p_shared_badge">📡 مشترك</string>
+    <string name="p2p_error">خطأ: %1$s</string>
+    <string name="p2p_pin_title">🔐 رمز الأمان</string>
+    <string name="p2p_pin_desc">أدخل هذا الرمز المكون من 4 أرقام في جهاز المستلم للسماح بنقل البيانات:</string>
+    <string name="p2p_enter_pin_title">🔐 أدخل رمز الأمان</string>
+    <string name="p2p_enter_pin_desc">أدخل رمز الأمان المكون من 4 أرقام الظاهر على شاشة المرسل لاستقبال الملف:</string>
+    <string name="p2p_verify_button">تأكيد واستقبال</string>
+    <string name="p2p_pin_incorrect">❌ رمز غير صحيح. يرجى المحاولة مرة أخرى.</string>
+    <string name="p2p_pin_verifying">جاري التحقق من الرمز…</string>
+    <string name="p2p_waiting_pin">في انتظار إدخال الرمز من جهاز المستلم…</string>
+    <string name="p2p_pin_verified">تم التحقق من الرمز بنجاح! جاري نقل البيانات…</string>
 
     
     <string name="gender_male">ولد</string>

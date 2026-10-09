@@ -4,6 +4,7 @@ import android.content.Context
 import com.example.voxa.data.ChildProfile
 import com.example.voxa.data.EnrolledIntent
 import com.example.voxa.data.PracticeStats
+import com.example.voxa.data.P2PSharingDto
 import kotlinx.coroutines.flow.StateFlow
 
 // Exposing LogEvent at the package level for clean modular boundaries.
@@ -54,4 +55,5 @@ interface IVoxaViewModel {
     fun recordPracticeAttempt(word: String, score: Int, stars: Int) {}
     fun updateCaregiverPhones(phone1: String, phone2: String, phone3: String) {}
     fun addPracticeCoins(coins: Int) {}
+    fun importP2PProfile(dto: P2PSharingDto, onSuccess: () -> Unit, onError: (String) -> Unit) {}
 }

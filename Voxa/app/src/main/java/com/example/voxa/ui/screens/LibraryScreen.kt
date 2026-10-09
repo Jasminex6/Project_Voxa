@@ -9,6 +9,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -141,6 +142,7 @@ fun LibraryScreen(viewModel: IVoxaViewModel, onNavigateToEnrollment: () -> Unit)
 
 @Composable
 fun LibraryIntentItem(intent: EnrolledIntent, onPlayPreview: () -> Unit, onDelete: () -> Unit) {
+    val isImported = intent.isImported
     Card(
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Slate800),
@@ -151,6 +153,18 @@ fun LibraryIntentItem(intent: EnrolledIntent, onPlayPreview: () -> Unit, onDelet
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
+                // Show "Shared" badge for P2P-imported intents
+                if (isImported) {
+                    Text(
+                        text = stringResource(id = R.string.p2p_shared_badge),
+                        fontSize = 10.sp,
+                        color = Sky400,
+                        modifier = Modifier
+                            .background(Sky400.copy(alpha = 0.15f), RoundedCornerShape(4.dp))
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                }
                 Text(
                     text = stringResource(id = R.string.label_intent, intent.intentName),
                     fontSize = 16.sp,
@@ -172,14 +186,31 @@ fun LibraryIntentItem(intent: EnrolledIntent, onPlayPreview: () -> Unit, onDelet
                 )
             }
 
-            IconButton(
-                onClick = onPlayPreview,
-                modifier = Modifier.padding(end = 4.dp)
-            ) {
-                Text(
-                    text = "🔊",
-                    fontSize = 18.sp
-                )
+            // Play preview: only available for locally-recorded intents
+            if (!isImported) {
+                IconButton(
+                    onClick = onPlayPreview,
+                    modifier = Modifier.padding(end = 4.dp)
+                ) {
+                    Text(
+                        text = "🔊",
+                        fontSize = 18.sp
+                    )
+                }
+            } else {
+                // Disabled state indicating no local recording available for preview
+                Box(
+                    modifier = Modifier
+                        .padding(end = 4.dp)
+                        .size(40.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "🔇",
+                        fontSize = 18.sp,
+                        modifier = Modifier.alpha(0.4f)
+                    )
+                }
             }
 
             IconButton(

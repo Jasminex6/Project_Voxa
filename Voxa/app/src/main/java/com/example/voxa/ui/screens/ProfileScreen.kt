@@ -32,6 +32,11 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextAlign
+import kotlinx.coroutines.launch
 
 
 /**
@@ -52,6 +57,7 @@ fun ProfileScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
     val activeProfile by viewModel.activeProfile.collectAsState()
     val enrolledIntents by viewModel.enrolledIntents.collectAsState()
     var showShareSheet by remember { mutableStateOf(false) }
+    var showReceiveSheet by remember { mutableStateOf(false) }
 
     var newName by remember { mutableStateOf("") }
     
@@ -322,6 +328,69 @@ fun ProfileScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                 }
             }
         }
+
+        // ── P2P Profile Sharing Section ──
+        Spacer(modifier = Modifier.height(24.dp))
+        Text(
+            text = stringResource(id = R.string.p2p_section_title),
+            color = Color.White,
+            fontWeight = FontWeight.Bold,
+            fontSize = 16.sp,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+        Card(
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = Slate800),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Send Profile Button
+                Button(
+                    onClick = { showShareSheet = true },
+                    enabled = activeProfile != null,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Sky400,
+                        disabledContainerColor = Slate700
+                    ),
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Share,
+                        contentDescription = null,
+                        tint = if (activeProfile != null) Slate900 else Slate500,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = stringResource(id = R.string.p2p_send_button),
+                        color = if (activeProfile != null) Slate900 else Slate500,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp
+                    )
+                }
+
+                // Receive Profile Button
+                Button(
+                    onClick = { showReceiveSheet = true },
+                    colors = ButtonDefaults.buttonColors(containerColor = Slate700),
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(
+                        text = stringResource(id = R.string.p2p_receive_button),
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp
+                    )
+                }
+            }
+        }
     }
 
     if (showShareSheet && activeProfile != null) {
@@ -329,6 +398,13 @@ fun ProfileScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
             profile = activeProfile!!,
             intents = enrolledIntents,
             onDismiss = { showShareSheet = false }
+        )
+    }
+
+    if (showReceiveSheet) {
+        ReceiveProfileBottomSheet(
+            viewModel = viewModel,
+            onDismiss = { showReceiveSheet = false }
         )
     }
 }
@@ -482,6 +558,14 @@ fun ShareProfileBottomSheet(
     val context = androidx.compose.ui.platform.LocalContext.current
     val sharingManager = remember { com.example.voxa.utils.ProfileSharingManager(context) }
     val sharingState by sharingManager.sharingState.collectAsState()
+    val coroutineScope = rememberCoroutineScope()
+
+    // Generate a secure 4-digit random pairing PIN for this sharing session
+    val securityPin = remember { String.format(java.util.Locale.US, "%04d", (1000..9999).random()) }
+
+    LaunchedEffect(securityPin) {
+        sharingManager.setExpectedPin(securityPin)
+    }
 
     val permissions = mutableListOf(
         android.Manifest.permission.BLUETOOTH_ADVERTISE,
@@ -503,8 +587,40 @@ fun ShareProfileBottomSheet(
         }
     }
 
-    // Start discovering as soon as the sheet opens
+    // Trigger profile data send ONLY once receiver enters the correct 4-digit PIN
     LaunchedEffect(Unit) {
+        sharingManager.setOnPinVerifiedListener {
+            coroutineScope.launch {
+                val gson = com.google.gson.Gson()
+                val db = com.example.voxa.data.VoxaDatabase.getDatabase(context)
+                val dao = db.voxaDao()
+                val intentDtos = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    intents.map { intent ->
+                        val templates = dao.getTemplatesForIntent(intent.id)
+                        com.example.voxa.data.IntentWithTemplates(
+                            intentName = intent.intentName,
+                            outputPhrase = intent.outputPhrase,
+                            audioAssetPath = intent.audioAssetPath,
+                            oodThreshold = intent.oodThreshold,
+                            templateFeatures = templates.map { it.templateFeatures }
+                        )
+                    }
+                }
+                val dto = com.example.voxa.data.P2PSharingDto(
+                    childName = profile.name,
+                    childGender = profile.gender,
+                    childAvatarEmoji = profile.avatarEmoji,
+                    speakerEmbedding = profile.speakerEmbedding,
+                    caregiverName = com.example.voxa.data.EmergencyContactPrefs.getContactName(context),
+                    caregiverPhone = com.example.voxa.data.EmergencyContactPrefs.getContactPhone(context),
+                    caregiverRelation = com.example.voxa.data.EmergencyContactPrefs.getContactRelation(context),
+                    intents = intentDtos
+                )
+                val json = gson.toJson(dto)
+                sharingManager.sendProfileData(json)
+            }
+        }
+
         val hasAllPermissions = permissions.all {
             androidx.core.content.ContextCompat.checkSelfPermission(context, it) == android.content.pm.PackageManager.PERMISSION_GRANTED
         }
@@ -546,7 +662,7 @@ fun ShareProfileBottomSheet(
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(28.dp))
 
             when (val state = sharingState) {
                 is com.example.voxa.utils.ProfileSharingManager.SharingState.Idle,
@@ -566,28 +682,67 @@ fun ShareProfileBottomSheet(
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(stringResource(com.example.voxa.R.string.profile_connecting_to, state.name), color = Slate400)
                 }
-                is com.example.voxa.utils.ProfileSharingManager.SharingState.Connected -> {
-                    Icon(Icons.Default.Check, contentDescription = null, tint = SuccessGreen, modifier = Modifier.size(48.dp))
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(stringResource(com.example.voxa.R.string.profile_connected_sending), color = SuccessGreen)
-                    
-                    // Trigger send
-                    LaunchedEffect(Unit) {
-                        val gson = com.google.gson.Gson()
-                        val caregiverName = com.example.voxa.data.EmergencyContactPrefs.getContactName(context)
-                        val caregiverPhone = com.example.voxa.data.EmergencyContactPrefs.getContactPhone(context)
-                        val caregiverRelation = com.example.voxa.data.EmergencyContactPrefs.getContactRelation(context)
-                        val dto = mapOf(
-                            "profile" to profile,
-                            "intents" to intents,
-                            "caregiverName" to caregiverName,
-                            "caregiverPhone" to caregiverPhone,
-                            "caregiverRelation" to caregiverRelation
-                        )
-                        val json = gson.toJson(dto)
-                        val pcmFiles = intents.map { java.io.File(context.cacheDir, it.audioAssetPath) }
-                        sharingManager.sendProfileData(json, pcmFiles)
+                is com.example.voxa.utils.ProfileSharingManager.SharingState.WaitingForPin -> {
+                    Card(
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = Slate800),
+                        border = BorderStroke(1.dp, Sky400.copy(alpha = 0.5f)),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(20.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = stringResource(id = R.string.p2p_pin_title),
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Sky400
+                            )
+                            Spacer(modifier = Modifier.height(14.dp))
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                state.pin.forEach { char ->
+                                    Box(
+                                        modifier = Modifier
+                                            .size(52.dp)
+                                            .background(Slate900, RoundedCornerShape(12.dp))
+                                            .border(2.dp, Sky400, RoundedCornerShape(12.dp)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = char.toString(),
+                                            fontSize = 26.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color.White
+                                        )
+                                    }
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(14.dp))
+                            Text(
+                                text = stringResource(id = R.string.p2p_pin_desc),
+                                fontSize = 12.sp,
+                                color = Slate300,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
+                        }
                     }
+                    Spacer(modifier = Modifier.height(24.dp))
+                    CircularProgressIndicator(color = Sky400, modifier = Modifier.size(28.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = stringResource(id = R.string.p2p_waiting_pin),
+                        color = Slate400,
+                        fontSize = 13.sp
+                    )
+                }
+                is com.example.voxa.utils.ProfileSharingManager.SharingState.PinVerified -> {
+                    CircularProgressIndicator(color = SuccessGreen)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(stringResource(id = R.string.p2p_pin_verified), color = SuccessGreen, fontWeight = FontWeight.Bold)
                 }
                 is com.example.voxa.utils.ProfileSharingManager.SharingState.Transferring -> {
                     CircularProgressIndicator(color = Sky400)
@@ -602,8 +757,268 @@ fun ShareProfileBottomSheet(
                 is com.example.voxa.utils.ProfileSharingManager.SharingState.Error -> {
                     Text(stringResource(com.example.voxa.R.string.profile_error, state.message), color = ErrorRed)
                 }
-                is com.example.voxa.utils.ProfileSharingManager.SharingState.Advertising -> {
-                    // Receiver mode, not used here
+                else -> {
+                    CircularProgressIndicator(color = Sky400)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+            Button(
+                onClick = onDismiss,
+                colors = ButtonDefaults.buttonColors(containerColor = Slate800)
+            ) {
+                Text(stringResource(com.example.voxa.R.string.profile_cancel), color = Color.White)
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ReceiveProfileBottomSheet(
+    viewModel: IVoxaViewModel,
+    onDismiss: () -> Unit
+) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val sharingManager = remember { com.example.voxa.utils.ProfileSharingManager(context) }
+    val sharingState by sharingManager.sharingState.collectAsState()
+    var importResult by remember { mutableStateOf<String?>(null) }
+    var enteredPin by remember { mutableStateOf("") }
+
+    val permissions = mutableListOf(
+        android.Manifest.permission.BLUETOOTH_ADVERTISE,
+        android.Manifest.permission.BLUETOOTH_CONNECT,
+        android.Manifest.permission.BLUETOOTH_SCAN,
+        android.Manifest.permission.ACCESS_FINE_LOCATION
+    )
+    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+        permissions.add(android.Manifest.permission.NEARBY_WIFI_DEVICES)
+    }
+
+    val permissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions()
+    ) { results ->
+        if (results.all { it.value }) {
+            sharingManager.startAdvertising("Voxa Receiver")
+        } else {
+            android.widget.Toast.makeText(context, "Permissions required for receiving", android.widget.Toast.LENGTH_LONG).show()
+        }
+    }
+
+    // Set up the receiver callback and start advertising
+    LaunchedEffect(Unit) {
+        sharingManager.setOnProfileReceivedListener { json ->
+            try {
+                val gson = com.google.gson.Gson()
+                val dto = gson.fromJson(json, com.example.voxa.data.P2PSharingDto::class.java)
+                viewModel.importP2PProfile(
+                    dto = dto,
+                    onSuccess = { importResult = "success" },
+                    onError = { importResult = "error: $it" }
+                )
+            } catch (e: Exception) {
+                importResult = "error: ${e.message}"
+            }
+        }
+
+        val hasAllPermissions = permissions.all {
+            androidx.core.content.ContextCompat.checkSelfPermission(context, it) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        }
+        if (hasAllPermissions) {
+            sharingManager.startAdvertising("Voxa Receiver")
+        } else {
+            permissionLauncher.launch(permissions.toTypedArray())
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            sharingManager.disconnect()
+        }
+    }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = Slate900
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = stringResource(id = R.string.p2p_receive_title),
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = stringResource(id = R.string.p2p_receive_desc),
+                fontSize = 14.sp,
+                color = Slate400,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(28.dp))
+
+            when {
+                importResult == "success" -> {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = null,
+                        tint = SuccessGreen,
+                        modifier = Modifier.size(48.dp)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = stringResource(id = R.string.p2p_success),
+                        color = SuccessGreen,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = stringResource(id = R.string.p2p_success_detail),
+                        color = Slate400,
+                        fontSize = 13.sp
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = stringResource(id = R.string.p2p_no_preview),
+                        color = Slate400,
+                        fontSize = 12.sp
+                    )
+                }
+                importResult?.startsWith("error") == true -> {
+                    Text(
+                        text = stringResource(id = R.string.p2p_error, importResult?.substringAfter("error: ") ?: ""),
+                        color = ErrorRed
+                    )
+                }
+                sharingState is com.example.voxa.utils.ProfileSharingManager.SharingState.AwaitingPinEntry ||
+                sharingState is com.example.voxa.utils.ProfileSharingManager.SharingState.PinFailed ||
+                sharingState is com.example.voxa.utils.ProfileSharingManager.SharingState.VerifyingPin -> {
+                    Card(
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = Slate800),
+                        border = BorderStroke(1.dp, Slate700),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(20.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = stringResource(id = R.string.p2p_enter_pin_title),
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = stringResource(id = R.string.p2p_enter_pin_desc),
+                                fontSize = 12.sp,
+                                color = Slate400,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(18.dp))
+
+                            OutlinedTextField(
+                                value = enteredPin,
+                                onValueChange = { input ->
+                                    if (input.length <= 4 && input.all { it.isDigit() }) {
+                                        enteredPin = input
+                                    }
+                                },
+                                singleLine = true,
+                                textStyle = TextStyle(
+                                    fontSize = 28.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    textAlign = TextAlign.Center,
+                                    letterSpacing = 10.sp,
+                                    color = Color.White
+                                ),
+                                keyboardOptions = KeyboardOptions(
+                                    keyboardType = KeyboardType.Number
+                                ),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedTextColor = Color.White,
+                                    unfocusedTextColor = Color.White,
+                                    focusedBorderColor = Sky400,
+                                    unfocusedBorderColor = Slate600
+                                ),
+                                modifier = Modifier.width(200.dp)
+                            )
+
+                            if (sharingState is com.example.voxa.utils.ProfileSharingManager.SharingState.PinFailed) {
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Text(
+                                    text = stringResource(id = R.string.p2p_pin_incorrect),
+                                    color = ErrorRed,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(18.dp))
+
+                            Button(
+                                onClick = { sharingManager.submitPin(enteredPin) },
+                                enabled = enteredPin.length == 4 && sharingState !is com.example.voxa.utils.ProfileSharingManager.SharingState.VerifyingPin,
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Sky400,
+                                    disabledContainerColor = Slate700
+                                ),
+                                shape = RoundedCornerShape(10.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                if (sharingState is com.example.voxa.utils.ProfileSharingManager.SharingState.VerifyingPin) {
+                                    CircularProgressIndicator(color = Slate900, modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(stringResource(id = R.string.p2p_pin_verifying), color = Slate900, fontWeight = FontWeight.Bold)
+                                } else {
+                                    Text(
+                                        text = stringResource(id = R.string.p2p_verify_button),
+                                        color = if (enteredPin.length == 4) Slate900 else Slate500,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+                sharingState is com.example.voxa.utils.ProfileSharingManager.SharingState.Advertising -> {
+                    CircularProgressIndicator(color = Sky400)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(stringResource(id = R.string.p2p_waiting_sender), color = Sky400)
+                }
+                sharingState is com.example.voxa.utils.ProfileSharingManager.SharingState.Connecting -> {
+                    val state = sharingState as com.example.voxa.utils.ProfileSharingManager.SharingState.Connecting
+                    CircularProgressIndicator(color = Sky400)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(stringResource(com.example.voxa.R.string.profile_connecting_to, state.name), color = Slate400)
+                }
+                sharingState is com.example.voxa.utils.ProfileSharingManager.SharingState.PinVerified -> {
+                    CircularProgressIndicator(color = SuccessGreen)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(stringResource(id = R.string.p2p_pin_verified), color = SuccessGreen, fontWeight = FontWeight.Bold)
+                }
+                sharingState is com.example.voxa.utils.ProfileSharingManager.SharingState.Transferring -> {
+                    CircularProgressIndicator(color = Sky400)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(stringResource(com.example.voxa.R.string.profile_transferring), color = Sky400)
+                }
+                sharingState is com.example.voxa.utils.ProfileSharingManager.SharingState.TransferComplete -> {
+                    CircularProgressIndicator(color = SuccessGreen)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("Processing...", color = Slate400)
+                }
+                sharingState is com.example.voxa.utils.ProfileSharingManager.SharingState.Error -> {
+                    val state = sharingState as com.example.voxa.utils.ProfileSharingManager.SharingState.Error
+                    Text(stringResource(com.example.voxa.R.string.profile_error, state.message), color = ErrorRed)
+                }
+                else -> {
+                    CircularProgressIndicator(color = Sky400)
                 }
             }
 
