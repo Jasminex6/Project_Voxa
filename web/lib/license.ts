@@ -41,9 +41,10 @@ export function signLicense(
     expiresAt: number;
   },
   now = Date.now(),
+  signing?: { kid: string; pem: string },
 ): string {
-  const kid = process.env.VOXA_LICENSE_KEY_ID;
-  const pem = process.env.VOXA_LICENSE_PRIVATE_KEY?.replace(/\\n/g, "\n");
+  const kid = signing?.kid ?? process.env.VOXA_LICENSE_KEY_ID;
+  const pem = (signing?.pem ?? process.env.VOXA_LICENSE_PRIVATE_KEY)?.replace(/\\n/g, "\n");
   if (!kid || !pem) throw new Error("License signing is not configured");
   const claims = claimsSchema.parse({
     iss: "voxa-license",

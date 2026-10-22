@@ -4,9 +4,28 @@ This Next.js application includes a bilingual storefront, account/license dashbo
 
 ## Hosted storefront
 
-Live URL: https://voxa-web-pi.vercel.app/en (Arabic: `/ar`). Vercel project: `jazz16/voxa-web`. The public deployment has demo mode disabled; checkout and online account activation remain unavailable until production services below are configured. Simulated purchases and device activation continue to work in the local demo.
+Live URL: https://voxa-web-pi.vercel.app/en (Arabic: `/ar`). Vercel project: `jazz16/voxa-web`. The site markets family and center benefits, includes an interactive synthetic center report, and generates working device-paired demonstration codes and QR codes. No real payments are collected.
 
 Deployments are manual from this `web` folder with `vercel deploy --prod`. `.vercelignore` excludes local keys, environment files, and demo data. The ignored `.vercel/` folder links this checkout to the project. The public pages and configuration were checked without Vercel authentication.
+
+## Hosted plan activation demo
+
+1. Install the updated demo APK. In Voxa, open Sidebar → Profile → My plan → Activate a code and copy its installation ID.
+2. Visit `/en/plan-demo` or `/ar/plan-demo`. Choose Family Pro or Clinical SLP, paste that ID, and generate the signed activation code and QR.
+3. Scan the QR **inside Voxa**, paste its activation code, or tap “Open in Voxa” on the paired phone. Confirm with the caregiver PIN. The selected tier unlocks on that installation, with seven demo days plus the normal seven-day offline grace period. A different installation rejects the token.
+
+This flow is explicitly a no-charge hackathon demonstration. It does not simulate a verified purchase or create a customer account. It grants one installation per generated token, independent of the commercial multi-device allowance. It stores no customer/child records on the server and needs no database. Codes are signed server-side, then verified and cached locally by the app. The public demo endpoint is separate from paid checkout and disabled unless `VOXA_PUBLIC_DEMO`, `VOXA_PUBLIC_DEMO_KEY_ID`, and `VOXA_PUBLIC_DEMO_PRIVATE_KEY` are configured. Its separate key is trusted only by debug APKs; release builds do not accept it.
+
+To initialize a new hosted demo, run `node scripts/setup-hosted-demo.mjs --configure-vercel` after Vercel sign-in. It preserves the ignored private key in `../.local/hosted-demo-private.pem`, sends secrets through CLI stdin, configures the production origin, and exports only the public verification key to `config/`. Never commit or upload the private file. `npx tsx scripts/hosted-demo-fixture.ts` regenerates the public synthetic interoperability fixture.
+
+Build the connected-phone demo with:
+
+```powershell
+cd ../Voxa
+.\gradlew.bat :app:assembleDebug -PVOXA_WEB_URL=https://voxa-web-pi.vercel.app
+```
+
+The center report is interactive sample data, not a live center dashboard. Actual progress summaries remain caregiver-generated and deliberately shared. Automatic weekly delivery, center membership, appointments, and billing are outside this preview.
 
 ## Run the local demo
 

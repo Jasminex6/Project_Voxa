@@ -57,8 +57,8 @@ export function Shell({
               <Globe2 size={15} />
               {ar ? "English" : "العربية"}
             </Link>
-            <Link className="button small quiet" href={`/${lang}/dashboard`}>
-              {ar ? "حسابي" : "My account"}
+            <Link className="button small quiet" href={`/${lang}/plan-demo`}>
+              {ar ? "تفعيل التطبيق" : "Activate app"}
               <ArrowUpRight size={14} />
             </Link>
             <button

@@ -37,6 +37,7 @@ import java.util.Date
 fun SubscriptionCard(viewModel: IVoxaViewModel) {
     val license by viewModel.license.collectAsState()
     val context = LocalContext.current
+    val installationId = remember { LicenseManager.get(context).deviceId }
     var purchaseCode by remember { mutableStateOf("") }
     var expanded by remember { mutableStateOf(false) }
     val paid = license.effectiveTier != LicenseTier.FREE
@@ -105,6 +106,17 @@ fun SubscriptionCard(viewModel: IVoxaViewModel) {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     HorizontalDivider(color = accent.copy(alpha = 0.15f))
                     Text(stringResource(R.string.license_purchase_hint), color = Slate400, style = MaterialTheme.typography.bodySmall)
+                    Surface(shape = RoundedCornerShape(12.dp), color = Slate900) {
+                        Column(Modifier.fillMaxWidth().padding(12.dp)) {
+                            Text(stringResource(R.string.license_pairing_title), color = Sky400, style = MaterialTheme.typography.labelMedium)
+                            Text(installationId, color = Slate300, style = MaterialTheme.typography.bodySmall)
+                            TextButton(onClick = {
+                                (context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager)
+                                    .setPrimaryClip(android.content.ClipData.newPlainText("Voxa installation ID", installationId))
+                                android.widget.Toast.makeText(context, R.string.license_pairing_copied, android.widget.Toast.LENGTH_SHORT).show()
+                            }, contentPadding = PaddingValues(0.dp)) { Text(stringResource(R.string.license_pairing_copy)) }
+                        }
+                    }
                     OutlinedTextField(
                         value = purchaseCode,
                         onValueChange = { purchaseCode = it.take(8192) },

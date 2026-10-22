@@ -30,6 +30,7 @@ import {
 import { demoMode, transaction, type Order } from "./store";
 import { reportSchema } from "./report";
 import { notifyPaidOrder } from "./email";
+import { issuePublicDemo, publicDemoEnabled } from "./public-demo";
 
 const checkoutSchema = z
   .object({
@@ -66,6 +67,7 @@ export async function handleApi(
     if (request.method === "GET" && route === "configuration")
       return response({
         demo: demoMode(),
+        publicDemo: publicDemoEnabled(),
         prices: catalog,
         stripe:
           !!process.env.STRIPE_SECRET_KEY &&
@@ -74,6 +76,11 @@ export async function handleApi(
           !!process.env.PAYMOB_SECRET_KEY && !!process.env.PAYMOB_HMAC_SECRET,
         authConfigured: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
       });
+    if (route === "demo/activate" && request.method === "POST") {
+      checkOrigin(request);
+      rateLimit("public-demo:" + (request.headers.get("x-forwarded-for")?.split(",")[0] ?? "local"), 15);
+      return response(issuePublicDemo(await jsonBody(request)));
+    }
     if (route === "license/activate" && request.method === "POST") {
       if (demoMode()) assertLocalDemo(request);
       rateLimit(

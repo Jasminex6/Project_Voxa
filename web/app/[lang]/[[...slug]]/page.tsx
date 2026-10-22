@@ -6,6 +6,7 @@ import { Landing } from "@/components/Landing";
 import { Pricing } from "@/components/Pricing";
 import { Checkout, Dashboard, SignIn } from "@/components/Account";
 import { Clinical, Legal } from "@/components/Information";
+import { ActivationDemo } from "@/components/ActivationDemo";
 type Params = { params: Promise<{ lang: string; slug?: string[] }> };
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { lang, slug } = await params;
@@ -16,6 +17,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     terms: lang === "ar" ? "الشروط" : "Terms",
     clinical: lang === "ar" ? "لفرق الرعاية" : "For care teams",
     signin: lang === "ar" ? "تسجيل الدخول" : "Sign in",
+    "plan-demo": lang === "ar" ? "تفعيل خطتك" : "Activate your plan",
   };
   return {
     title: titles[slug?.[0] ?? ""] ?? "Voxa — Their voice. Their way.",
@@ -36,6 +38,9 @@ export default async function Page({ params }: Params) {
       break;
     case "pricing":
       content = <Pricing lang={lang} />;
+      break;
+    case "plan-demo":
+      content = <ActivationDemo lang={lang} />;
       break;
     case "dashboard":
       content = <Dashboard lang={lang} />;

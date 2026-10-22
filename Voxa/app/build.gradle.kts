@@ -11,6 +11,10 @@ val demoLicenseKey = Properties().apply {
     val source = rootProject.file("../config/demo-license-public-key.properties")
     if (source.exists()) source.inputStream().use { load(it) }
 }
+val hostedDemoKey = Properties().apply {
+    val source = rootProject.file("../config/hosted-demo-license-public-key.properties")
+    if (source.exists()) source.inputStream().use { load(it) }
+}
 fun quoted(value: String) = "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
 val webUrl = providers.gradleProperty("VOXA_WEB_URL").orElse("https://voxa.invalid")
 
@@ -32,6 +36,8 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         manifestPlaceholders["voxaWebHost"] = URI(webUrl.get()).host
         buildConfigField("String", "VOXA_WEB_URL", quoted(webUrl.get()))
+        buildConfigField("String", "HOSTED_DEMO_KEY_ID", quoted(""))
+        buildConfigField("String", "HOSTED_DEMO_PUBLIC_KEY", quoted(""))
     }
 
     signingConfigs {
@@ -51,6 +57,8 @@ android {
             buildConfigField("String", "LICENSE_KEY_ID", quoted(demoLicenseKey.getProperty("kid", "demo-v1")))
             buildConfigField("String", "LICENSE_PUBLIC_KEY", quoted(demoLicenseKey.getProperty("publicKey", "")))
             buildConfigField("boolean", "WEB_UPGRADE_ENABLED", "true")
+            buildConfigField("String", "HOSTED_DEMO_KEY_ID", quoted(hostedDemoKey.getProperty("kid", "")))
+            buildConfigField("String", "HOSTED_DEMO_PUBLIC_KEY", quoted(hostedDemoKey.getProperty("publicKey", "")))
         }
         release {
             isMinifyEnabled = true

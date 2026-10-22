@@ -9,6 +9,9 @@
     <string name="license_progress_note">Exports contain summary counts only. Older history may include successful attempts only. Scores are not clinical measurements.</string>
     <string name="license_progress_share">Export report</string>
     <string name="license_title">My plan</string>
+    <string name="license_pairing_title">Installation ID · pair with the website</string>
+    <string name="license_pairing_copy">Copy installation ID</string>
+    <string name="license_pairing_copied">Installation ID copied</string>
     <string name="license_free_name">Free</string>
     <string name="license_free_details">1 child profile · 3 words</string>
     <string name="license_enter_code">Activate a code</string>

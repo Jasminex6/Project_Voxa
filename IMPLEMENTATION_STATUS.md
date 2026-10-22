@@ -16,6 +16,8 @@ The supplied `EXECUTION_PLAN.md` is preserved. This file records actual implemen
 - Bilingual Next.js storefront, monthly/annual EGP/SAR Family plan selection using business plan v2 prices, account sign-in, subscription/device management, QR/deep-link fulfillment, report upload/view/print, privacy and terms drafts. The audio demo was removed; Support links to the supplied demo address voxasupport@gmail.com. Clinic subscriptions are monthly only.
 - Profile contains the purchase activation-code field and plan status. The dashboard sidebar shows the current plan and links to Profile; practice and enrollment screens do not contain subscription cards or plan banners.
 - My plan uses a compact accented summary with a status badge and expandable activation controls. Its matching sidebar shortcut is compact. The revised debug APK was built and installed on the connected Samsung.
+- Hosted `/en/plan-demo` and `/ar/plan-demo` generate signed Family Pro or Clinical SLP demo codes and QR codes, paired to the random installation ID displayed/copied from My plan. Each token grants one installation seven days plus offline grace, without payment, account creation, or server-side child records. A separate server-only signer is trusted by debug builds only; paid licensing remains separate.
+- The storefront explains child, family, and center benefits. For centers provides a concrete clinic/home workflow, an interactive synthetic weekly report, a clinic activation CTA, and the supplied support contact. Reports are explicitly examples; automated delivery and a real secretary dashboard are not claimed.
 - Supabase Auth integration and PostgreSQL schema with RLS enabled and no public table policies. Server routes verify ownership.
 - Stripe hosted subscription checkout, provider signature validation, paid-state verification, amount/currency/provider/order checks, duplicate fulfillment handling, renewal/cancellation reconciliation, full-refund revocation, and billing portal.
 - Paymob Intention/Unified Checkout and HMAC-verified transaction callbacks. Paymob is explicitly prepaid/manual renewal in this version. Actual available methods are determined by merchant integrations.
@@ -35,18 +37,19 @@ The supplied `EXECUTION_PLAN.md` is preserved. This file records actual implemen
 
 ## Verified locally
 
-- 36 Android JVM tests passed, including seven cross-platform license-verification/entitlement tests.
+- 37 Android JVM tests passed, including hosted-plan token interoperability and the existing license-verification/entitlement tests.
+- A targeted test on the connected Samsung fetched both tiers from the deployed site, parsed the activation links, verified their signatures and premium features, and rejected a different installation. It did not modify the family's PIN, license, or data. The real phone's Family Pro caregiver confirmation was opened separately for the user.
 - A Pixel 6 Android 14 emulator test passed Keystore storage, airplane-mode license verification, invalid-token rejection, clock rollback handling, and caregiver confirmation for external activation links.
 - Debug APK, minified unsigned release APK, and release AAB built; release vital lint passed. Artifacts require production signing/configuration before distribution.
-- 19 web/backend tests passed, covering signatures, tampering, expiry/grace, ownership, seat limits, duplicate payment handling, unpaid renewals, Paymob HMAC, and report privacy/schema checks.
+- 22 web/backend tests passed, including public-demo tier/device binding, tampering, input allowlisting and explicit enablement, plus the existing commerce/privacy checks.
 - TypeScript and Next.js production build passed.
 - Local HTTP smoke test passed pending-order protection, price tampering, duplicate completion, device pairing, account isolation, cancellation, report deduplication/privacy, and disabled live webhooks.
 - Browser verification covered English pricing, simulated purchase, verified order, QR/deep-link generation, Arabic navigation with the order query retained, and Arabic account layout.
 
 ## Not complete / launch requirements
 
-- The public storefront is deployed at https://voxa-web-pi.vercel.app in Vercel project `jazz16/voxa-web`. Deployment `dpl_88s5WSAbhZatbxdjfFWXPxTyJV5c` reached READY. Unauthenticated requests to English, Arabic, pricing, and configuration returned HTTP 200; the live page was visually verified. This is a manual deployment; the CLI's automatic Git connection was disconnected so unrelated branch pushes cannot publish it.
-- Website production build passes; Vercel upload rules exclude environment files and local demo data. Hosted demo mode is disabled. Hosted pages disable unavailable checkout/sign-in; the local demo retains simulated purchase/activation. No live payment, Supabase/PostgreSQL, email, production signing, or owned-domain credentials are configured. Real provider checkout, database deployment, and email delivery remain unverified.
+- The site is deployed at https://voxa-web-pi.vercel.app in Vercel project `jazz16/voxa-web`. Deployment `dpl_5RrLSi41DGWcKS3EcFk6yhnJJiXf` reached READY. Hosted demo activation was verified in the browser and on the Samsung; the Arabic center report and week switching were checked. This is a manual deployment, without automatic Git publishing.
+- Website production build passes; Vercel upload rules exclude environment files and local demo data. Public demonstration activation is enabled with its own signer; the localhost JSON-store demo remains restricted to localhost. No live payments, Supabase/PostgreSQL, email, production licensing signer, or owned-domain credentials are configured. Real purchases/customer accounts remain separate launch work.
 - Production legal/privacy review, a support contact, retention/deletion procedures, store distribution/billing decisions, and final prices are still required.
 - Extra high-fidelity/dialect voice packs, validated biomarkers, custom Clinical practice content, and multi-child batch handover are not implemented. The existing individual handover flow is retained and gated; no extra voice assets or clinical validation data were supplied.
 - The earlier center-seat invitation model, secretary appointments/dues/calendar, and automated weekly Android-to-center report delivery are not part of the supplied three-pillar execution implementation. Current reports are generated locally and uploaded deliberately through the authenticated web account. No doctor/center authorization model has been fabricated.

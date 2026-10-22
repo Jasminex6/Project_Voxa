@@ -5,6 +5,9 @@
     <string name="license_progress_note">يحتوي التصدير على ملخصات عددية فقط. قد يشمل السجل القديم المحاولات الناجحة فقط. الدرجات ليست قياسات سريرية.</string>
     <string name="license_progress_share">تصدير التقرير</string>
     <string name="license_title">خطتي</string>
+    <string name="license_pairing_title">معرّف التثبيت · للربط بالموقع</string>
+    <string name="license_pairing_copy">نسخ معرّف التثبيت</string>
+    <string name="license_pairing_copied">تم نسخ معرّف التثبيت</string>
     <string name="license_free_name">مجانية</string>
     <string name="license_free_details">ملف طفل واحد · ٣ كلمات</string>
     <string name="license_enter_code">تفعيل رمز</string>

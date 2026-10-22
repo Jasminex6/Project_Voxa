@@ -233,6 +233,14 @@ export function Landing({ lang }: { lang: Lang }) {
           ))}
         </div>
       </section>
+      <section className="section audience-section">
+        <div className="section-intro"><div className="eyebrow">{ar ? "أداة واحدة، أثر في كل يوم" : "ONE TOOL. DIFFERENT EVERYDAY BENEFITS."}</div><h2>{ar ? "حول الطفل، مساحة للتواصل." : "A little more connection, for everyone."}</h2></div>
+        <div className="audience-grid">
+          <article><Heart /><h3>{ar ? "للطفل" : "For the child"}</h3><p>{ar ? "تواصل بأصواته المألوفة، وكلمات عربية واضحة، دون الحاجة إلى اتصال دائم." : "Communicate through familiar sounds and clear Arabic phrases, with on-device recognition that works offline."}</p></article>
+          <article><Smartphone /><h3>{ar ? "للأسرة" : "For the family"}</h3><p>{ar ? "تواصل يومي وممارسة كلام ومهام ومكافآت، مع بقاء التسجيلات على جهاز الأسرة." : "Bring communication, speech practice, tasks, and rewards into daily life, while recordings stay on the family’s device."}</p><Link className="text-link" href={`/${lang}/pricing`}>{ar ? "خطط الأسرة" : "Explore family plans"}<ArrowRight size={15} /></Link></article>
+          <article><ShieldCheck /><h3>{ar ? "للمركز" : "For the center"}</h3><p>{ar ? "ملفات منفصلة للأطفال، وتسليم آمن بين الأجهزة، وملخصات تشاركها الأسرة لتوضيح الممارسة بين الجلسات." : "Separate child profiles, nearby device handover, and caregiver-shared summaries bring home practice into the next conversation."}</p><Link className="text-link" href={`/${lang}/clinical`}>{ar ? "اكتشف سير عمل المركز" : "See the center workflow"}<ArrowRight size={15} /></Link></article>
+        </div>
+      </section>
       <section className="section privacy-section">
         <div className="privacy-emblem">
           <LockKeyhole size={36} strokeWidth={1.2} />

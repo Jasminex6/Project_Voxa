@@ -27,6 +27,10 @@ class LicenseManager private constructor(context: Context) {
             runCatching { Base64.decode(BuildConfig.LICENSE_PUBLIC_KEY, Base64.DEFAULT) }.getOrNull()
                 ?.takeIf { it.size == 32 }?.let { put(BuildConfig.LICENSE_KEY_ID, it) }
         }
+        if (BuildConfig.DEBUG && BuildConfig.HOSTED_DEMO_PUBLIC_KEY.isNotBlank()) {
+            runCatching { Base64.decode(BuildConfig.HOSTED_DEMO_PUBLIC_KEY, Base64.DEFAULT) }.getOrNull()
+                ?.takeIf { it.size == 32 }?.let { put(BuildConfig.HOSTED_DEMO_KEY_ID, it) }
+        }
     })
     private val _license = MutableStateFlow(ActiveLicense())
     val license: StateFlow<ActiveLicense> = _license

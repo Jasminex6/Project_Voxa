@@ -20,6 +20,7 @@ export function Pricing({ lang }: { lang: Lang }) {
     stripe: boolean;
     paymob: boolean;
     authConfigured: boolean;
+    publicDemo: boolean;
   } | null>(null);
   const [gateway, setGateway] = useState("stripe"),
     [busy, setBusy] = useState(""),
@@ -172,7 +173,7 @@ export function Pricing({ lang }: { lang: Lang }) {
           </select>
         </label>
       </div>
-      {config?.demo && (
+      {(config?.demo || config?.publicDemo) && (
         <div className="notice">
           <SparkleDot />
           {ar
@@ -239,9 +240,13 @@ export function Pricing({ lang }: { lang: Lang }) {
                     : "Organize access across your team."}
             </p>
             {tier === "FREE" ? (
-              <Link className="button quiet full" href={`/${lang}/dashboard`}>
+              <a className="button quiet full" href="mailto:voxasupport@gmail.com?subject=Voxa%20Android%20demo">
                 {ar ? "ابدأ مجاناً" : "Start with Free"}
                 <ArrowUpRight size={15} />
+              </a>
+            ) : config?.publicDemo ? (
+              <Link className={`button full ${tier === "FAMILY_PRO" ? "primary" : "quiet"}`} href={`/${lang}/plan-demo?tier=${tier}`}>
+                {ar ? "جرّب الخطة وفعّلها" : "Try plan & activate"}<ArrowUpRight size={15} />
               </Link>
             ) : (
               <button
@@ -276,7 +281,7 @@ export function Pricing({ lang }: { lang: Lang }) {
           </article>
         ))}
       </div>
-      {!config?.demo && (
+      {!config?.demo && !config?.publicDemo && checkoutReady && (
         <div className="payment-options">
           <label>
             {ar ? "طريقة الدفع" : "Payment provider"}
