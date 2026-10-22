@@ -1,0 +1,35 @@
+<resources>
+    <string name="license_search_profiles">البحث في ملفات الأطفال</string>
+    <string name="license_progress_title">تقدم الممارسة</string>
+    <string name="license_progress_count">%1$d محاولة مسجلة على هذا الجهاز</string>
+    <string name="license_progress_note">يحتوي التصدير على ملخصات عددية فقط. قد يشمل السجل القديم المحاولات الناجحة فقط. الدرجات ليست قياسات سريرية.</string>
+    <string name="license_progress_share">تصدير التقرير</string>
+    <string name="license_title">الاشتراك والترخيص</string>
+    <string name="license_free">مجاني · ملف طفل واحد · ٥ أصوات مخصصة</string>
+    <string name="license_valid_until">الوصول المدفوع حتى %1$s</string>
+    <string name="license_grace">فترة سماح لمدة سبعة أيام. اتصل لتجديد الاشتراك.</string>
+    <string name="license_expired">انتهى الوصول المميز. ملفات الأطفال ونماذج الصوت محفوظة.</string>
+    <string name="license_clock">تحقق من تاريخ ووقت الجهاز لتأكيد الوصول المميز.</string>
+    <string name="license_safety">أدوات الطوارئ والترجمات الحالية دون إنترنت متاحة في كل الخطط.</string>
+    <string name="license_activate">تفعيل الاشتراك أو تجديده</string>
+    <string name="license_scan">مسح رمز التفعيل</string>
+    <string name="license_scan_error">الماسح غير متاح. الصق رابط التفعيل بدلاً منه.</string>
+    <string name="license_scan_note">قد يحتاج الماسح إلى تنزيل أولي من خدمات Google Play.</string>
+    <string name="license_upgrade">عرض الخطط على الموقع</string>
+    <string name="license_browser_error">لا يوجد متصفح متاح.</string>
+    <string name="license_activation_note">أكد بصفتك ولي الأمر. يحتاج رمز الموقع إلى الإنترنت مرة واحدة؛ ويمكن التحقق من الرمز الموقع المقترن دون إنترنت.</string>
+    <string name="license_code">رابط التفعيل أو رمز الاستبدال أو الرمز الموقع</string>
+    <string name="license_parent_pin">الرقم السري لولي الأمر</string>
+    <string name="license_setup_pin">أنشئ رقماً سرياً من أربعة أرقام لولي الأمر</string>
+    <string name="license_confirm_pin">تأكيد الرقم السري</string>
+    <string name="license_pin_error">الرقم السري غير متطابق.</string>
+    <string name="license_success">تم تفعيل الوصول المميز. الاستخدام دون إنترنت جاهز.</string>
+    <string name="license_activation_error">فشل التفعيل. تحقق من الرمز والاتصال.</string>
+    <string name="license_confirm">تحقق وفعّل</string>
+    <string name="license_profile_limit">تشمل الخطة المجانية ملف طفل واحداً. فعّل Family Pro لإضافة المزيد. تظل الملفات الحالية متاحة.</string>
+    <string name="license_intent_limit">تشمل الخطة المجانية خمسة أصوات مخصصة. فعّل Family Pro لإضافة المزيد. تظل الترجمات الحالية متاحة.</string>
+    <string name="license_handover_limit">يتطلب إرسال الملف Family Pro. يظل الاستقبال متاحاً.</string>
+    <string name="license_back">رجوع</string>
+    <string name="license_offline_unavailable">التعرف على الكلام على الجهاز غير متاح لهذا الجهاز أو اللغة. ثبّت حزمة اللغة دون إنترنت؛ لن يتم إرسال الصوت عبر الشبكة.</string>
+    <string name="license_practice_demo">تجربة التمرين المجانية · تشمل Family Pro المكتبة الكاملة</string>
+</resources>

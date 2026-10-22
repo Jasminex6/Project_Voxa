@@ -25,6 +25,10 @@ data class LogEvent(
  * or a static mock ViewModel during design layout previews without database crashes.
  */
 interface IVoxaViewModel {
+    val license: StateFlow<com.example.voxa.data.license.ActiveLicense>
+        get() = kotlinx.coroutines.flow.MutableStateFlow(com.example.voxa.data.license.ActiveLicense())
+    val pendingActivation: StateFlow<String?> get() = kotlinx.coroutines.flow.MutableStateFlow(null)
+    fun requestActivation(value: String?) {}
     val allProfiles: StateFlow<List<ChildProfile>>
     val activeProfile: StateFlow<ChildProfile?>
     val enrolledIntents: StateFlow<List<EnrolledIntent>>

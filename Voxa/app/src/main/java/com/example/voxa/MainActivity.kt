@@ -72,6 +72,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        handleActivationIntent(intent)
         enableEdgeToEdge()
         setContent {
             val view = LocalView.current
@@ -95,6 +96,7 @@ class MainActivity : ComponentActivity() {
                             viewModel = viewModel,
                             questsViewModel = questsViewModel
                         )
+                        com.example.voxa.ui.screens.ActivationPrompt(viewModel)
                     }
                 }
             }
@@ -107,6 +109,22 @@ class MainActivity : ComponentActivity() {
         super.onResume()
         // Sync listening state when resuming app focus
         viewModel.updateListeningState()
+        com.example.voxa.data.license.LicenseManager.get(this).refresh()
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleActivationIntent(intent)
+    }
+
+    private fun handleActivationIntent(intent: Intent?) {
+        val data = intent?.data ?: return
+        if (data.scheme == "voxa" && data.host == "activate" ||
+            data.scheme == "https" && data.host == java.net.URI(BuildConfig.VOXA_WEB_URL).host && data.path == "/activate") {
+            // Never grant an entitlement just because an external activity supplied a link.
+            viewModel.requestActivation(data.toString())
+        }
     }
 }
 

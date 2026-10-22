@@ -168,9 +168,12 @@ class VoxaListenerService : Service() {
             // If the device does not support our audio configuration, log an error and exit the thread.
             if (minBufferSize == AudioRecord.ERROR || minBufferSize == AudioRecord.ERROR_BAD_VALUE) {
                 Log.e("VoxaService", "Invalid buffer size computed")
+                isRecording = false
+                stopSelf()
                 return@Thread
             }
 
+            var hardwareFailed = false
             try {
                 // Initialize the AudioRecord interface to access the microphone hardware
                 audioRecord = AudioRecord(
@@ -180,6 +183,7 @@ class VoxaListenerService : Service() {
                     audioFormat,
                     minBufferSize
                 )
+                check(audioRecord?.state == AudioRecord.STATE_INITIALIZED) { "Microphone unavailable" }
 
                 // Start streaming data from the physical microphone
                 audioRecord?.startRecording()
@@ -195,6 +199,7 @@ class VoxaListenerService : Service() {
                     // audioRecord.read() is a blocking call. It halts the thread right here until the microphone
                     // gathers enough sound waves to completely fill our minBufferSize array.
                     val readResult = audioRecord?.read(audioData, 0, minBufferSize) ?: 0
+                    if (readResult < 0) { hardwareFailed = true; break }
                     
                     // If we successfully read data from the hardware buffer
                     if (readResult > 0) {
@@ -229,11 +234,17 @@ class VoxaListenerService : Service() {
                     }
                 }
             } catch (e: SecurityException) {
+                hardwareFailed = true
                 // Triggered if the user revokes microphone permissions in system settings while the service is running.
                 Log.e("VoxaService", "Permission denied for recording audio: ${e.message}")
+            } catch (e: RuntimeException) {
+                hardwareFailed = true
+                Log.e("VoxaService", "Audio hardware unavailable")
             } finally {
+                isRecording = false
                 // Always release hardware back to the OS when the loop ends (preventing microphone locking errors)
                 stopAudioHardware()
+                if (hardwareFailed) stopSelf()
             }
         }, "VoxaAudioRecordThread").apply {
             // Assign maximum scheduling priority to this thread.
@@ -310,13 +321,15 @@ class VoxaListenerService : Service() {
      * Safely stops the microphone hardware and releases its system locks.
      */
     private fun stopAudioHardware() {
+        val recorder = audioRecord
+        audioRecord = null
         try {
-            audioRecord?.stop()
-            audioRecord?.release()
-            audioRecord = null
+            recorder?.stop()
             Log.d("VoxaService", "Audio hardware stopped and released")
         } catch (e: Exception) {
             Log.e("VoxaService", "Error releasing audio hardware: ${e.message}")
+        } finally {
+            runCatching { recorder?.release() }
         }
     }
 

@@ -9,6 +9,8 @@ import kotlinx.coroutines.flow.Flow
  */
 @Dao
 interface QuestDao {
+    @Query("SELECT * FROM quests WHERE profileId = :profileId ORDER BY timestamp DESC")
+    suspend fun getQuestsForProfile(profileId: Long): List<QuestEntity>
 
     // ==========================================
     // 🎯 QUEST QUERIES

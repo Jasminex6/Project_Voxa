@@ -56,10 +56,13 @@ fun ProfileScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
     val profiles by viewModel.allProfiles.collectAsState()
     val activeProfile by viewModel.activeProfile.collectAsState()
     val enrolledIntents by viewModel.enrolledIntents.collectAsState()
+    val license by viewModel.license.collectAsState()
+    val licenseContext = androidx.compose.ui.platform.LocalContext.current
     var showShareSheet by remember { mutableStateOf(false) }
     var showReceiveSheet by remember { mutableStateOf(false) }
 
     var newName by remember { mutableStateOf("") }
+    var profileSearch by remember { mutableStateOf("") }
     
     // Arabic voice pack gender: determines whether translation audio clips playBoy (Male) or Girl (Female) pre-recorded samples.
     var selectedGender by remember { mutableStateOf("Male") } // Defaults to Male child voice pack
@@ -96,6 +99,9 @@ fun ProfileScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
         Spacer(modifier = Modifier.height(16.dp))
 
         // ── PROFILE CREATION FORM ──
+        SubscriptionCard(viewModel)
+        PracticeProgressCard(viewModel)
+        Spacer(modifier = Modifier.height(16.dp))
         Card(
             shape = RoundedCornerShape(12.dp),
             colors = CardDefaults.cardColors(containerColor = Slate800),
@@ -309,11 +315,16 @@ fun ProfileScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                 )
             }
         } else {
+            if (license.effectiveTier == com.example.voxa.data.license.LicenseTier.CLINICAL_SLP) {
+                OutlinedTextField(value = profileSearch, onValueChange = { profileSearch = it },
+                    label = { Text(stringResource(R.string.license_search_profiles)) }, modifier = Modifier.fillMaxWidth())
+                Spacer(Modifier.height(12.dp))
+            }
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                profiles.forEach { profile ->
+                profiles.filter { license.effectiveTier != com.example.voxa.data.license.LicenseTier.CLINICAL_SLP || it.name.contains(profileSearch, ignoreCase = true) }.forEach { profile ->
                     val isActive = activeProfile?.id == profile.id
                     // Tapping a profile card triggers an atomic database query to clear other active profiles
                     // and select this specific profile ID, immediately shifting flatMapLatest queries for intents.
@@ -323,7 +334,10 @@ fun ProfileScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                         onSelect = { viewModel.selectActiveProfile(profile.id) },
                         onDelete = { viewModel.deleteProfile(profile) },
                         onToggleGender = { viewModel.updateProfileGender(profile, if (profile.gender == "Male") "Female" else "Male") },
-                        onShare = { showShareSheet = true }
+                        onShare = {
+                            if (license.canSendProfiles) showShareSheet = true
+                            else android.widget.Toast.makeText(licenseContext, R.string.license_handover_limit, android.widget.Toast.LENGTH_LONG).show()
+                        }
                     )
                 }
             }
@@ -351,7 +365,10 @@ fun ProfileScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
             ) {
                 // Send Profile Button
                 Button(
-                    onClick = { showShareSheet = true },
+                    onClick = {
+                        if (license.canSendProfiles) showShareSheet = true
+                        else android.widget.Toast.makeText(licenseContext, R.string.license_handover_limit, android.widget.Toast.LENGTH_LONG).show()
+                    },
                     enabled = activeProfile != null,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Sky400,

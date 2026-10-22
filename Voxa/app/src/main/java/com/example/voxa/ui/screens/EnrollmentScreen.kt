@@ -50,6 +50,16 @@ import androidx.compose.material.icons.filled.ArrowBack
  */
 @Composable
 fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
+    val license by viewModel.license.collectAsState()
+    val intents by viewModel.enrolledIntents.collectAsState()
+    if (!license.canEnrollIntent(intents.count { !it.isImported })) {
+        Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Text(stringResource(R.string.license_intent_limit))
+            SubscriptionCard(viewModel)
+            TextButton(onClick = onBack) { Text(stringResource(R.string.license_back)) }
+        }
+        return
+    }
     val activeProfile by viewModel.activeProfile.collectAsState()
     val bifurcationWarning by viewModel.bifurcationWarningTriggered.collectAsState()
     val scope = rememberCoroutineScope()
@@ -111,6 +121,7 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                 }
 
                 if (audioRecord.state != AudioRecord.STATE_INITIALIZED) {
+                    audioRecord.release()
                     withContext(Dispatchers.Main) {
                         Toast.makeText(context, "Microphone failed to initialize.", Toast.LENGTH_SHORT).show()
                         isRecordingSample = false
@@ -120,16 +131,16 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
 
                 val pcmBufferList = mutableListOf<Short>()
                 val readBuffer = ShortArray(1024)
-                audioRecord.startRecording()
-
                 try {
+                    audioRecord.startRecording()
                     // Maximum 2.5 seconds to prevent memory overflow
                     val maxSamples = (sampleRate * 2.5).toInt()
                     while (isRecordingSample && pcmBufferList.size < maxSamples) {
                         val readSize = audioRecord.read(readBuffer, 0, readBuffer.size)
+                        if (readSize < 0) break
                         if (readSize > 0) {
                             var maxVal = 0
-                            for (i in 0 until readSize) {
+                            for (i in 0 until minOf(readSize, maxSamples - pcmBufferList.size)) {
                                 val sample = readBuffer[i]
                                 pcmBufferList.add(sample)
                                 val absVal = abs(sample.toInt())

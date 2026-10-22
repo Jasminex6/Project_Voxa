@@ -30,6 +30,12 @@ import kotlinx.coroutines.withContext
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class VoxaViewModel(application: Application) : AndroidViewModel(application), IVoxaViewModel {
+    private val licenseManager = com.example.voxa.data.license.LicenseManager.get(application)
+    override val license = licenseManager.license
+    private val _pendingActivation = MutableStateFlow<String?>(null)
+    override val pendingActivation = _pendingActivation.asStateFlow()
+    override fun requestActivation(value: String?) { _pendingActivation.value = value?.take(8192) }
+    private val creationMutex = kotlinx.coroutines.sync.Mutex()
 
     // Access door to the database queries.
     private val voxaDao = VoxaDatabase.getDatabase(application).voxaDao()
@@ -190,6 +196,13 @@ class VoxaViewModel(application: Application) : AndroidViewModel(application), I
     // as the active profile automatically.
     override fun createProfile(name: String, gender: String, avatarEmoji: String) {
         viewModelScope.launch {
+            creationMutex.lock()
+            try {
+            licenseManager.refresh()
+            if (!license.value.canCreateProfile(voxaDao.profileCount())) {
+                Toast.makeText(getApplication(), com.example.voxa.R.string.license_profile_limit, Toast.LENGTH_LONG).show()
+                return@launch
+            }
             val capitalizedName = name.trim().replaceFirstChar { if (it.isLowerCase()) it.titlecase(java.util.Locale.getDefault()) else it.toString() }
             val newProfile = ChildProfile(
                 name = capitalizedName,
@@ -203,6 +216,7 @@ class VoxaViewModel(application: Application) : AndroidViewModel(application), I
                 val created = newProfile.copy(id = id, isActive = true)
                 _activeProfile.value = created
             }
+            } finally { creationMutex.unlock() }
         }
     }
 
@@ -236,8 +250,14 @@ class VoxaViewModel(application: Application) : AndroidViewModel(application), I
         }
 
         viewModelScope.launch {
+            creationMutex.lock()
             try {
-                android.util.Log.e("VoxaDebug", "Starting enrollment coroutine for ${intentName.trim()}")
+                licenseManager.refresh()
+                if (!license.value.canEnrollIntent(voxaDao.customIntentCount(profile.id))) {
+                    Toast.makeText(getApplication(), com.example.voxa.R.string.license_intent_limit, Toast.LENGTH_LONG).show()
+                    return@launch
+                }
+                android.util.Log.d("VoxaDebug", "Starting enrollment")
 
                 // 1. Create and insert the EnrolledIntent
                 val intent = EnrolledIntent(
@@ -283,7 +303,7 @@ class VoxaViewModel(application: Application) : AndroidViewModel(application), I
                 android.util.Log.d("VoxaViewModel", "Successfully enrolled intent '$intentName' with $storedCount MFCC templates")
             } catch (e: Exception) {
                 android.util.Log.e("VoxaViewModel", "Failed to enroll intent: ${e.message}", e)
-            }
+            } finally { creationMutex.unlock() }
         }
     }
 
@@ -398,6 +418,11 @@ class VoxaViewModel(application: Application) : AndroidViewModel(application), I
     }
 
     override fun exportProfileData(context: Context) {
+        licenseManager.refresh()
+        if (!license.value.canSendProfiles) {
+            Toast.makeText(context, com.example.voxa.R.string.license_handover_limit, Toast.LENGTH_LONG).show()
+            return
+        }
         val profile = _activeProfile.value ?: return
         viewModelScope.launch {
             try {
@@ -455,7 +480,13 @@ class VoxaViewModel(application: Application) : AndroidViewModel(application), I
         onError: (String) -> Unit
     ) {
         viewModelScope.launch {
+            creationMutex.lock()
             try {
+                licenseManager.refresh()
+                if (!license.value.canCreateProfile(voxaDao.profileCount())) {
+                    onError(getApplication<Application>().getString(com.example.voxa.R.string.license_profile_limit))
+                    return@launch
+                }
                 // 1. Read JSON string from URI
                 val contentResolver = context.contentResolver
                 val stringBuilder = StringBuilder()
@@ -530,7 +561,7 @@ class VoxaViewModel(application: Application) : AndroidViewModel(application), I
             } catch (e: Exception) {
                 android.util.Log.e("VoxaViewModel", "Failed to import profile: ${e.message}", e)
                 onError(e.message ?: "Unknown error occurred during import")
-            }
+            } finally { creationMutex.unlock() }
         }
     }
 
@@ -605,7 +636,13 @@ class VoxaViewModel(application: Application) : AndroidViewModel(application), I
         onError: (String) -> Unit
     ) {
         viewModelScope.launch {
+            creationMutex.lock()
             try {
+                licenseManager.refresh()
+                if (!license.value.canCreateProfile(voxaDao.profileCount())) {
+                    onError(getApplication<Application>().getString(com.example.voxa.R.string.license_profile_limit))
+                    return@launch
+                }
                 // 1. Create the child profile (marked as NOT active initially)
                 val newProfile = ChildProfile(
                     name = "${dto.childName} (Shared)",
@@ -664,7 +701,7 @@ class VoxaViewModel(application: Application) : AndroidViewModel(application), I
             } catch (e: Exception) {
                 Log.e("VoxaViewModel", "P2P import failed: ${e.message}", e)
                 withContext(Dispatchers.Main) { onError(e.message ?: "Import failed") }
-            }
+            } finally { creationMutex.unlock() }
         }
     }
 }

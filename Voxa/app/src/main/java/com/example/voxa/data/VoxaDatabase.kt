@@ -61,15 +61,8 @@ abstract class VoxaDatabase : RoomDatabase() {
                     VoxaDatabase::class.java,
                     "voxa_database"
                 )
-                /**
-                 * fallbackToDestructiveMigration:
-                 * During early hackathon development, you might change a column in your tables. 
-                 * Normally, Room will crash on startup if your entity classes don't match the 
-                 * SQL file schema on the phone. This line prevents crashes by saying: 
-                 * "If the schema changes during development, just delete the old database file 
-                 * and create a new clean one."
-                 */
-                .fallbackToDestructiveMigration(dropAllTables = true)
+                // Preserve trained profiles. Unsupported older schemas require an explicit
+                // migration; never silently erase a child's local database during an update.
                 .build()
                 
                 // Cache the newly created instance

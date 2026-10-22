@@ -28,7 +28,7 @@ class FuzzyMatcherTest {
         assertEquals(0, FuzzyMatcher.levenshtein("مايه", "مايه"))
         assertEquals(1, FuzzyMatcher.levenshtein("مايه", "ميه"))
         assertEquals(1, FuzzyMatcher.levenshtein("water", "wate"))
-        assertEquals(2, FuzzyMatcher.levenshtein("water", "waiter"))
+        assertEquals(1, FuzzyMatcher.levenshtein("water", "waiter")) // insert 'i'
     }
 
     @Test

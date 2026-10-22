@@ -11,6 +11,11 @@ import androidx.room.*
  */
 @Dao
 interface VoxaDao {
+    @Query("SELECT COUNT(*) FROM child_profiles")
+    suspend fun profileCount(): Int
+
+    @Query("SELECT COUNT(*) FROM enrolled_intents WHERE profileId = :profileId AND isImported = 0")
+    suspend fun customIntentCount(profileId: Long): Int
 
     // ==========================================
     // 👤 PROFILE QUERIES

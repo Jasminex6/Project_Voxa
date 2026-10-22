@@ -57,3 +57,11 @@ venv/
 # ── Exclude internal documentation ──
 Docs/
 
+# Web dependencies, generated output, credentials, and local demo state
+node_modules/
+.next/
+.local/
+.env*
+!.env.example
+*.tsbuildinfo
+

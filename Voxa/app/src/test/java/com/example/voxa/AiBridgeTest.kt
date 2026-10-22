@@ -2,7 +2,7 @@ package com.example.voxa
 
 import com.example.voxa.ai.PrototypicalMatcher
 import com.example.voxa.ai.YamnetEncoder
-import com.example.voxa.logic.MarginGate
+import com.example.voxa.ai.MarginGate
 import org.junit.Assert.*
 import org.junit.Test
 import kotlin.math.sqrt
@@ -41,21 +41,25 @@ class AiBridgeTest {
 
     @Test
     fun testYamnetEncoder_prepareAudioWindow_padsShortSignal() {
-        // 1000 samples is short (< 15360)
+        // The current encoder center-pads to a fixed 1.44-second window.
         val pcm = ShortArray(1000) { it.toShort() }
         val prepared = YamnetEncoder.prepareAudioWindow(pcm)
-        assertEquals(15360, prepared.size)
-        
-        // Element at index 1000 should be equal to index 0 due to repeat padding
-        assertEquals(prepared[0], prepared[1000], 0.0001f)
+        assertEquals(23040, prepared.size)
+        val offset = (23040 - pcm.size) / 2
+        assertEquals(0f, prepared[offset - 1], 0.0001f)
+        assertEquals(pcm[999] / 32768f, prepared[offset + 999], 0.0001f)
+        assertEquals(0f, prepared[offset + 1000], 0.0001f)
     }
 
     @Test
     fun testYamnetEncoder_prepareAudioWindow_leavesLongSignal() {
-        // 30000 samples is long (>= 15360)
+        // Long input is center-cropped, preserving the middle of the utterance.
         val pcm = ShortArray(30000) { it.toShort() }
         val prepared = YamnetEncoder.prepareAudioWindow(pcm)
-        assertEquals(30000, prepared.size) // No cropping!
+        assertEquals(23040, prepared.size)
+        val start = (pcm.size - 23040) / 2
+        assertEquals(pcm[start] / 32768f, prepared.first(), 0.0001f)
+        assertEquals(pcm[start + 23039] / 32768f, prepared.last(), 0.0001f)
     }
 
     @Test
@@ -224,8 +228,8 @@ class AiBridgeTest {
     @Test
     fun testMarginGate_validMatch() {
         val candidates = listOf(
-            MarginGate.CandidateMatch("Water", 0.90f),
-            MarginGate.CandidateMatch("More", 0.82f)
+            MarginGate.CandidateMatch("Water", 0.10f),
+            MarginGate.CandidateMatch("More", 0.18f)
         )
         val result = MarginGate.evaluate(
             candidates = candidates,
@@ -239,8 +243,8 @@ class AiBridgeTest {
     @Test
     fun testMarginGate_failsAbsoluteThreshold() {
         val candidates = listOf(
-            MarginGate.CandidateMatch("Water", 0.80f),
-            MarginGate.CandidateMatch("More", 0.75f)
+            MarginGate.CandidateMatch("Water", 0.90f),
+            MarginGate.CandidateMatch("More", 0.95f)
         )
         val result = MarginGate.evaluate(
             candidates = candidates,
@@ -249,14 +253,14 @@ class AiBridgeTest {
         )
         assertFalse(result.isMatch)
         assertNull(result.matchedWord)
-        assertTrue(result.reason.contains("below absolute threshold"))
+        assertTrue(result.reason.contains("exceeds absolute threshold"))
     }
 
     @Test
     fun testMarginGate_failsMarginCheck() {
         val candidates = listOf(
-            MarginGate.CandidateMatch("Water", 0.85f),
-            MarginGate.CandidateMatch("More", 0.83f)
+            MarginGate.CandidateMatch("Water", 0.15f),
+            MarginGate.CandidateMatch("More", 0.17f)
         )
         val result = MarginGate.evaluate(
             candidates = candidates,
@@ -271,7 +275,7 @@ class AiBridgeTest {
     @Test
     fun testMarginGate_singleCandidate() {
         val candidates = listOf(
-            MarginGate.CandidateMatch("Water", 0.85f)
+            MarginGate.CandidateMatch("Water", 0.15f)
         )
         val result = MarginGate.evaluate(
             candidates = candidates,

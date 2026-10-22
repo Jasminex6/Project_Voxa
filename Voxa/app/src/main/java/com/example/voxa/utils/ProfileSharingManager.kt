@@ -167,6 +167,12 @@ class ProfileSharingManager(private val context: Context) {
     }
 
     fun sendProfileData(profileJson: String) {
+        val licenseManager = com.example.voxa.data.license.LicenseManager.get(context)
+        licenseManager.refresh()
+        if (!licenseManager.license.value.canSendProfiles) {
+            _sharingState.value = SharingState.Error(context.getString(com.example.voxa.R.string.license_handover_limit))
+            return
+        }
         val endpoint = currentEndpointId ?: run {
             _sharingState.value = SharingState.Error("No active connection to send data")
             return

@@ -19,3 +19,11 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# Serialized profile handover DTOs use Gson reflection; the audio pipeline does not.
+-keepattributes Signature,*Annotation*,InnerClasses,EnclosingMethod
+-keep class com.example.voxa.data.P2PSharingDto { *; }
+-keep class com.example.voxa.data.IntentWithTemplates { *; }
+-keepclassmembers class com.example.voxa.data.** { <fields>; }
+-keep class org.tensorflow.lite.** { *; }
+-keep class com.google.ai.edge.litert.** { *; }

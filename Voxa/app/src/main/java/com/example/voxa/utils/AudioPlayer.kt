@@ -113,7 +113,7 @@ class AudioPlayer(private val context: Context) {
             val targetLocale = if (isEn) Locale.US else Locale("ar", "EG")
             tts?.language = targetLocale
 
-            val voices = tts?.voices
+            val voices = tts?.voices?.filter { !it.isNetworkConnectionRequired }
             if (voices != null) {
                 val isFemale = gender.equals("Female", ignoreCase = true)
                 val langPrefix = if (isEn) "en" else "ar"
@@ -137,8 +137,8 @@ class AudioPlayer(private val context: Context) {
                 if (matchVoice != null) {
                     tts?.voice = matchVoice
                     Log.d(TAG, "Selected TTS Voice for $language: ${matchVoice.name}")
-                }
-            }
+                } else { Log.w(TAG, "No installed offline voice for requested language"); return }
+            } else { return }
 
             val textToSpeak = if (!isEn) applyTashkeel(text) else text
             tts?.speak(textToSpeak, TextToSpeech.QUEUE_FLUSH, null, "voxa_speech")

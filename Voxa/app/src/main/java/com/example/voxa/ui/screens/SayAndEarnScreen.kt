@@ -178,9 +178,10 @@ fun SayAndEarnScreen(
     val activeProfile by viewModel.activeProfile.collectAsState()
     val enrolledIntents by viewModel.enrolledIntents.collectAsState()
     val childPoints by viewModel.childPoints.collectAsState()
+    val license by viewModel.license.collectAsState()
 
     // Combined vocabulary: default core words + child's custom enrolled words
-    val allWords = remember(enrolledIntents) {
+    val allWords = remember(enrolledIntents, license.effectiveTier) {
         val customWords = enrolledIntents.map { intent ->
             SayAndEarnWord(
                 english = intent.outputPhrase,
@@ -190,7 +191,8 @@ fun SayAndEarnScreen(
                 audioAssetPath = intent.audioAssetPath
             )
         }
-        (DEFAULT_SAY_AND_EARN_WORDS + customWords).distinctBy { it.arabic }
+        if (license.hasFullPractice) (DEFAULT_SAY_AND_EARN_WORDS + customWords).distinctBy { it.arabic }
+        else DEFAULT_SAY_AND_EARN_WORDS.take(3)
     }
 
     var selectedWordIndex by remember { mutableIntStateOf(0) }
@@ -335,22 +337,22 @@ fun SayAndEarnScreen(
         }
         speechRecognizer = null
 
-        val recognizer = if (SpeechRecognizer.isRecognitionAvailable(context)) {
-            SpeechRecognizer.createSpeechRecognizer(context)
+        val recognizer = if (android.os.Build.VERSION.SDK_INT >= 31 && SpeechRecognizer.isOnDeviceRecognitionAvailable(context)) {
+            SpeechRecognizer.createOnDeviceSpeechRecognizer(context)
         } else {
             null
         }
         speechRecognizer = recognizer
 
         if (recognizer == null) {
-            Toast.makeText(context, "Speech recognition is not available on this device", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, R.string.license_offline_unavailable, Toast.LENGTH_LONG).show()
             matchResult = FuzzyMatcher.MatchResult(
                 isMatched = false,
                 isExact = false,
                 editDistance = 999,
                 bestCandidate = "",
                 coinsEarned = 0,
-                feedbackMessage = if (selectedLanguage == "ar") "خدمة التعرف على الصوت غير متاحة على هذا الجهاز" else "Speech recognition service not available"
+                feedbackMessage = context.getString(R.string.license_offline_unavailable)
             )
             showResult = true
             return
@@ -471,6 +473,9 @@ fun SayAndEarnScreen(
                 matchResult = result
                 showResult = true
 
+                // Persist evaluated attempts, not only rewards, so history is not success-biased.
+                viewModel.recordPracticeAttempt(targetWord.english, result.matchPercent.toInt(), result.starsEarned)
+
                 if (result.isMatched) {
                     var totalCoins = result.coinsEarned
                     streakCount += 1
@@ -483,11 +488,6 @@ fun SayAndEarnScreen(
 
                     // Persist coins in child profile wallet
                     viewModel.addPracticeCoins(totalCoins)
-                    viewModel.recordPracticeAttempt(
-                        word = targetWord.english,
-                        score = result.matchPercent.toInt(),
-                        stars = result.starsEarned
-                    )
 
                     // Trigger celebration
                     triggerCoinBurst()
@@ -521,7 +521,7 @@ fun SayAndEarnScreen(
             }
             putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 5)
             putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
-            // DO NOT set EXTRA_PREFER_OFFLINE so network/offline hybrid works seamlessly
+            putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
         }
 
         try {
@@ -618,6 +618,10 @@ fun SayAndEarnScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // ── TOP BAR / HEADER ──
+            if (!license.hasFullPractice) Text(
+                text = stringResource(R.string.license_practice_demo),
+                color = Slate400, fontSize = 11.sp, modifier = Modifier.padding(bottom = 8.dp)
+            )
             Row(
                 modifier = Modifier
                     .fillMaxWidth()

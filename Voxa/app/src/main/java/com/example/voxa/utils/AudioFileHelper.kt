@@ -111,11 +111,15 @@ object AudioFileHelper {
         if (!file.exists()) {
             throw IOException("Audio file does not exist: ${file.absolutePath}")
         }
-        val size = file.length().toInt()
+        val length = file.length()
+        if (length <= 0 || length > 16000L * 2 * 30 || length % 2L != 0L) {
+            throw IOException("Invalid PCM file size")
+        }
+        val size = length.toInt()
         val bytes = ByteArray(size)
         try {
             FileInputStream(file).use { fis ->
-                fis.read(bytes)
+                java.io.DataInputStream(fis).readFully(bytes)
             }
         } catch (e: IOException) {
             throw IOException("Failed to read audio file: ${e.message}", e)
