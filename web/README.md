@@ -2,6 +2,12 @@
 
 This Next.js application includes a bilingual storefront, account/license dashboard, report templates, Stripe and Paymob adapters, and an explicit local demo. It is kept in the same branch as the Android licensing implementation.
 
+## Hosted storefront
+
+Live URL: https://voxa-web-pi.vercel.app/en (Arabic: `/ar`). Vercel project: `jazz16/voxa-web`. The public deployment has demo mode disabled; checkout and online account activation remain unavailable until production services below are configured. Simulated purchases and device activation continue to work in the local demo.
+
+Deployments are manual from this `web` folder with `vercel deploy --prod`. `.vercelignore` excludes local keys, environment files, and demo data. The ignored `.vercel/` folder links this checkout to the project. The public pages and configuration were checked without Vercel authentication.
+
 ## Run the local demo
 
 Use Node 22.19+ and Java 21 for Android.
