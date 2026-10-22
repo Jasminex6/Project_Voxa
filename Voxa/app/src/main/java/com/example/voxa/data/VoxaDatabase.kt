@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 
 /**
  * 🏛️ VoxaDatabase
@@ -31,6 +33,13 @@ abstract class VoxaDatabase : RoomDatabase() {
     abstract fun questDao(): QuestDao
 
     companion object {
+        val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Existing enrollments were recorded locally, so retain their audio previews.
+                db.execSQL("ALTER TABLE enrolled_intents ADD COLUMN isImported INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
         /**
          * @Volatile: This is a concurrency safety keyword.
          *
@@ -61,6 +70,7 @@ abstract class VoxaDatabase : RoomDatabase() {
                     VoxaDatabase::class.java,
                     "voxa_database"
                 )
+                .addMigrations(MIGRATION_8_9)
                 // Preserve trained profiles. Unsupported older schemas require an explicit
                 // migration; never silently erase a child's local database during an update.
                 .build()
