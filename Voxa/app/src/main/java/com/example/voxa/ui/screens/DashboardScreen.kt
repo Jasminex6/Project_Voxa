@@ -483,14 +483,18 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
                         Card(
                             onClick = { isSidebarOpen = false; onNavigateToProfile() },
                             modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
-                            colors = CardDefaults.cardColors(containerColor = Slate800)
+                            border = BorderStroke(1.dp, Sky400.copy(alpha = 0.25f)),
+                            colors = CardDefaults.cardColors(containerColor = SelectedActiveBlue.copy(alpha = 0.55f))
                         ) {
-                            Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                Text(stringResource(com.example.voxa.R.string.license_title), color = Sky400,
-                                    fontWeight = FontWeight.Bold)
-                                Text(licensePlanName(license), color = Color.White)
-                                Text(licenseStatusText(license), color = Slate400, fontSize = 11.sp)
-                                Text(stringResource(com.example.voxa.R.string.license_manage), color = Sky400, fontSize = 12.sp)
+                            Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                                    Text(stringResource(com.example.voxa.R.string.license_title), color = Sky400, fontSize = 11.sp)
+                                    Text(if (license.effectiveTier == com.example.voxa.data.license.LicenseTier.FREE)
+                                        stringResource(com.example.voxa.R.string.license_free_name) else licensePlanName(license),
+                                        color = Color.White, fontWeight = FontWeight.Bold)
+                                    Text(stringResource(com.example.voxa.R.string.license_manage), color = Slate300, fontSize = 11.sp)
+                                }
+                                Text("✦", color = Sky400, fontSize = 24.sp)
                             }
                         }
 

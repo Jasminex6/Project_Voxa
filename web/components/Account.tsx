@@ -38,10 +38,12 @@ export function SignIn({ lang }: { lang: Lang }) {
     [message, setMessage] = useState(""),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
-    [demo, setDemo] = useState(false);
+    [demo, setDemo] = useState(false),
+    [authReady, setAuthReady] = useState(false),
+    [configLoaded, setConfigLoaded] = useState(false);
   useEffect(() => {
-    api<{ demo: boolean }>("configuration")
-      .then((c) => setDemo(c.demo))
+    api<{ demo: boolean; authConfigured: boolean }>("configuration")
+      .then((c) => { setDemo(c.demo); setAuthReady(c.authConfigured); setConfigLoaded(true); })
       .catch(() => {});
   }, []);
   async function signin(event: React.FormEvent) {
@@ -88,6 +90,9 @@ export function SignIn({ lang }: { lang: Lang }) {
           ? "أدر اشتراكك وفعّل أجهزتك. لا تُرفع تسجيلات طفلك هنا."
           : "Manage your plan and activate your devices. Your child’s recordings aren’t uploaded here."}
       </p>
+      {configLoaded && !authReady && !demo && <p className="notice" role="status">
+        {ar ? "إدارة الحسابات والتفعيل عبر الإنترنت غير متاحة في هذا العرض بعد." : "Online account management and activation are not available in this preview yet."}
+      </p>}
       <form onSubmit={signin} className="form">
         <label>
           {ar ? "البريد الإلكتروني" : "Email address"}
@@ -100,7 +105,7 @@ export function SignIn({ lang }: { lang: Lang }) {
             placeholder="you@example.com"
           />
         </label>
-        <button disabled={busy} className="button primary">
+        <button disabled={busy || !authReady} className="button primary">
           {busy ? <LoaderCircle className="spin" /> : null}
           {ar ? "أرسل رابط الدخول" : "Send a sign-in link"}
           <ArrowRight size={16} />

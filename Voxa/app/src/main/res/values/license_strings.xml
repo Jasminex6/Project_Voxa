@@ -9,6 +9,15 @@
     <string name="license_progress_note">Exports contain summary counts only. Older history may include successful attempts only. Scores are not clinical measurements.</string>
     <string name="license_progress_share">Export report</string>
     <string name="license_title">My plan</string>
+    <string name="license_free_name">Free</string>
+    <string name="license_free_details">1 child profile · 3 words</string>
+    <string name="license_enter_code">Activate a code</string>
+    <string name="license_compare">Compare plans</string>
+    <string name="license_grace_badge">Grace period</string>
+    <string name="license_expired_badge">Expired</string>
+    <string name="license_clock_badge">Check clock</string>
+    <string name="license_expand">Show activation controls</string>
+    <string name="license_collapse">Hide activation controls</string>
     <string name="license_manage">Manage plan in Profile →</string>
     <string name="license_active">Active</string>
     <string name="license_free_status">Free plan active</string>

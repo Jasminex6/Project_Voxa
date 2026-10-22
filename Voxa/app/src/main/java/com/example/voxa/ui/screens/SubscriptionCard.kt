@@ -3,12 +3,24 @@ package com.example.voxa.ui.screens
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.layout.*
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.voxa.BuildConfig
 import com.example.voxa.R
@@ -26,39 +38,94 @@ fun SubscriptionCard(viewModel: IVoxaViewModel) {
     val license by viewModel.license.collectAsState()
     val context = LocalContext.current
     var purchaseCode by remember { mutableStateOf("") }
-    Card(colors = CardDefaults.cardColors(containerColor = Slate800), modifier = Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text(stringResource(R.string.license_title), color = Sky400, style = MaterialTheme.typography.titleMedium)
-            Text(licensePlanName(license), color = androidx.compose.ui.graphics.Color.White,
-                style = MaterialTheme.typography.titleLarge)
-            Text(licenseStatusText(license), color = Sky400)
-            if (license.expiresAt > 0) Text(
-                stringResource(R.string.license_valid_until, DateFormat.getDateInstance().format(Date(license.expiresAt))), color = Slate400)
-            Text(stringResource(R.string.license_purchase_hint), color = Slate400)
-            OutlinedTextField(
-                value = purchaseCode,
-                onValueChange = { purchaseCode = it.take(8192) },
-                label = { Text(stringResource(R.string.license_purchase_code)) },
-                modifier = Modifier.fillMaxWidth(), maxLines = 3,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = androidx.compose.ui.graphics.Color.White,
-                    unfocusedTextColor = androidx.compose.ui.graphics.Color.White,
-                    focusedLabelColor = Sky400, unfocusedLabelColor = Slate400
-                )
-            )
-            Button(enabled = purchaseCode.isNotBlank(), onClick = { viewModel.requestActivation(purchaseCode.trim()) }) {
-                Text(stringResource(R.string.license_activate))
+    var expanded by remember { mutableStateOf(false) }
+    val paid = license.effectiveTier != LicenseTier.FREE
+    val accent = if (paid) QuestTeal else Sky400
+    val statusColor = when (license.status) {
+        LicenseStatus.ACTIVE, LicenseStatus.FREE -> accent
+        LicenseStatus.GRACE -> WarningAmber
+        else -> ErrorRed
+    }
+    Card(
+        shape = RoundedCornerShape(20.dp),
+        border = BorderStroke(1.dp, accent.copy(alpha = 0.3f)),
+        colors = CardDefaults.cardColors(containerColor = Slate800), modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            Modifier.background(Brush.linearGradient(listOf(accent.copy(alpha = 0.10f), Slate800)))
+                .padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Surface(shape = RoundedCornerShape(12.dp), color = accent.copy(alpha = 0.15f)) {
+                    Icon(Icons.Default.Star, contentDescription = null, tint = accent,
+                        modifier = Modifier.padding(10.dp).size(22.dp))
+                }
+                Column(Modifier.weight(1f)) {
+                    Text(stringResource(R.string.license_title), color = Slate300, style = MaterialTheme.typography.labelMedium)
+                    Text(if (paid) licensePlanName(license) else stringResource(R.string.license_free_name),
+                        color = Color.White, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                }
+                Surface(shape = RoundedCornerShape(50), color = statusColor.copy(alpha = 0.13f)) {
+                    Text(stringResource(when (license.status) {
+                        LicenseStatus.ACTIVE, LicenseStatus.FREE -> R.string.license_active
+                        LicenseStatus.GRACE -> R.string.license_grace_badge
+                        LicenseStatus.EXPIRED -> R.string.license_expired_badge
+                        LicenseStatus.CLOCK_INVALID -> R.string.license_clock_badge
+                    }), color = statusColor, style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp))
+                }
             }
-            OutlinedButton(onClick = {
-                GmsBarcodeScanning.getClient(context).startScan()
-                    .addOnSuccessListener { barcode -> barcode.rawValue?.let { viewModel.requestActivation(it) } }
-                    .addOnFailureListener { android.widget.Toast.makeText(context, R.string.license_scan_error, android.widget.Toast.LENGTH_LONG).show() }
-            }) { Text(stringResource(R.string.license_scan)) }
-            Text(stringResource(R.string.license_scan_note), color = Slate400, style = MaterialTheme.typography.bodySmall)
-            if (BuildConfig.WEB_UPGRADE_ENABLED) TextButton(onClick = {
-                runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("${BuildConfig.VOXA_WEB_URL}/en/pricing"))) }
-                    .onFailure { android.widget.Toast.makeText(context, R.string.license_browser_error, android.widget.Toast.LENGTH_SHORT).show() }
-            }) { Text(stringResource(R.string.license_upgrade)) }
+            Text(
+                if (license.expiresAt > 0) stringResource(R.string.license_valid_until,
+                    DateFormat.getDateInstance().format(Date(license.expiresAt)))
+                else stringResource(R.string.license_free_details),
+                color = Slate300, style = MaterialTheme.typography.bodySmall
+            )
+            if (license.status !in listOf(LicenseStatus.ACTIVE, LicenseStatus.FREE)) {
+                Text(licenseStatusText(license), color = statusColor, style = MaterialTheme.typography.bodySmall)
+            }
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween) {
+                FilledTonalButton(onClick = { expanded = !expanded },
+                    colors = ButtonDefaults.filledTonalButtonColors(containerColor = accent.copy(alpha = 0.14f), contentColor = accent),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)) {
+                    Text(stringResource(R.string.license_enter_code), style = MaterialTheme.typography.labelMedium)
+                    Spacer(Modifier.width(4.dp))
+                    Icon(if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                        contentDescription = stringResource(if (expanded) R.string.license_collapse else R.string.license_expand),
+                        modifier = Modifier.size(18.dp))
+                }
+                if (BuildConfig.WEB_UPGRADE_ENABLED) TextButton(onClick = {
+                    val lang = if (context.resources.configuration.locales[0].language == "ar") "ar" else "en"
+                    runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("${BuildConfig.VOXA_WEB_URL}/$lang/pricing"))) }
+                        .onFailure { android.widget.Toast.makeText(context, R.string.license_browser_error, android.widget.Toast.LENGTH_SHORT).show() }
+                }) { Text(stringResource(R.string.license_compare), color = Slate300, style = MaterialTheme.typography.labelMedium) }
+            }
+            AnimatedVisibility(visible = expanded) {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    HorizontalDivider(color = accent.copy(alpha = 0.15f))
+                    Text(stringResource(R.string.license_purchase_hint), color = Slate400, style = MaterialTheme.typography.bodySmall)
+                    OutlinedTextField(
+                        value = purchaseCode,
+                        onValueChange = { purchaseCode = it.take(8192) },
+                        label = { Text(stringResource(R.string.license_purchase_code)) },
+                        modifier = Modifier.fillMaxWidth(), maxLines = 3,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.White, unfocusedTextColor = Color.White,
+                            focusedLabelColor = Sky400, unfocusedLabelColor = Slate400
+                        )
+                    )
+                    Button(modifier = Modifier.fillMaxWidth(), enabled = purchaseCode.isNotBlank(),
+                        onClick = { viewModel.requestActivation(purchaseCode.trim()) }) {
+                        Text(stringResource(R.string.license_activate))
+                    }
+                    OutlinedButton(modifier = Modifier.fillMaxWidth(), onClick = {
+                        GmsBarcodeScanning.getClient(context).startScan()
+                            .addOnSuccessListener { barcode -> barcode.rawValue?.let { viewModel.requestActivation(it) } }
+                            .addOnFailureListener { android.widget.Toast.makeText(context, R.string.license_scan_error, android.widget.Toast.LENGTH_LONG).show() }
+                    }) { Text(stringResource(R.string.license_scan)) }
+                }
+            }
         }
     }
 }

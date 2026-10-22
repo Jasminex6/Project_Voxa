@@ -5,6 +5,15 @@
     <string name="license_progress_note">يحتوي التصدير على ملخصات عددية فقط. قد يشمل السجل القديم المحاولات الناجحة فقط. الدرجات ليست قياسات سريرية.</string>
     <string name="license_progress_share">تصدير التقرير</string>
     <string name="license_title">خطتي</string>
+    <string name="license_free_name">مجانية</string>
+    <string name="license_free_details">ملف طفل واحد · ٣ كلمات</string>
+    <string name="license_enter_code">تفعيل رمز</string>
+    <string name="license_compare">مقارنة الخطط</string>
+    <string name="license_grace_badge">فترة سماح</string>
+    <string name="license_expired_badge">منتهية</string>
+    <string name="license_clock_badge">تحقق من الوقت</string>
+    <string name="license_expand">عرض خيارات التفعيل</string>
+    <string name="license_collapse">إخفاء خيارات التفعيل</string>
     <string name="license_manage">إدارة الخطة في الملف الشخصي ←</string>
     <string name="license_active">نشطة</string>
     <string name="license_free_status">الخطة المجانية نشطة</string>

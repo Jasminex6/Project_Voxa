@@ -19,6 +19,7 @@ export function Pricing({ lang }: { lang: Lang }) {
     demo: boolean;
     stripe: boolean;
     paymob: boolean;
+    authConfigured: boolean;
   } | null>(null);
   const [gateway, setGateway] = useState("stripe"),
     [busy, setBusy] = useState(""),
@@ -30,6 +31,7 @@ export function Pricing({ lang }: { lang: Lang }) {
       .then((c) => {
         setConfig(c);
         if (c?.demo) setGateway("demo");
+        else if (!c?.stripe && c?.paymob) setGateway("paymob");
       })
       .catch(() =>
         setError(
@@ -37,6 +39,8 @@ export function Pricing({ lang }: { lang: Lang }) {
         ),
       );
   }, [ar]);
+  const checkoutReady = !!config && (config.demo || (config.authConfigured &&
+    (gateway === "paymob" ? config.paymob && currency === "EGP" : config.stripe)));
   async function checkout(tier: PaidTier) {
     setBusy(tier);
     setError("");
@@ -242,13 +246,15 @@ export function Pricing({ lang }: { lang: Lang }) {
             ) : (
               <button
                 className={`button full ${tier === "FAMILY_PRO" ? "primary" : "quiet"}`}
-                disabled={!!busy || !config}
+                disabled={!!busy || !checkoutReady}
                 onClick={() => checkout(tier)}
               >
                 {busy === tier
                   ? ar
                     ? "جارٍ التحضير…"
                     : "Preparing…"
+                  : config && !checkoutReady
+                    ? ar ? "الدفع غير متاح حالياً" : "Checkout unavailable"
                   : config?.demo
                     ? ar
                       ? "جرّب الترقية"
