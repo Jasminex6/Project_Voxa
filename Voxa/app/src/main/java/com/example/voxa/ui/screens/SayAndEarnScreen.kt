@@ -618,10 +618,6 @@ fun SayAndEarnScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // ── TOP BAR / HEADER ──
-            if (!license.hasFullPractice) Text(
-                text = stringResource(R.string.license_practice_demo),
-                color = Slate400, fontSize = 11.sp, modifier = Modifier.padding(bottom = 8.dp)
-            )
             Row(
                 modifier = Modifier
                     .fillMaxWidth()

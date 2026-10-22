@@ -25,23 +25,30 @@ import java.util.Date
 fun SubscriptionCard(viewModel: IVoxaViewModel) {
     val license by viewModel.license.collectAsState()
     val context = LocalContext.current
+    var purchaseCode by remember { mutableStateOf("") }
     Card(colors = CardDefaults.cardColors(containerColor = Slate800), modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(stringResource(R.string.license_title), color = Sky400, style = MaterialTheme.typography.titleMedium)
-            Text(when (license.effectiveTier) {
-                LicenseTier.FREE -> stringResource(R.string.license_free)
-                LicenseTier.FAMILY_PRO -> "Family Pro"
-                LicenseTier.CLINICAL_SLP -> "Clinical SLP"
-            }, color = androidx.compose.ui.graphics.Color.White)
+            Text(licensePlanName(license), color = androidx.compose.ui.graphics.Color.White,
+                style = MaterialTheme.typography.titleLarge)
+            Text(licenseStatusText(license), color = Sky400)
             if (license.expiresAt > 0) Text(
                 stringResource(R.string.license_valid_until, DateFormat.getDateInstance().format(Date(license.expiresAt))), color = Slate400)
-            Text(stringResource(when (license.status) {
-                LicenseStatus.GRACE -> R.string.license_grace
-                LicenseStatus.EXPIRED -> R.string.license_expired
-                LicenseStatus.CLOCK_INVALID -> R.string.license_clock
-                else -> R.string.license_safety
-            }), color = Slate400)
-            Button(onClick = { viewModel.requestActivation("") }) { Text(stringResource(R.string.license_activate)) }
+            Text(stringResource(R.string.license_purchase_hint), color = Slate400)
+            OutlinedTextField(
+                value = purchaseCode,
+                onValueChange = { purchaseCode = it.take(8192) },
+                label = { Text(stringResource(R.string.license_purchase_code)) },
+                modifier = Modifier.fillMaxWidth(), maxLines = 3,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = androidx.compose.ui.graphics.Color.White,
+                    unfocusedTextColor = androidx.compose.ui.graphics.Color.White,
+                    focusedLabelColor = Sky400, unfocusedLabelColor = Slate400
+                )
+            )
+            Button(enabled = purchaseCode.isNotBlank(), onClick = { viewModel.requestActivation(purchaseCode.trim()) }) {
+                Text(stringResource(R.string.license_activate))
+            }
             OutlinedButton(onClick = {
                 GmsBarcodeScanning.getClient(context).startScan()
                     .addOnSuccessListener { barcode -> barcode.rawValue?.let { viewModel.requestActivation(it) } }
@@ -55,6 +62,22 @@ fun SubscriptionCard(viewModel: IVoxaViewModel) {
         }
     }
 }
+
+@Composable
+fun licensePlanName(license: ActiveLicense): String = when (license.effectiveTier) {
+    LicenseTier.FREE -> stringResource(R.string.license_free)
+    LicenseTier.FAMILY_PRO -> "Family Pro"
+    LicenseTier.CLINICAL_SLP -> "Clinical SLP"
+}
+
+@Composable
+fun licenseStatusText(license: ActiveLicense): String = stringResource(when (license.status) {
+    LicenseStatus.ACTIVE -> R.string.license_active
+    LicenseStatus.GRACE -> R.string.license_grace
+    LicenseStatus.EXPIRED -> R.string.license_expired
+    LicenseStatus.CLOCK_INVALID -> R.string.license_clock
+    LicenseStatus.FREE -> R.string.license_free_status
+})
 
 @Composable
 fun ActivationPrompt(viewModel: IVoxaViewModel) {

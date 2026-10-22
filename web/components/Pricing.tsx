@@ -45,7 +45,7 @@ export function Pricing({ lang }: { lang: Lang }) {
       const result = await api<{ url: string }>("checkout", {
         tier,
         currency,
-        interval,
+        interval: tier === "CLINICAL_SLP" ? "monthly" : interval,
         gateway,
         lang,
         ...(gateway === "paymob" ? { name, phone } : {}),
@@ -66,13 +66,13 @@ export function Pricing({ lang }: { lang: Lang }) {
     FREE: ar
       ? [
           "ملف طفل واحد",
-          "٥ أصوات مخصصة",
+          "٣ كلمات أساسية",
           "تجربة مكتبة التمرين",
           "استقبال ملف عبر الأجهزة",
         ]
       : [
           "One child profile",
-          "Five custom sounds",
+          "Three core words",
           "Practice library preview",
           "Receive a nearby handover",
         ],
@@ -159,12 +159,12 @@ export function Pricing({ lang }: { lang: Lang }) {
             value={currency}
             onChange={(e) => {
               setCurrency(e.target.value as Currency);
-              if (e.target.value === "USD" && gateway === "paymob")
+              if (e.target.value === "SAR" && gateway === "paymob")
                 setGateway("stripe");
             }}
           >
             <option>EGP</option>
-            <option>USD</option>
+            <option>SAR</option>
           </select>
         </label>
       </div>
@@ -172,8 +172,8 @@ export function Pricing({ lang }: { lang: Lang }) {
         <div className="notice">
           <SparkleDot />
           {ar
-            ? "وضع عرض محلي: لا يتم تحصيل أي مبلغ. الأسعار من خطة التنفيذ، ويمكن تعديلها قبل الإطلاق."
-            : "Local demo: no money is charged. Preview prices follow the execution plan and can be revised before launch."}
+            ? "عرض تجريبي: لا يتم تحصيل أي مبلغ."
+            : "Demo checkout: no money is charged."}
         </div>
       )}
       <div className="pricing-grid">
@@ -206,13 +206,13 @@ export function Pricing({ lang }: { lang: Lang }) {
             <div className="price">
               {tier === "FREE"
                 ? format(0)
-                : format(catalog[tier].prices[currency][interval])}
+                : format(catalog[tier].prices[currency][tier === "CLINICAL_SLP" ? "monthly" : interval]!)}
               <small>
                 {tier === "FREE"
                   ? ar
                     ? "دائماً"
                     : "always"
-                  : interval === "annual"
+                  : tier !== "CLINICAL_SLP" && interval === "annual"
                     ? ar
                       ? "/ سنة"
                       : "/ year"

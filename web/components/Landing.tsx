@@ -1,6 +1,5 @@
 "use client";
 import Link from "next/link";
-import { useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import {
   ArrowRight,
@@ -12,7 +11,6 @@ import {
   Download,
   Heart,
   LockKeyhole,
-  Play,
   ShieldCheck,
   Smartphone,
   Sparkles,
@@ -24,50 +22,6 @@ import type { Lang } from "./Shell";
 export function Landing({ lang }: { lang: Lang }) {
   const ar = lang === "ar",
     reduce = useReducedMotion();
-  const [selected, setSelected] = useState("water"),
-    [playing, setPlaying] = useState(false),
-    [error, setError] = useState("");
-  const audio = useRef<HTMLAudioElement | null>(null);
-  const words = [
-    {
-      id: "water",
-      ar: "مياه",
-      en: "Water",
-      phrase: "أنا عايز مياه",
-      color: "blue",
-    },
-    { id: "mama", ar: "ماما", en: "Mama", phrase: "ماما", color: "pink" },
-    {
-      id: "milk",
-      ar: "لبن",
-      en: "Milk",
-      phrase: "أنا عايز لبن",
-      color: "violet",
-    },
-    {
-      id: "help",
-      ar: "مساعدة",
-      en: "Help",
-      phrase: "أنا محتاج مساعدة",
-      color: "green",
-    },
-  ];
-  const word = words.find((w) => w.id === selected)!;
-  async function play(id: string) {
-    audio.current?.pause();
-    setSelected(id);
-    setError("");
-    const player = new Audio(`/demo-audio/${id}.wav`);
-    audio.current = player;
-    player.onended = () => setPlaying(false);
-    try {
-      await player.play();
-      setPlaying(true);
-    } catch {
-      setPlaying(false);
-      setError(ar ? "الصوت غير متاح الآن." : "Audio is unavailable right now.");
-    }
-  }
   const enter = reduce
     ? {}
     : {
@@ -110,12 +64,7 @@ export function Landing({ lang }: { lang: Lang }) {
               {ar ? "اختر خطتك" : "Find your plan"}
               <ArrowUpRight size={18} />
             </Link>
-            <a className="text-link" href="#experience">
-              <span className="play-small">
-                <Play size={11} fill="currentColor" />
-              </span>
-              {ar ? "اسمع التجربة" : "Hear the experience"}
-            </a>
+
           </div>
           <div className="trust-row">
             <span>
@@ -282,75 +231,6 @@ export function Landing({ lang }: { lang: Lang }) {
               <ChevronRight size={19} />
             </article>
           ))}
-        </div>
-      </section>
-      <section id="experience" className="experience section">
-        <div>
-          <div className="eyebrow">
-            {ar ? "جرّب بنفسك" : "A SMALL LISTEN. A BIG POSSIBILITY."}
-          </div>
-          <h2>
-            {ar ? (
-              <>
-                صوت صغير.
-                <br />
-                <em>معنى كبير.</em>
-              </>
-            ) : (
-              <>
-                A little sound.
-                <br />
-                <em>A world of meaning.</em>
-              </>
-            )}
-          </h2>
-          <p>
-            {ar
-              ? "اختر كلمة لسماع صوت مرجعي من مكتبة التمرين. هذا مشغّل أمثلة، ولا يستمع إلى الميكروفون."
-              : "Choose a word to hear a reference clip from the practice library. This is a sample player; it does not listen to your microphone."}
-          </p>
-          <div className="word-buttons">
-            {words.map((w) => (
-              <button
-                key={w.id}
-                className={selected === w.id ? "selected" : ""}
-                onClick={() => play(w.id)}
-                aria-pressed={selected === w.id}
-              >
-                <Volume2 size={15} />
-                {ar ? w.ar : w.en}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className={`demo-player ${word.color}`}>
-          <span className="demo-label">
-            {ar ? "مثال صوتي من المكتبة" : "REFERENCE AUDIO · PRACTICE LIBRARY"}
-          </span>
-          <button
-            className="demo-play"
-            onClick={() => play(selected)}
-            aria-label={ar ? "تشغيل الصوت" : "Play reference audio"}
-          >
-            {playing ? (
-              <AudioLines size={32} />
-            ) : (
-              <Play size={28} fill="currentColor" />
-            )}
-          </button>
-          <h3 dir="rtl" lang="ar">
-            {word.ar}
-          </h3>
-          <span>{word.en}</span>
-          <div className="demo-caption">
-            {ar
-              ? "يمكن ربط الصوت بعبارة مثل"
-              : "A sound can be mapped to a phrase like"}
-            <b dir="rtl" lang="ar">
-              {word.phrase}
-            </b>
-          </div>
-          {error && <p role="alert">{error}</p>}
         </div>
       </section>
       <section className="section privacy-section">

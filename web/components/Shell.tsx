@@ -48,6 +48,9 @@ export function Shell({
             <Link onClick={() => setOpen(false)} href={`/${lang}/clinical`}>
               {ar ? "للمراكز" : "For centers"}
             </Link>
+            <a href="mailto:voxasupport@gmail.com" onClick={() => setOpen(false)}>
+              {ar ? "الدعم" : "Support"}
+            </a>
           </nav>
           <div className="nav-actions">
             <Link className="language" href={other}>
@@ -84,9 +87,9 @@ export function Shell({
           <div>
             <Link href={`/${lang}/privacy`}>{ar ? "الخصوصية" : "Privacy"}</Link>
             <Link href={`/${lang}/terms`}>{ar ? "الشروط" : "Terms"}</Link>
-            <Link href={`/${lang}/clinical`}>
-              {ar ? "تواصل معنا" : "Get in touch"}
-            </Link>
+            <a href="mailto:voxasupport@gmail.com">
+              {ar ? "الدعم" : "Support"} · voxasupport@gmail.com
+            </a>
           </div>
         </div>
         <div className="footer-bottom">

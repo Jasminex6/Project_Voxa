@@ -2,11 +2,14 @@
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 CREATE TABLE IF NOT EXISTS orders (
   id uuid PRIMARY KEY, user_id uuid NOT NULL, tier text NOT NULL CHECK (tier IN ('FAMILY_PRO','CLINICAL_SLP')),
-  currency text NOT NULL CHECK (currency IN ('EGP','USD')), interval text NOT NULL CHECK (interval IN ('monthly','annual')),
+  currency text NOT NULL CHECK (currency IN ('EGP','SAR','USD')), interval text NOT NULL CHECK (interval IN ('monthly','annual')),
   amount integer NOT NULL CHECK (amount > 0), gateway text NOT NULL, status text NOT NULL,
   gateway_id text, created_at bigint NOT NULL, billing_email text
 );
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS billing_email text;
+-- Keep historical USD orders; new checkout requests accept only EGP and SAR.
+ALTER TABLE orders DROP CONSTRAINT IF EXISTS orders_currency_check;
+ALTER TABLE orders ADD CONSTRAINT orders_currency_check CHECK (currency IN ('EGP','SAR','USD'));
 CREATE TABLE IF NOT EXISTS subscriptions (
   id uuid PRIMARY KEY, user_id uuid NOT NULL, order_id uuid NOT NULL UNIQUE REFERENCES orders(id), gateway text NOT NULL,
   gateway_subscription_id text UNIQUE, gateway_customer_id text, tier text NOT NULL, status text NOT NULL,

@@ -23,5 +23,5 @@ data class ActiveLicense(
         LicenseTier.FAMILY_PRO -> Int.MAX_VALUE
         LicenseTier.CLINICAL_SLP -> Int.MAX_VALUE
     }
-    fun canEnrollIntent(count: Int): Boolean = effectiveTier != LicenseTier.FREE || count < 5
+    fun canEnrollIntent(count: Int): Boolean = effectiveTier != LicenseTier.FREE || count < 3
 }

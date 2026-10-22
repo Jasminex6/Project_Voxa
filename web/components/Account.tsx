@@ -496,7 +496,7 @@ export function ActivationBox({
         <p>
           {ar
             ? "افتح الرابط على هاتف Android، أو امسح الرمز من فوكسـا ← الملف ← الاشتراك والترخيص."
-            : "Open the link on Android, or scan from Voxa → Profile → Subscription & license."}
+            : "Open the link on Android, or paste your code in Voxa → Profile → My plan."}
         </p>
         {expired ? (
           <p className="error">

@@ -67,6 +67,7 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
     val activeProfile by viewModel.activeProfile.collectAsState()
     val recentEvents by viewModel.recentEvents.collectAsState()
     val volumeLevel by viewModel.volumeLevel.collectAsState()
+    val license by viewModel.license.collectAsState()
 
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
     
@@ -478,6 +479,20 @@ fun DashboardScreen(viewModel: IVoxaViewModel, onNavigateToProfile: () -> Unit) 
                         }
 
                         Divider(color = Slate700, thickness = 1.dp, modifier = Modifier.padding(vertical = 12.dp))
+
+                        Card(
+                            onClick = { isSidebarOpen = false; onNavigateToProfile() },
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                            colors = CardDefaults.cardColors(containerColor = Slate800)
+                        ) {
+                            Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text(stringResource(com.example.voxa.R.string.license_title), color = Sky400,
+                                    fontWeight = FontWeight.Bold)
+                                Text(licensePlanName(license), color = Color.White)
+                                Text(licenseStatusText(license), color = Slate400, fontSize = 11.sp)
+                                Text(stringResource(com.example.voxa.R.string.license_manage), color = Sky400, fontSize = 12.sp)
+                            }
+                        }
 
                         // 👦 Child Info Section
                         Text(

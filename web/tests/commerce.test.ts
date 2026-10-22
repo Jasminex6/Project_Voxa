@@ -21,7 +21,7 @@ const order = (): Order => ({
   tier: "FAMILY_PRO",
   currency: "EGP",
   interval: "monthly",
-  amount: 25000,
+  amount: 34900,
   gateway: "demo",
   gatewayId: "demo-order",
   status: "pending",
@@ -31,7 +31,7 @@ const details = {
   gateway: "demo",
   gatewayId: "demo-order",
   eventId: "evt-1",
-  amount: 25000,
+  amount: 34900,
   currency: "EGP",
 };
 async function paid() {

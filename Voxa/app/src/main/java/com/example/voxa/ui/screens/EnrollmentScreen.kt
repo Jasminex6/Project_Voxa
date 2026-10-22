@@ -55,7 +55,6 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
     if (!license.canEnrollIntent(intents.count { !it.isImported })) {
         Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Text(stringResource(R.string.license_intent_limit))
-            SubscriptionCard(viewModel)
             TextButton(onClick = onBack) { Text(stringResource(R.string.license_back)) }
         }
         return

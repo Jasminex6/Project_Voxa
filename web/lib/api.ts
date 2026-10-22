@@ -34,7 +34,7 @@ import { notifyPaidOrder } from "./email";
 const checkoutSchema = z
   .object({
     tier: z.enum(["FAMILY_PRO", "CLINICAL_SLP"]),
-    currency: z.enum(["EGP", "USD"]),
+    currency: z.enum(["EGP", "SAR"]),
     interval: z.enum(["monthly", "annual"]),
     gateway: z.enum(["demo", "stripe", "paymob"]),
     lang: z.enum(["en", "ar"]).default("en"),
@@ -44,7 +44,10 @@ const checkoutSchema = z
       .regex(/^\+?[0-9]{9,15}$/)
       .optional(),
   })
-  .strict();
+  .strict()
+  .refine((input) => input.tier !== "CLINICAL_SLP" || input.interval === "monthly", {
+    message: "The clinic plan is billed monthly only",
+  });
 const uuid = z.string().uuid();
 const activateSchema = z
   .object({ code: z.string().regex(/^[A-Za-z0-9_-]{32,128}$/), deviceId: uuid })

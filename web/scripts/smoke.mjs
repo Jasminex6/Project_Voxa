@@ -51,7 +51,24 @@ const checkout = (
 ).data;
 let order = (await request(`orders/${checkout.orderId}`)).data;
 assert.equal(order.order.status, "pending");
+assert.equal(order.order.amount, 34900);
 assert.equal(order.license, undefined);
+for (const [currency, interval, amount] of [
+  ["EGP", "annual", 279900],
+  ["SAR", "monthly", 9900],
+  ["SAR", "annual", 89900],
+]) {
+  const result = (await request("checkout", {
+    tier: "FAMILY_PRO", currency, interval, gateway: "demo", lang: "en",
+  })).data;
+  const pending = (await request(`orders/${result.orderId}`)).data;
+  assert.equal(pending.order.amount, amount);
+  assert.equal(pending.order.currency, currency);
+  assert.equal(pending.license, undefined);
+}
+await request("checkout", {
+  tier: "CLINICAL_SLP", currency: "EGP", interval: "annual", gateway: "demo", lang: "en",
+}, 400);
 await request("checkout/demo/complete", { orderId: checkout.orderId });
 await request("checkout/demo/complete", { orderId: checkout.orderId });
 order = (await request(`orders/${checkout.orderId}`)).data;

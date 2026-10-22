@@ -7,13 +7,14 @@ The supplied `EXECUTION_PLAN.md` is preserved. This file records actual implemen
 ## Implemented
 
 - Android Free / Family Pro / Clinical SLP entitlement state; signed Ed25519 JWS validation with issuer, audience, key ID, installation binding, issue/expiry/grace dates, and strict claim checks.
-- Android Keystore AES-GCM storage, local clock rollback detection, and periodic local expiry checks. Free allows one newly created profile and five custom enrollments. Existing profiles, existing translations, emergency tools, and local data remain accessible after expiry.
+- Android Keystore AES-GCM storage, local clock rollback detection, and periodic local expiry checks. Free allows one newly created profile and three word enrollments. Existing profiles, existing translations, emergency tools, and local data remain accessible after expiry.
 - Entitlement checks at creation/import/enrollment/send actions, not only on buttons. Family enables the full practice library and sending nearby profiles; Clinical adds profile search. Receiving remains possible within the profile limit.
 - Caregiver-confirmed activation via custom deep link, short-lived code, QR scanner, or a previously paired signed token. The scanner has no app camera permission but may need an initial Google Play Services module download.
 - Numerical progress JSON/PDF export protected by caregiver PIN. No audio, embeddings, acoustic templates, names, contacts, task descriptions, or parent notes appear in the report contract.
 - On-device-only speech practice. Unsupported devices/languages receive an explanation rather than a silent cloud fallback. Installed offline TTS voices are required when a prerecorded clip is unavailable.
 - Microphone/file handling guards, bounded enrollment buffers, non-destructive database-upgrade policy, backup exclusions, release shrinking, and signing configuration through environment variables.
-- Bilingual Next.js storefront, sample audio player, monthly/annual EGP/USD plan selection, account sign-in, subscription/device management, QR/deep-link fulfillment, report upload/view/print, privacy and terms drafts.
+- Bilingual Next.js storefront, monthly/annual EGP/SAR Family plan selection using business plan v2 prices, account sign-in, subscription/device management, QR/deep-link fulfillment, report upload/view/print, privacy and terms drafts. The audio demo was removed; Support links to the supplied demo address voxasupport@gmail.com. Clinic subscriptions are monthly only.
+- Profile contains the purchase activation-code field and plan status. The dashboard sidebar shows the current plan and links to Profile; practice and enrollment screens do not contain subscription cards or plan banners.
 - Supabase Auth integration and PostgreSQL schema with RLS enabled and no public table policies. Server routes verify ownership.
 - Stripe hosted subscription checkout, provider signature validation, paid-state verification, amount/currency/provider/order checks, duplicate fulfillment handling, renewal/cancellation reconciliation, full-refund revocation, and billing portal.
 - Paymob Intention/Unified Checkout and HMAC-verified transaction callbacks. Paymob is explicitly prepaid/manual renewal in this version. Actual available methods are determined by merchant integrations.
