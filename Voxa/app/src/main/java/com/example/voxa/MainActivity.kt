@@ -15,10 +15,12 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -75,25 +77,44 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             val view = LocalView.current
-
-            SideEffect {
-                val window = (view.context as Activity).window
-                window.statusBarColor = Color(0xFF0B1326).toArgb()
-                window.navigationBarColor = Color(0xFF0B1326).toArgb()
-
-                WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
-                WindowCompat.getInsetsController(window, view).isAppearanceLightNavigationBars = false
+            val systemDarkTheme = isSystemInDarkTheme()
+            val settings = remember {
+                getSharedPreferences("voxa_settings", MODE_PRIVATE)
+            }
+            var themeMode by remember {
+                mutableStateOf(settings.getString("theme_mode", "system") ?: "system")
+            }
+            val darkTheme = when (themeMode) {
+                "light" -> false
+                "dark" -> true
+                else -> systemDarkTheme
+            }
+            val toggleTheme = {
+                themeMode = if (darkTheme) "light" else "dark"
+                settings.edit().putString("theme_mode", themeMode).apply()
             }
 
             androidx.compose.runtime.CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr) {
-                VoxaTheme {
+                VoxaTheme(darkTheme = darkTheme) {
+                    val themeColors = LocalVoxaColors.current
+                    SideEffect {
+                        val window = (view.context as Activity).window
+                        val systemBarColor = if (darkTheme) Color(0xFF0B1326) else themeColors.background
+                        window.statusBarColor = systemBarColor.toArgb()
+                        window.navigationBarColor = systemBarColor.toArgb()
+
+                        WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+                        WindowCompat.getInsetsController(window, view).isAppearanceLightNavigationBars = !darkTheme
+                    }
                     Surface(
                         modifier = Modifier.fillMaxSize(),
-                        color = Slate900
+                        color = themeColors.background
                     ) {
                         VoxaAppEntry(
                             viewModel = viewModel,
-                            questsViewModel = questsViewModel
+                            questsViewModel = questsViewModel,
+                            isDarkTheme = darkTheme,
+                            onToggleTheme = toggleTheme
                         )
                     }
                 }
@@ -124,7 +145,13 @@ enum class Screen(val titleResId: Int, val icon: String) {
 
 // Security gate (night club analogy)
 @Composable
-fun VoxaAppEntry(viewModel: IVoxaViewModel, questsViewModel: QuestsViewModel, modifier: Modifier = Modifier) {
+fun VoxaAppEntry(
+    viewModel: IVoxaViewModel,
+    questsViewModel: QuestsViewModel,
+    isDarkTheme: Boolean,
+    onToggleTheme: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     val context = LocalContext.current
 
     // Track whether first-time setup has been completed
@@ -137,7 +164,13 @@ fun VoxaAppEntry(viewModel: IVoxaViewModel, questsViewModel: QuestsViewModel, mo
             onOnboardingCompleted = { isSetupDone = true }
         )
     } else {
-        VoxaAppContent(viewModel = viewModel, questsViewModel = questsViewModel, modifier = modifier)
+        VoxaAppContent(
+            viewModel = viewModel,
+            questsViewModel = questsViewModel,
+            isDarkTheme = isDarkTheme,
+            onToggleTheme = onToggleTheme,
+            modifier = modifier
+        )
     }
 }
 
@@ -145,7 +178,13 @@ fun VoxaAppEntry(viewModel: IVoxaViewModel, questsViewModel: QuestsViewModel, mo
 // This acts as a theater stage: a single persistent frame with a bottom tab switcher
 // that dynamically slides different screen contents into focus depending on state.
 @Composable
-fun VoxaAppContent(viewModel: IVoxaViewModel, questsViewModel: QuestsViewModel, modifier: Modifier = Modifier) {
+fun VoxaAppContent(
+    viewModel: IVoxaViewModel,
+    questsViewModel: QuestsViewModel,
+    isDarkTheme: Boolean,
+    onToggleTheme: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     val navStack = remember { mutableStateListOf(Screen.Dashboard) }
     val currentScreen = navStack.last()
 
@@ -155,6 +194,7 @@ fun VoxaAppContent(viewModel: IVoxaViewModel, questsViewModel: QuestsViewModel, 
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
+        containerColor = LocalVoxaColors.current.background,
         bottomBar = {
             CustomBottomBar(
                 currentScreen = currentScreen,
@@ -174,7 +214,9 @@ fun VoxaAppContent(viewModel: IVoxaViewModel, questsViewModel: QuestsViewModel, 
             when (currentScreen) {
                 Screen.Dashboard -> DashboardScreen(
                     viewModel = viewModel,
-                    onNavigateToProfile = { navStack.add(Screen.Profile) }
+                    onNavigateToProfile = { navStack.add(Screen.Profile) },
+                    isDarkTheme = isDarkTheme,
+                    onToggleTheme = onToggleTheme
                 )
                 Screen.Enrollment -> EnrollmentScreen(
                     viewModel = viewModel,
@@ -205,10 +247,22 @@ fun CustomBottomBar(
     currentScreen: Screen,
     onScreenSelected: (Screen) -> Unit
 ) {
+    val themeColors = LocalVoxaColors.current
     Surface(
-        color = Slate800,
+        color = themeColors.bottomNavigationSurface,
         tonalElevation = 8.dp,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .drawBehind {
+                if (!themeColors.isDark) {
+                    drawLine(
+                        color = themeColors.bottomNavigationDivider,
+                        start = androidx.compose.ui.geometry.Offset.Zero,
+                        end = androidx.compose.ui.geometry.Offset(size.width, 0f),
+                        strokeWidth = 1.dp.toPx()
+                    )
+                }
+            }
     ) {
         CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr) {
             Row(
@@ -229,29 +283,29 @@ fun CustomBottomBar(
                     Screen.Emergency -> ErrorRed.copy(alpha = 0.15f)
                     Screen.Practice -> PracticeViolet.copy(alpha = 0.15f)
                     Screen.Library -> WarningAmber.copy(alpha = 0.15f)
-                    Screen.Quests -> Sky400.copy(alpha = 0.15f)
-                    else -> Sky400.copy(alpha = 0.15f)
+                    Screen.Quests -> (if (themeColors.isDark) Sky400 else LightPrimaryPurple).copy(alpha = if (themeColors.isDark) 0.15f else 0.16f)
+                    else -> (if (themeColors.isDark) Sky400 else LightNeonCyan).copy(alpha = if (themeColors.isDark) 0.15f else 0.16f)
                 }
                 val activeContentColor = when (screen) {
                     Screen.Emergency -> ErrorRed
                     Screen.Practice -> PracticeViolet
                     Screen.Library -> WarningAmber
-                    Screen.Quests -> Sky400
-                    else -> Sky400
+                    Screen.Quests -> if (themeColors.isDark) Sky400 else LightPrimaryPurple
+                    else -> if (themeColors.isDark) Sky400 else LightNeonCyan
                 }
                 val activeBorderColor = when (screen) {
                     Screen.Emergency -> ErrorRed.copy(alpha = 0.3f)
                     Screen.Practice -> PracticeViolet.copy(alpha = 0.3f)
                     Screen.Library -> WarningAmber.copy(alpha = 0.3f)
-                    Screen.Quests -> Sky400.copy(alpha = 0.3f)
-                    else -> Sky400.copy(alpha = 0.3f)
+                    Screen.Quests -> (if (themeColors.isDark) Sky400 else LightPrimaryPurple).copy(alpha = if (themeColors.isDark) 0.3f else 0.34f)
+                    else -> (if (themeColors.isDark) Sky400 else LightNeonCyan).copy(alpha = if (themeColors.isDark) 0.3f else 0.34f)
                 }
                 val inactiveContentColor = when (screen) {
-                    Screen.Emergency -> ErrorRed.copy(alpha = 0.6f)
-                    Screen.Practice -> PracticeViolet.copy(alpha = 0.6f)
-                    Screen.Library -> WarningAmber.copy(alpha = 0.6f)
-                    Screen.Quests -> Sky400.copy(alpha = 0.6f)
-                    else -> Sky400
+                    Screen.Emergency -> ErrorRed.copy(alpha = if (themeColors.isDark) 0.6f else 0.62f)
+                    Screen.Practice -> PracticeViolet.copy(alpha = if (themeColors.isDark) 0.6f else 0.62f)
+                    Screen.Library -> WarningAmber.copy(alpha = if (themeColors.isDark) 0.6f else 0.62f)
+                    Screen.Quests -> (if (themeColors.isDark) Sky400 else LightPrimaryPurple).copy(alpha = if (themeColors.isDark) 0.6f else 0.62f)
+                    else -> (if (themeColors.isDark) Sky400 else LightNeonCyan).copy(alpha = if (themeColors.isDark) 1f else 0.62f)
                 }
                 
                 Column(

@@ -2,11 +2,13 @@
 <resources>
 
     <style name="Theme.Voxa" parent="android:Theme.Material.NoActionBar">
-        <item name="android:windowBackground">#0F172A</item>
-        <item name="android:statusBarColor">#0F172A</item>
-        <item name="android:navigationBarColor">#0F172A</item>
-        <item name="android:windowSplashScreenBackground">#0F172A</item>
+        <item name="android:windowBackground">#E9E7F2</item>
+        <item name="android:statusBarColor">#E9E7F2</item>
+        <item name="android:navigationBarColor">#E9E7F2</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:windowSplashScreenBackground">#E9E7F2</item>
         <item name="android:windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
-        <item name="android:windowSplashScreenIconBackgroundColor">#0F172A</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">#E9E7F2</item>
     </style>
 </resources>

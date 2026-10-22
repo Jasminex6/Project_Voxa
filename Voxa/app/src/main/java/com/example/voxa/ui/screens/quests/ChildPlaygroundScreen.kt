@@ -72,7 +72,7 @@ fun ChildPlaygroundScreen(
                     title = { },
                     navigationIcon = {
                         IconButton(onClick = onBackToParent) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White, modifier = Modifier.size(32.dp))
+                            Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = LocalVoxaColors.current.primaryText, modifier = Modifier.size(32.dp))
                         }
                     },
                     actions = {
@@ -91,11 +91,11 @@ fun ChildPlaygroundScreen(
                     .background(
                         brush = Brush.linearGradient(
                             colors = listOf(
-                                Slate900,
+                                LocalVoxaColors.current.background,
                                 QuestPurple.copy(alpha = 0.4f),
-                                Sky600.copy(alpha = 0.5f),
+                                if (LocalVoxaColors.current.isDark) Sky600.copy(alpha = 0.5f) else LightPrimaryPurple.copy(alpha = 0.10f),
                                 QuestTeal.copy(alpha = 0.3f),
-                                Slate900
+                                LocalVoxaColors.current.background
                             )
                         )
                     )
@@ -114,7 +114,7 @@ fun ChildPlaygroundScreen(
                     
                     Text(
                         text = stringResource(com.example.voxa.R.string.quests_child_missions),
-                        color = Color.White,
+                        color = LocalVoxaColors.current.primaryText,
                         fontSize = 24.sp,
                         fontWeight = FontWeight.ExtraBold,
                         modifier = Modifier.padding(top = 8.dp)
@@ -170,7 +170,7 @@ fun ChildPlaygroundScreen(
                                 Spacer(modifier = Modifier.height(16.dp))
                                 Text(
                                     text = stringResource(com.example.voxa.R.string.quests_get_rewards), 
-                                    color = Slate300, 
+                                    color = LocalVoxaColors.current.secondaryText,
                                     fontSize = 24.sp,
                                     fontWeight = FontWeight.Bold,
                                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -263,7 +263,7 @@ fun QuestChildCard(
                     // FIXED: Using the renamed variable here
                     translationY = offsetY.dp.toPx()
                 },
-            colors = CardDefaults.cardColors(containerColor = Slate800),
+            colors = CardDefaults.cardColors(containerColor = LocalVoxaColors.current.normalCard),
             shape = RoundedCornerShape(24.dp),
             border = BorderStroke(4.dp, QuestPurple.copy(alpha = 0.8f)),
             elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
@@ -274,17 +274,17 @@ fun QuestChildCard(
                         modifier = Modifier
                             .size(64.dp)
                             .clip(CircleShape)
-                            .background(Slate700),
+                            .background(LocalVoxaColors.current.surfaceVariant),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(text = quest.icon, fontSize = 36.sp)
                     }
                     Spacer(modifier = Modifier.width(16.dp))
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(text = quest.title, color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold)
+                        Text(text = quest.title, color = LocalVoxaColors.current.primaryText, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold)
                         Spacer(modifier = Modifier.height(4.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(text = stringResource(com.example.voxa.R.string.quests_reward_label), color = Slate300, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                            Text(text = stringResource(com.example.voxa.R.string.quests_reward_label), color = LocalVoxaColors.current.secondaryText, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                             Text(text = "${quest.points} ⭐", color = QuestGold, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
                         }
                     }
@@ -293,11 +293,11 @@ fun QuestChildCard(
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Button(
                         onClick = onUnable,
-                        colors = ButtonDefaults.buttonColors(containerColor = Slate700),
+                        colors = ButtonDefaults.buttonColors(containerColor = LocalVoxaColors.current.surfaceVariant),
                         shape = CircleShape,
                         modifier = Modifier.weight(1f).height(52.dp)
                     ) {
-                        Text(stringResource(com.example.voxa.R.string.quests_need_help), color = Slate300, fontWeight = FontWeight.ExtraBold, fontSize = 14.sp)
+                        Text(stringResource(com.example.voxa.R.string.quests_need_help), color = LocalVoxaColors.current.secondaryText, fontWeight = FontWeight.ExtraBold, fontSize = 14.sp)
                     }
 
                     // Pulsing Submit Button

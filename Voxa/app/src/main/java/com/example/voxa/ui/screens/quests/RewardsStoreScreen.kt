@@ -53,10 +53,10 @@ fun RewardsStoreScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(com.example.voxa.R.string.quests_rewards_title), color = Color.White, fontWeight = FontWeight.ExtraBold) },
+                title = { Text(stringResource(com.example.voxa.R.string.quests_rewards_title), color = LocalVoxaColors.current.primaryText, fontWeight = FontWeight.ExtraBold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = LocalVoxaColors.current.primaryText)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
@@ -81,7 +81,7 @@ fun RewardsStoreScreen(
                 .fillMaxSize()
                 .background(
                     brush = Brush.verticalGradient(
-                        colors = listOf(Slate900, QuestOrange.copy(alpha = 0.15f), Slate900)
+                        colors = listOf(LocalVoxaColors.current.background, QuestOrange.copy(alpha = 0.15f), LocalVoxaColors.current.background)
                     )
                 )
         ) {
@@ -99,7 +99,7 @@ fun RewardsStoreScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(stringResource(com.example.voxa.R.string.quests_rewards_available_stars), color = Slate300, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                    Text(stringResource(com.example.voxa.R.string.quests_rewards_available_stars), color = LocalVoxaColors.current.secondaryText, fontSize = 22.sp, fontWeight = FontWeight.Bold)
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text("$childPoints", color = QuestGold, fontSize = 36.sp, fontWeight = FontWeight.ExtraBold)
                         Spacer(modifier = Modifier.width(6.dp))
@@ -112,10 +112,10 @@ fun RewardsStoreScreen(
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text("🛒", fontSize = 80.sp)
                             Spacer(modifier = Modifier.height(20.dp))
-                            Text(stringResource(com.example.voxa.R.string.quests_rewards_empty_store), color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold)
+                            Text(stringResource(com.example.voxa.R.string.quests_rewards_empty_store), color = LocalVoxaColors.current.primaryText, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold)
                             Spacer(modifier = Modifier.height(8.dp))
                             val emptyTextRes = if (isParentAuthenticated) com.example.voxa.R.string.quests_rewards_add_some_parent else com.example.voxa.R.string.quests_rewards_ask_caregiver
-                            Text(stringResource(emptyTextRes), color = Slate400, fontSize = 16.sp, textAlign = TextAlign.Center)
+                            Text(stringResource(emptyTextRes), color = LocalVoxaColors.current.secondaryText, fontSize = 16.sp, textAlign = TextAlign.Center)
                         }
                     }
                 } else {
@@ -144,8 +144,8 @@ fun RewardsStoreScreen(
         ModalBottomSheet(
             onDismissRequest = { showCreateSheet = false },
             sheetState = sheetState,
-            containerColor = Slate900,
-            dragHandle = { BottomSheetDefaults.DragHandle(color = Slate600) }
+            containerColor = LocalVoxaColors.current.background,
+            dragHandle = { BottomSheetDefaults.DragHandle(color = LocalVoxaColors.current.inputBorder) }
         ) {
             CreateRewardSheetContent(
                 onDismiss = {
@@ -196,9 +196,9 @@ fun RewardCard(
                 enabled = canAfford && !isParent,
                 onClick = onRedeem
             ),
-        colors = CardDefaults.cardColors(containerColor = Slate800),
+        colors = CardDefaults.cardColors(containerColor = LocalVoxaColors.current.normalCard),
         shape = RoundedCornerShape(20.dp),
-        border = BorderStroke(2.dp, if (canAfford) QuestOrange else Slate700),
+        border = BorderStroke(2.dp, if (canAfford) QuestOrange else LocalVoxaColors.current.surfaceVariant),
         elevation = CardDefaults.cardElevation(defaultElevation = if (canAfford) 8.dp else 2.dp)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -211,14 +211,14 @@ fun RewardCard(
                     modifier = Modifier
                         .size(72.dp)
                         .clip(CircleShape)
-                        .background(Slate700),
+                        .background(LocalVoxaColors.current.surfaceVariant),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(text = reward.icon, fontSize = 40.sp, modifier = Modifier.scale(if (!canAfford) 0.8f else 1f))
                 }
                 Text(
                     text = reward.title,
-                    color = if (canAfford) Color.White else Slate500,
+                    color = if (canAfford) LocalVoxaColors.current.primaryText else LocalVoxaColors.current.secondaryText,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.ExtraBold,
                     textAlign = TextAlign.Center,
@@ -229,12 +229,12 @@ fun RewardCard(
                     enabled = canAfford && !isParent,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = QuestOrange,
-                        disabledContainerColor = Slate600
+                        disabledContainerColor = LocalVoxaColors.current.inputBorder
                     ),
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth().height(48.dp)
                 ) {
-                    Text(stringResource(com.example.voxa.R.string.quests_rewards_cost_format, reward.cost), color = if (canAfford) Color.White else Slate400, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
+                    Text(stringResource(com.example.voxa.R.string.quests_rewards_cost_format, reward.cost), color = if (canAfford) LocalVoxaColors.current.primaryText else LocalVoxaColors.current.secondaryText, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
                 }
             }
 
@@ -273,18 +273,20 @@ fun CreateRewardSheetContent(
             .padding(24.dp)
             .padding(bottom = 32.dp)
     ) {
-        Text(stringResource(com.example.voxa.R.string.quests_rewards_new_reward), color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 24.sp)
+        Text(stringResource(com.example.voxa.R.string.quests_rewards_new_reward), color = LocalVoxaColors.current.primaryText, fontWeight = FontWeight.ExtraBold, fontSize = 24.sp)
         Spacer(modifier = Modifier.height(24.dp))
 
         OutlinedTextField(
             value = title,
             onValueChange = { title = it },
-            label = { Text(stringResource(com.example.voxa.R.string.quests_rewards_reward_name), color = Slate400) },
+            label = { Text(stringResource(com.example.voxa.R.string.quests_rewards_reward_name), color = LocalVoxaColors.current.secondaryText) },
             colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = LocalVoxaColors.current.textFieldBackground,
+                unfocusedContainerColor = LocalVoxaColors.current.textFieldBackground,
                 focusedBorderColor = QuestOrange,
-                unfocusedBorderColor = Slate600,
-                focusedTextColor = Color.White,
-                unfocusedTextColor = Color.White
+                unfocusedBorderColor = LocalVoxaColors.current.inputBorder,
+                focusedTextColor = LocalVoxaColors.current.primaryText,
+                unfocusedTextColor = LocalVoxaColors.current.primaryText
             ),
             shape = RoundedCornerShape(12.dp),
             modifier = Modifier.fillMaxWidth()
@@ -293,18 +295,20 @@ fun CreateRewardSheetContent(
         OutlinedTextField(
             value = cost,
             onValueChange = { if (it.all { char -> char.isDigit() }) cost = it },
-            label = { Text(stringResource(com.example.voxa.R.string.quests_rewards_cost_stars), color = Slate400) },
+            label = { Text(stringResource(com.example.voxa.R.string.quests_rewards_cost_stars), color = LocalVoxaColors.current.secondaryText) },
             colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = LocalVoxaColors.current.textFieldBackground,
+                unfocusedContainerColor = LocalVoxaColors.current.textFieldBackground,
                 focusedBorderColor = QuestOrange,
-                unfocusedBorderColor = Slate600,
-                focusedTextColor = Color.White,
-                unfocusedTextColor = Color.White
+                unfocusedBorderColor = LocalVoxaColors.current.inputBorder,
+                focusedTextColor = LocalVoxaColors.current.primaryText,
+                unfocusedTextColor = LocalVoxaColors.current.primaryText
             ),
             shape = RoundedCornerShape(12.dp),
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(24.dp))
-        Text(stringResource(com.example.voxa.R.string.quests_rewards_select_emoji), color = Slate300, fontWeight = FontWeight.Medium)
+        Text(stringResource(com.example.voxa.R.string.quests_rewards_select_emoji), color = LocalVoxaColors.current.secondaryText, fontWeight = FontWeight.Medium)
         Spacer(modifier = Modifier.height(12.dp))
 
         // Emoji Grid
@@ -316,7 +320,7 @@ fun CreateRewardSheetContent(
                 Box(
                     modifier = Modifier
                         .size(56.dp)
-                        .background(if (selectedIcon == icon) QuestOrange.copy(alpha = 0.3f) else Slate800, RoundedCornerShape(12.dp))
+                        .background(if (selectedIcon == icon) QuestOrange.copy(alpha = 0.3f) else LocalVoxaColors.current.normalCard, RoundedCornerShape(12.dp))
                         .padding(8.dp),
                     contentAlignment = Alignment.Center
                 ) {
@@ -335,7 +339,7 @@ fun CreateRewardSheetContent(
                 Box(
                     modifier = Modifier
                         .size(56.dp)
-                        .background(if (selectedIcon == icon) QuestOrange.copy(alpha = 0.3f) else Slate800, RoundedCornerShape(12.dp))
+                        .background(if (selectedIcon == icon) QuestOrange.copy(alpha = 0.3f) else LocalVoxaColors.current.normalCard, RoundedCornerShape(12.dp))
                         .padding(8.dp),
                     contentAlignment = Alignment.Center
                 ) {
@@ -352,9 +356,9 @@ fun CreateRewardSheetContent(
                 onClick = onDismiss,
                 modifier = Modifier.weight(1f).height(56.dp),
                 shape = RoundedCornerShape(12.dp),
-                border = BorderStroke(1.dp, Slate600)
+                border = BorderStroke(1.dp, LocalVoxaColors.current.inputBorder)
             ) {
-                Text(stringResource(com.example.voxa.R.string.quests_rewards_cancel), color = Slate300, fontWeight = FontWeight.Bold)
+                Text(stringResource(com.example.voxa.R.string.quests_rewards_cancel), color = LocalVoxaColors.current.secondaryText, fontWeight = FontWeight.Bold)
             }
             Spacer(modifier = Modifier.width(16.dp))
             Button(

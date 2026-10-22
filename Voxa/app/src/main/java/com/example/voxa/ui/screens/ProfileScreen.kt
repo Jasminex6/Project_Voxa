@@ -68,7 +68,7 @@ fun ProfileScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Slate900)
+            .background(LocalVoxaColors.current.background)
             .padding(16.dp)
             .verticalScroll(rememberScrollState())
     ) {
@@ -83,14 +83,14 @@ fun ProfileScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                 Icon(
                     imageVector = Icons.Default.ArrowBack,
                     contentDescription = "Back to Home",
-                    tint = Color.White
+                    tint = LocalVoxaColors.current.primaryText
                 )
             }
             Text(
                 text = stringResource(id = R.string.profile_title),
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = LocalVoxaColors.current.primaryText
             )
         }
         Spacer(modifier = Modifier.height(16.dp))
@@ -98,7 +98,7 @@ fun ProfileScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
         // ── PROFILE CREATION FORM ──
         Card(
             shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = Slate800),
+            colors = CardDefaults.cardColors(containerColor = LocalVoxaColors.current.normalCard),
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(
@@ -109,19 +109,21 @@ fun ProfileScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                     text = stringResource(id = R.string.profile_add_title),
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = LocalVoxaColors.current.primaryText
                 )
 
                 OutlinedTextField(
                     value = newName,
                     onValueChange = { newName = it },
-                    label = { Text(stringResource(id = R.string.profile_name_label), color = Slate400) },
+                    label = { Text(stringResource(id = R.string.profile_name_label), color = LocalVoxaColors.current.secondaryText) },
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedBorderColor = Sky400,
-                        unfocusedBorderColor = Slate600
+                focusedContainerColor = LocalVoxaColors.current.textFieldBackground,
+                unfocusedContainerColor = LocalVoxaColors.current.textFieldBackground,
+                        focusedTextColor = LocalVoxaColors.current.primaryText,
+                        unfocusedTextColor = LocalVoxaColors.current.primaryText,
+                        focusedBorderColor = LocalVoxaColors.current.primaryAction,
+                        unfocusedBorderColor = LocalVoxaColors.current.inputBorder
                     ),
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -137,7 +139,7 @@ fun ProfileScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(8.dp))
-                            .background(Slate700)
+                            .background(LocalVoxaColors.current.surfaceVariant)
                             .clickable { isEmojiSelectorExpanded = !isEmojiSelectorExpanded }
                             .padding(horizontal = 12.dp, vertical = 10.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -147,7 +149,7 @@ fun ProfileScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                             Text(
                                 text = stringResource(id = R.string.profile_avatar_selected),
                                 fontSize = 13.sp,
-                                color = Slate300
+                                color = LocalVoxaColors.current.secondaryText
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
@@ -159,14 +161,14 @@ fun ProfileScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                             text = if (isEmojiSelectorExpanded) stringResource(id = R.string.profile_emoji_hide) else stringResource(id = R.string.profile_emoji_show),
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Sky400
+                            color = LocalVoxaColors.current.primaryAction
                         )
                     }
 
                     if (isEmojiSelectorExpanded) {
                         Card(
-                            colors = CardDefaults.cardColors(containerColor = Slate900),
-                            border = BorderStroke(1.dp, Slate700),
+                            colors = CardDefaults.cardColors(containerColor = LocalVoxaColors.current.background),
+                            border = BorderStroke(1.dp, LocalVoxaColors.current.glassBorder),
                             modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
                         ) {
                             Column(
@@ -176,7 +178,7 @@ fun ProfileScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                                 Text(
                                     text = stringResource(id = R.string.profile_emoji_grid_title),
                                     fontSize = 11.sp,
-                                    color = Slate400
+                                    color = LocalVoxaColors.current.secondaryText
                                 )
                                 val emojis = listOf("👦", "👧", "👶", "🦸", "🥷", "🦄", "🐼", "🦊", "🦁", "🦖")
                                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -192,10 +194,10 @@ fun ProfileScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                                                     modifier = Modifier
                                                         .size(42.dp)
                                                         .clip(CircleShape)
-                                                        .background(if (isEmojiSelected) Sky400.copy(alpha = 0.2f) else Color.Transparent)
+                                                        .background(if (isEmojiSelected) LocalVoxaColors.current.primaryAction.copy(alpha = 0.2f) else Color.Transparent)
                                                         .border(
                                                             width = 1.dp,
-                                                            color = if (isEmojiSelected) Sky400 else Slate700,
+                                                            color = if (isEmojiSelected) LocalVoxaColors.current.primaryAction else LocalVoxaColors.current.surfaceVariant,
                                                             shape = CircleShape
                                                         )
                                                         .clickable { 
@@ -226,7 +228,7 @@ fun ProfileScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                     Text(
                         text = stringResource(id = R.string.profile_voice_pack_gender),
                         fontSize = 13.sp,
-                        color = Slate400
+                        color = LocalVoxaColors.current.secondaryText
                     )
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -240,11 +242,11 @@ fun ProfileScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                                 { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
                             } else null,
                             colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Sky400,
-                                selectedLabelColor = Slate900,
-                                selectedLeadingIconColor = Slate900,
-                                containerColor = Slate800,
-                                labelColor = Slate400
+                                selectedContainerColor = LocalVoxaColors.current.primaryAction,
+                                selectedLabelColor = LocalVoxaColors.current.onPrimaryAction,
+                                selectedLeadingIconColor = LocalVoxaColors.current.onPrimaryAction,
+                                containerColor = LocalVoxaColors.current.normalCard,
+                                labelColor = LocalVoxaColors.current.secondaryText
                             ),
                             modifier = Modifier.weight(1f)
                         )
@@ -256,11 +258,11 @@ fun ProfileScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                                 { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
                             } else null,
                             colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Sky400,
-                                selectedLabelColor = Slate900,
-                                selectedLeadingIconColor = Slate900,
-                                containerColor = Slate800,
-                                labelColor = Slate400
+                                selectedContainerColor = LocalVoxaColors.current.primaryAction,
+                                selectedLabelColor = LocalVoxaColors.current.onPrimaryAction,
+                                selectedLeadingIconColor = LocalVoxaColors.current.onPrimaryAction,
+                                containerColor = LocalVoxaColors.current.normalCard,
+                                labelColor = LocalVoxaColors.current.secondaryText
                             ),
                             modifier = Modifier.weight(1f)
                         )
@@ -274,11 +276,11 @@ fun ProfileScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                             newName = ""
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Sky400),
+                    colors = ButtonDefaults.buttonColors(containerColor = LocalVoxaColors.current.primaryAction),
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(8.dp)
                 ) {
-                    Text(stringResource(id = R.string.btn_add_profile), color = Slate900, fontWeight = FontWeight.Bold)
+                    Text(stringResource(id = R.string.btn_add_profile), color = LocalVoxaColors.current.onPrimaryAction, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -290,7 +292,7 @@ fun ProfileScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
             text = stringResource(id = R.string.profile_enrolled_title),
             fontSize = 15.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.White
+            color = LocalVoxaColors.current.primaryText
         )
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -303,7 +305,7 @@ fun ProfileScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
             ) {
                 Text(
                     text = stringResource(id = R.string.profile_empty),
-                    color = Slate400,
+                    color = LocalVoxaColors.current.secondaryText,
                     fontSize = 13.sp,
                     lineHeight = 18.sp
                 )
@@ -333,14 +335,14 @@ fun ProfileScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
         Spacer(modifier = Modifier.height(24.dp))
         Text(
             text = stringResource(id = R.string.p2p_section_title),
-            color = Color.White,
+            color = LocalVoxaColors.current.primaryText,
             fontWeight = FontWeight.Bold,
             fontSize = 16.sp,
             modifier = Modifier.padding(bottom = 8.dp)
         )
         Card(
             shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = Slate800),
+            colors = CardDefaults.cardColors(containerColor = LocalVoxaColors.current.normalCard),
             modifier = Modifier.fillMaxWidth()
         ) {
             Row(
@@ -354,8 +356,8 @@ fun ProfileScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                     onClick = { showShareSheet = true },
                     enabled = activeProfile != null,
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Sky400,
-                        disabledContainerColor = Slate700
+                        containerColor = LocalVoxaColors.current.primaryAction,
+                        disabledContainerColor = LocalVoxaColors.current.surfaceVariant
                     ),
                     shape = RoundedCornerShape(10.dp),
                     modifier = Modifier.weight(1f)
@@ -363,13 +365,13 @@ fun ProfileScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                     Icon(
                         imageVector = Icons.Default.Share,
                         contentDescription = null,
-                        tint = if (activeProfile != null) Slate900 else Slate500,
+                        tint = if (activeProfile != null) LocalVoxaColors.current.onPrimaryAction else LocalVoxaColors.current.secondaryText,
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = stringResource(id = R.string.p2p_send_button),
-                        color = if (activeProfile != null) Slate900 else Slate500,
+                        color = if (activeProfile != null) LocalVoxaColors.current.onPrimaryAction else LocalVoxaColors.current.secondaryText,
                         fontWeight = FontWeight.Bold,
                         fontSize = 13.sp
                     )
@@ -378,13 +380,13 @@ fun ProfileScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                 // Receive Profile Button
                 Button(
                     onClick = { showReceiveSheet = true },
-                    colors = ButtonDefaults.buttonColors(containerColor = Slate700),
+                    colors = ButtonDefaults.buttonColors(containerColor = LocalVoxaColors.current.surfaceVariant),
                     shape = RoundedCornerShape(10.dp),
                     modifier = Modifier.weight(1f)
                 ) {
                     Text(
                         text = stringResource(id = R.string.p2p_receive_button),
-                        color = Color.White,
+                        color = LocalVoxaColors.current.primaryText,
                         fontWeight = FontWeight.Bold,
                         fontSize = 13.sp
                     )
@@ -421,7 +423,7 @@ fun ProfileItem(
     Card(
         shape = RoundedCornerShape(10.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isActive) SelectedActiveBlue else Slate800
+            containerColor = if (isActive) LocalVoxaColors.current.selectedProfileSurface else LocalVoxaColors.current.normalCard
         ),
         modifier = Modifier
             .fillMaxWidth()
@@ -441,7 +443,7 @@ fun ProfileItem(
                     modifier = Modifier
                         .size(40.dp)
                         .clip(CircleShape)
-                        .background(if (isActive) Sky400.copy(alpha = 0.15f) else Slate700)
+                        .background(if (isActive) LocalVoxaColors.current.primaryAction.copy(alpha = 0.15f) else LocalVoxaColors.current.surfaceVariant)
                         .then(
                             if (isActive) Modifier.border(2.dp, SuccessGreen, CircleShape)
                             else Modifier
@@ -460,13 +462,13 @@ fun ProfileItem(
                             text = profile.name.replaceFirstChar { if (it.isLowerCase()) it.titlecase(java.util.Locale.getDefault()) else it.toString() },
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White
+                            color = LocalVoxaColors.current.primaryText
                         )
                     }
                     Text(
                         text = stringResource(id = R.string.voice_pack_label, if (profile.gender == "Male") stringResource(R.string.profile_male) else stringResource(R.string.profile_female)),
                         fontSize = 12.sp,
-                        color = Slate300
+                        color = LocalVoxaColors.current.secondaryText
                     )
                 }
             }
@@ -481,7 +483,7 @@ fun ProfileItem(
                         Icon(
                             imageVector = Icons.Default.Share,
                             contentDescription = "Share Profile",
-                            tint = Sky400,
+                            tint = LocalVoxaColors.current.primaryAction,
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -492,7 +494,7 @@ fun ProfileItem(
                     Icon(
                         imageVector = Icons.Default.SwapHoriz,
                         contentDescription = stringResource(id = R.string.btn_toggle_voice_pack),
-                        tint = Color.White,
+                        tint = LocalVoxaColors.current.primaryText,
                         modifier = Modifier.size(22.dp)
                     )
                 }
@@ -640,7 +642,7 @@ fun ShareProfileBottomSheet(
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        containerColor = Slate900
+        containerColor = LocalVoxaColors.current.background
     ) {
         Column(
             modifier = Modifier
@@ -652,13 +654,13 @@ fun ShareProfileBottomSheet(
                 text = "Share ${profile.name.replaceFirstChar { if (it.isLowerCase()) it.titlecase(java.util.Locale.getDefault()) else it.toString() }}'s Profile",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = LocalVoxaColors.current.primaryText
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = stringResource(com.example.voxa.R.string.profile_looking_for_nearby),
                 fontSize = 14.sp,
-                color = Slate400,
+                color = LocalVoxaColors.current.secondaryText,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
 
@@ -667,26 +669,26 @@ fun ShareProfileBottomSheet(
             when (val state = sharingState) {
                 is com.example.voxa.utils.ProfileSharingManager.SharingState.Idle,
                 is com.example.voxa.utils.ProfileSharingManager.SharingState.Discovering -> {
-                    CircularProgressIndicator(color = Sky400)
+                    CircularProgressIndicator(color = LocalVoxaColors.current.primaryAction)
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text(stringResource(com.example.voxa.R.string.profile_searching), color = Sky400)
+                    Text(stringResource(com.example.voxa.R.string.profile_searching), color = LocalVoxaColors.current.primaryAction)
                 }
                 is com.example.voxa.utils.ProfileSharingManager.SharingState.EndpointFound -> {
                     Text(stringResource(com.example.voxa.R.string.profile_found, state.name), color = SuccessGreen, fontWeight = FontWeight.Bold)
                     Spacer(modifier = Modifier.height(16.dp))
                     CircularProgressIndicator(color = SuccessGreen)
-                    Text(stringResource(com.example.voxa.R.string.profile_connecting_auto), color = Slate400)
+                    Text(stringResource(com.example.voxa.R.string.profile_connecting_auto), color = LocalVoxaColors.current.secondaryText)
                 }
                 is com.example.voxa.utils.ProfileSharingManager.SharingState.Connecting -> {
-                    CircularProgressIndicator(color = Sky400)
+                    CircularProgressIndicator(color = LocalVoxaColors.current.primaryAction)
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text(stringResource(com.example.voxa.R.string.profile_connecting_to, state.name), color = Slate400)
+                    Text(stringResource(com.example.voxa.R.string.profile_connecting_to, state.name), color = LocalVoxaColors.current.secondaryText)
                 }
                 is com.example.voxa.utils.ProfileSharingManager.SharingState.WaitingForPin -> {
                     Card(
                         shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = Slate800),
-                        border = BorderStroke(1.dp, Sky400.copy(alpha = 0.5f)),
+                        colors = CardDefaults.cardColors(containerColor = LocalVoxaColors.current.normalCard),
+                        border = BorderStroke(1.dp, LocalVoxaColors.current.primaryAction.copy(alpha = 0.5f)),
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
                     ) {
                         Column(
@@ -697,7 +699,7 @@ fun ShareProfileBottomSheet(
                                 text = stringResource(id = R.string.p2p_pin_title),
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Sky400
+                                color = LocalVoxaColors.current.primaryAction
                             )
                             Spacer(modifier = Modifier.height(14.dp))
                             Row(
@@ -708,15 +710,15 @@ fun ShareProfileBottomSheet(
                                     Box(
                                         modifier = Modifier
                                             .size(52.dp)
-                                            .background(Slate900, RoundedCornerShape(12.dp))
-                                            .border(2.dp, Sky400, RoundedCornerShape(12.dp)),
+                                            .background(LocalVoxaColors.current.background, RoundedCornerShape(12.dp))
+                                            .border(2.dp, LocalVoxaColors.current.primaryAction, RoundedCornerShape(12.dp)),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Text(
                                             text = char.toString(),
                                             fontSize = 26.sp,
                                             fontWeight = FontWeight.Bold,
-                                            color = Color.White
+                                            color = LocalVoxaColors.current.primaryText
                                         )
                                     }
                                 }
@@ -725,17 +727,17 @@ fun ShareProfileBottomSheet(
                             Text(
                                 text = stringResource(id = R.string.p2p_pin_desc),
                                 fontSize = 12.sp,
-                                color = Slate300,
+                                color = LocalVoxaColors.current.secondaryText,
                                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
                             )
                         }
                     }
                     Spacer(modifier = Modifier.height(24.dp))
-                    CircularProgressIndicator(color = Sky400, modifier = Modifier.size(28.dp))
+                    CircularProgressIndicator(color = LocalVoxaColors.current.primaryAction, modifier = Modifier.size(28.dp))
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
                         text = stringResource(id = R.string.p2p_waiting_pin),
-                        color = Slate400,
+                        color = LocalVoxaColors.current.secondaryText,
                         fontSize = 13.sp
                     )
                 }
@@ -745,9 +747,9 @@ fun ShareProfileBottomSheet(
                     Text(stringResource(id = R.string.p2p_pin_verified), color = SuccessGreen, fontWeight = FontWeight.Bold)
                 }
                 is com.example.voxa.utils.ProfileSharingManager.SharingState.Transferring -> {
-                    CircularProgressIndicator(color = Sky400)
+                    CircularProgressIndicator(color = LocalVoxaColors.current.primaryAction)
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text(stringResource(com.example.voxa.R.string.profile_transferring), color = Sky400)
+                    Text(stringResource(com.example.voxa.R.string.profile_transferring), color = LocalVoxaColors.current.primaryAction)
                 }
                 is com.example.voxa.utils.ProfileSharingManager.SharingState.TransferComplete -> {
                     Icon(Icons.Default.Check, contentDescription = null, tint = SuccessGreen, modifier = Modifier.size(48.dp))
@@ -758,16 +760,16 @@ fun ShareProfileBottomSheet(
                     Text(stringResource(com.example.voxa.R.string.profile_error, state.message), color = ErrorRed)
                 }
                 else -> {
-                    CircularProgressIndicator(color = Sky400)
+                    CircularProgressIndicator(color = LocalVoxaColors.current.primaryAction)
                 }
             }
 
             Spacer(modifier = Modifier.height(32.dp))
             Button(
                 onClick = onDismiss,
-                colors = ButtonDefaults.buttonColors(containerColor = Slate800)
+                colors = ButtonDefaults.buttonColors(containerColor = LocalVoxaColors.current.normalCard)
             ) {
-                Text(stringResource(com.example.voxa.R.string.profile_cancel), color = Color.White)
+                Text(stringResource(com.example.voxa.R.string.profile_cancel), color = LocalVoxaColors.current.primaryText)
             }
         }
     }
@@ -839,7 +841,7 @@ fun ReceiveProfileBottomSheet(
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        containerColor = Slate900
+        containerColor = LocalVoxaColors.current.background
     ) {
         Column(
             modifier = Modifier
@@ -851,13 +853,13 @@ fun ReceiveProfileBottomSheet(
                 text = stringResource(id = R.string.p2p_receive_title),
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = LocalVoxaColors.current.primaryText
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = stringResource(id = R.string.p2p_receive_desc),
                 fontSize = 14.sp,
-                color = Slate400,
+                color = LocalVoxaColors.current.secondaryText,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
             Spacer(modifier = Modifier.height(28.dp))
@@ -879,13 +881,13 @@ fun ReceiveProfileBottomSheet(
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = stringResource(id = R.string.p2p_success_detail),
-                        color = Slate400,
+                        color = LocalVoxaColors.current.secondaryText,
                         fontSize = 13.sp
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = stringResource(id = R.string.p2p_no_preview),
-                        color = Slate400,
+                        color = LocalVoxaColors.current.secondaryText,
                         fontSize = 12.sp
                     )
                 }
@@ -900,8 +902,8 @@ fun ReceiveProfileBottomSheet(
                 sharingState is com.example.voxa.utils.ProfileSharingManager.SharingState.VerifyingPin -> {
                     Card(
                         shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = Slate800),
-                        border = BorderStroke(1.dp, Slate700),
+                        colors = CardDefaults.cardColors(containerColor = LocalVoxaColors.current.normalCard),
+                        border = BorderStroke(1.dp, LocalVoxaColors.current.glassBorder),
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
                     ) {
                         Column(
@@ -912,13 +914,13 @@ fun ReceiveProfileBottomSheet(
                                 text = stringResource(id = R.string.p2p_enter_pin_title),
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color.White
+                                color = LocalVoxaColors.current.primaryText
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = stringResource(id = R.string.p2p_enter_pin_desc),
                                 fontSize = 12.sp,
-                                color = Slate400,
+                                color = LocalVoxaColors.current.secondaryText,
                                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
                             )
                             Spacer(modifier = Modifier.height(18.dp))
@@ -936,16 +938,18 @@ fun ReceiveProfileBottomSheet(
                                     fontWeight = FontWeight.Bold,
                                     textAlign = TextAlign.Center,
                                     letterSpacing = 10.sp,
-                                    color = Color.White
+                                    color = LocalVoxaColors.current.primaryText
                                 ),
                                 keyboardOptions = KeyboardOptions(
                                     keyboardType = KeyboardType.Number
                                 ),
                                 colors = OutlinedTextFieldDefaults.colors(
-                                    focusedTextColor = Color.White,
-                                    unfocusedTextColor = Color.White,
-                                    focusedBorderColor = Sky400,
-                                    unfocusedBorderColor = Slate600
+                focusedContainerColor = LocalVoxaColors.current.textFieldBackground,
+                unfocusedContainerColor = LocalVoxaColors.current.textFieldBackground,
+                                    focusedTextColor = LocalVoxaColors.current.primaryText,
+                                    unfocusedTextColor = LocalVoxaColors.current.primaryText,
+                                    focusedBorderColor = LocalVoxaColors.current.primaryAction,
+                                    unfocusedBorderColor = LocalVoxaColors.current.inputBorder
                                 ),
                                 modifier = Modifier.width(200.dp)
                             )
@@ -966,20 +970,20 @@ fun ReceiveProfileBottomSheet(
                                 onClick = { sharingManager.submitPin(enteredPin) },
                                 enabled = enteredPin.length == 4 && sharingState !is com.example.voxa.utils.ProfileSharingManager.SharingState.VerifyingPin,
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = Sky400,
-                                    disabledContainerColor = Slate700
+                                    containerColor = LocalVoxaColors.current.primaryAction,
+                                    disabledContainerColor = LocalVoxaColors.current.surfaceVariant
                                 ),
                                 shape = RoundedCornerShape(10.dp),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 if (sharingState is com.example.voxa.utils.ProfileSharingManager.SharingState.VerifyingPin) {
-                                    CircularProgressIndicator(color = Slate900, modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                                    CircularProgressIndicator(color = LocalVoxaColors.current.onPrimaryAction, modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text(stringResource(id = R.string.p2p_pin_verifying), color = Slate900, fontWeight = FontWeight.Bold)
+                                    Text(stringResource(id = R.string.p2p_pin_verifying), color = LocalVoxaColors.current.onPrimaryAction, fontWeight = FontWeight.Bold)
                                 } else {
                                     Text(
                                         text = stringResource(id = R.string.p2p_verify_button),
-                                        color = if (enteredPin.length == 4) Slate900 else Slate500,
+                                        color = if (enteredPin.length == 4) LocalVoxaColors.current.onPrimaryAction else LocalVoxaColors.current.secondaryText,
                                         fontWeight = FontWeight.Bold
                                     )
                                 }
@@ -988,15 +992,15 @@ fun ReceiveProfileBottomSheet(
                     }
                 }
                 sharingState is com.example.voxa.utils.ProfileSharingManager.SharingState.Advertising -> {
-                    CircularProgressIndicator(color = Sky400)
+                    CircularProgressIndicator(color = LocalVoxaColors.current.primaryAction)
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text(stringResource(id = R.string.p2p_waiting_sender), color = Sky400)
+                    Text(stringResource(id = R.string.p2p_waiting_sender), color = LocalVoxaColors.current.primaryAction)
                 }
                 sharingState is com.example.voxa.utils.ProfileSharingManager.SharingState.Connecting -> {
                     val state = sharingState as com.example.voxa.utils.ProfileSharingManager.SharingState.Connecting
-                    CircularProgressIndicator(color = Sky400)
+                    CircularProgressIndicator(color = LocalVoxaColors.current.primaryAction)
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text(stringResource(com.example.voxa.R.string.profile_connecting_to, state.name), color = Slate400)
+                    Text(stringResource(com.example.voxa.R.string.profile_connecting_to, state.name), color = LocalVoxaColors.current.secondaryText)
                 }
                 sharingState is com.example.voxa.utils.ProfileSharingManager.SharingState.PinVerified -> {
                     CircularProgressIndicator(color = SuccessGreen)
@@ -1004,30 +1008,30 @@ fun ReceiveProfileBottomSheet(
                     Text(stringResource(id = R.string.p2p_pin_verified), color = SuccessGreen, fontWeight = FontWeight.Bold)
                 }
                 sharingState is com.example.voxa.utils.ProfileSharingManager.SharingState.Transferring -> {
-                    CircularProgressIndicator(color = Sky400)
+                    CircularProgressIndicator(color = LocalVoxaColors.current.primaryAction)
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text(stringResource(com.example.voxa.R.string.profile_transferring), color = Sky400)
+                    Text(stringResource(com.example.voxa.R.string.profile_transferring), color = LocalVoxaColors.current.primaryAction)
                 }
                 sharingState is com.example.voxa.utils.ProfileSharingManager.SharingState.TransferComplete -> {
                     CircularProgressIndicator(color = SuccessGreen)
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text("Processing...", color = Slate400)
+                    Text("Processing...", color = LocalVoxaColors.current.secondaryText)
                 }
                 sharingState is com.example.voxa.utils.ProfileSharingManager.SharingState.Error -> {
                     val state = sharingState as com.example.voxa.utils.ProfileSharingManager.SharingState.Error
                     Text(stringResource(com.example.voxa.R.string.profile_error, state.message), color = ErrorRed)
                 }
                 else -> {
-                    CircularProgressIndicator(color = Sky400)
+                    CircularProgressIndicator(color = LocalVoxaColors.current.primaryAction)
                 }
             }
 
             Spacer(modifier = Modifier.height(32.dp))
             Button(
                 onClick = onDismiss,
-                colors = ButtonDefaults.buttonColors(containerColor = Slate800)
+                colors = ButtonDefaults.buttonColors(containerColor = LocalVoxaColors.current.normalCard)
             ) {
-                Text(stringResource(com.example.voxa.R.string.profile_cancel), color = Color.White)
+                Text(stringResource(com.example.voxa.R.string.profile_cancel), color = LocalVoxaColors.current.primaryText)
             }
         }
     }

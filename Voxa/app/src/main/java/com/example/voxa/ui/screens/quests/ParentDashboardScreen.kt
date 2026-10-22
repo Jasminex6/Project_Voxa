@@ -66,12 +66,12 @@ fun ParentDashboardScreen(
                         title = { 
                             Text(
                                 stringResource(com.example.voxa.R.string.quests_parent_dashboard_title), 
-                                color = Color.White, 
+                                color = LocalVoxaColors.current.primaryText,
                                 fontWeight = FontWeight.ExtraBold,
                                 fontSize = 20.sp
                             ) 
                         },
-                        colors = TopAppBarDefaults.topAppBarColors(containerColor = Slate900),
+                        colors = TopAppBarDefaults.topAppBarColors(containerColor = LocalVoxaColors.current.background),
                         actions = {
                             IconButton(onClick = { showRewards = true }) {
                                 Icon(
@@ -85,7 +85,7 @@ fun ParentDashboardScreen(
                                 Icon(
                                     Icons.AutoMirrored.Filled.ExitToApp, 
                                     contentDescription = "Logout", 
-                                    tint = Slate300,
+                                    tint = LocalVoxaColors.current.secondaryText,
                                     modifier = Modifier.size(26.dp)
                                 )
                             }
@@ -102,7 +102,7 @@ fun ParentDashboardScreen(
                         Icon(Icons.Default.Add, contentDescription = "New Quest", modifier = Modifier.size(30.dp))
                     }
                 },
-                containerColor = Slate900
+                containerColor = LocalVoxaColors.current.background
             ) { innerPadding ->
                 LazyColumn(
                     modifier = Modifier
@@ -117,9 +117,9 @@ fun ParentDashboardScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(vertical = 4.dp),
-                            colors = CardDefaults.cardColors(containerColor = Slate800),
+                            colors = CardDefaults.cardColors(containerColor = LocalVoxaColors.current.normalCard),
                             shape = RoundedCornerShape(16.dp),
-                            border = BorderStroke(1.dp, Slate700)
+                            border = BorderStroke(1.dp, LocalVoxaColors.current.glassBorder)
                         ) {
                             Column(
                                 modifier = Modifier
@@ -129,7 +129,7 @@ fun ParentDashboardScreen(
                             ) {
                                 Text(
                                     text = stringResource(com.example.voxa.R.string.quests_parent_child_wallet), 
-                                    color = Slate400, 
+                                    color = LocalVoxaColors.current.secondaryText,
                                     fontSize = 15.sp, 
                                     fontWeight = FontWeight.Medium, 
                                     textAlign = TextAlign.Center
@@ -171,7 +171,7 @@ fun ParentDashboardScreen(
                                 ) {
                                     Text(
                                         text = "${unfulfilledPurchases.size}", 
-                                        color = Color.White, 
+                                        color = Color.White,
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.Bold
                                     )
@@ -188,7 +188,7 @@ fun ParentDashboardScreen(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
                                 stringResource(com.example.voxa.R.string.quests_parent_actionable_quests), 
-                                color = Color.White, 
+                                color = LocalVoxaColors.current.primaryText,
                                 fontSize = 20.sp, 
                                 fontWeight = FontWeight.ExtraBold
                             )
@@ -201,7 +201,7 @@ fun ParentDashboardScreen(
                             ) {
                                 Text(
                                     text = "${actionableQuests.size}", 
-                                    color = Color.White, 
+                                    color = Color.White,
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -213,9 +213,9 @@ fun ParentDashboardScreen(
                         item {
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
-                                colors = CardDefaults.cardColors(containerColor = Slate800),
+                                colors = CardDefaults.cardColors(containerColor = LocalVoxaColors.current.normalCard),
                                 shape = RoundedCornerShape(16.dp),
-                                border = BorderStroke(1.dp, Slate700)
+                                border = BorderStroke(1.dp, LocalVoxaColors.current.glassBorder)
                             ) {
                                 Box(
                                     modifier = Modifier.fillMaxWidth().wrapContentHeight().padding(24.dp), 
@@ -226,7 +226,7 @@ fun ParentDashboardScreen(
                                         Spacer(modifier = Modifier.height(12.dp))
                                         Text(
                                             stringResource(com.example.voxa.R.string.quests_parent_all_caught_up), 
-                                            color = Color.White, 
+                                            color = LocalVoxaColors.current.primaryText,
                                             fontSize = 17.sp, 
                                             fontWeight = FontWeight.Bold
                                         )
@@ -250,7 +250,7 @@ fun ParentDashboardScreen(
                         ) {
                             Text(
                                 stringResource(com.example.voxa.R.string.quests_parent_completed_history), 
-                                color = Color.White, 
+                                color = LocalVoxaColors.current.primaryText,
                                 fontSize = 20.sp, 
                                 fontWeight = FontWeight.ExtraBold
                             )
@@ -258,12 +258,12 @@ fun ParentDashboardScreen(
                             Box(
                                 modifier = Modifier
                                     .size(24.dp)
-                                    .background(Slate600, CircleShape),
+                                    .background(LocalVoxaColors.current.inputBorder, CircleShape),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
                                     text = "${approvedQuests.size}", 
-                                    color = Color.White, 
+                                    color = Color.White,
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -286,7 +286,7 @@ fun ParentDashboardScreen(
                             Icon(
                                 imageVector = if (historyExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
                                 contentDescription = if (historyExpanded) "Collapse" else "Expand",
-                                tint = Slate400,
+                                tint = LocalVoxaColors.current.secondaryText,
                                 modifier = Modifier.size(24.dp)
                             )
                         }
@@ -297,7 +297,7 @@ fun ParentDashboardScreen(
                             item {
                                 Text(
                                     stringResource(com.example.voxa.R.string.quests_parent_no_history), 
-                                    color = Slate500, 
+                                    color = LocalVoxaColors.current.secondaryText,
                                     fontSize = 14.sp,
                                     modifier = Modifier.padding(bottom = 80.dp)
                                 )
@@ -322,8 +322,8 @@ fun ParentDashboardScreen(
                 ModalBottomSheet(
                     onDismissRequest = { showCreateSheet = false },
                     sheetState = sheetState,
-                    containerColor = Slate900,
-                    dragHandle = { BottomSheetDefaults.DragHandle(color = Slate600) }
+                    containerColor = LocalVoxaColors.current.background,
+                    dragHandle = { BottomSheetDefaults.DragHandle(color = LocalVoxaColors.current.inputBorder) }
                 ) {
                     CreateQuestSheetContent(
                         onDismiss = { 
@@ -352,17 +352,17 @@ fun ParentDashboardScreen(
                     title = { 
                         Text(
                             stringResource(com.example.voxa.R.string.quests_parent_clear_history_confirm_title), 
-                            color = Color.White, 
+                            color = LocalVoxaColors.current.primaryText,
                             fontWeight = FontWeight.Bold
                         ) 
                     },
                     text = { 
                         Text(
                             stringResource(com.example.voxa.R.string.quests_parent_clear_history_confirm_msg), 
-                            color = Slate300
+                            color = LocalVoxaColors.current.secondaryText
                         ) 
                     },
-                    containerColor = Slate800,
+                    containerColor = LocalVoxaColors.current.normalCard,
                     confirmButton = {
                         Button(
                             onClick = {
@@ -374,7 +374,7 @@ fun ParentDashboardScreen(
                         ) {
                             Text(
                                 stringResource(com.example.voxa.R.string.quests_parent_clear_confirm), 
-                                color = Color.White, 
+                                color = Color.White,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -383,7 +383,7 @@ fun ParentDashboardScreen(
                         TextButton(onClick = { showClearHistoryDialog = false }) {
                             Text(
                                 stringResource(com.example.voxa.R.string.quests_parent_clear_cancel), 
-                                color = Slate400
+                                color = LocalVoxaColors.current.secondaryText
                             )
                         }
                     }
@@ -399,22 +399,22 @@ fun QuestParentCard(quest: QuestEntity, viewModel: QuestsViewModel, isActionable
     val borderColor = when (quest.status) {
         QuestStatus.SUBMITTED -> QuestTeal
         QuestStatus.UNABLE -> QuestOrange
-        QuestStatus.PENDING -> Slate700
-        else -> Slate700
+        QuestStatus.PENDING -> LocalVoxaColors.current.surfaceVariant
+        else -> LocalVoxaColors.current.surfaceVariant
     }
     
     val badgeColor = when (quest.status) {
         QuestStatus.SUBMITTED -> QuestTeal.copy(alpha = 0.2f)
         QuestStatus.UNABLE -> QuestOrange.copy(alpha = 0.2f)
-        QuestStatus.PENDING -> Slate700
+        QuestStatus.PENDING -> LocalVoxaColors.current.surfaceVariant
         else -> Color.Transparent
     }
     
     val badgeTextColor = when (quest.status) {
         QuestStatus.SUBMITTED -> QuestTeal
         QuestStatus.UNABLE -> QuestOrange
-        QuestStatus.PENDING -> Slate300
-        else -> Slate500
+        QuestStatus.PENDING -> LocalVoxaColors.current.secondaryText
+        else -> LocalVoxaColors.current.secondaryText
     }
     
     val badgeText = when (quest.status) {
@@ -426,7 +426,7 @@ fun QuestParentCard(quest: QuestEntity, viewModel: QuestsViewModel, isActionable
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Slate800),
+        colors = CardDefaults.cardColors(containerColor = LocalVoxaColors.current.normalCard),
         shape = RoundedCornerShape(16.dp),
         border = BorderStroke(1.dp, borderColor)
     ) {
@@ -459,7 +459,7 @@ fun QuestParentCard(quest: QuestEntity, viewModel: QuestsViewModel, isActionable
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             text = quest.title, 
-                            color = if (isActionable) Color.White else Slate400, 
+                            color = if (isActionable) LocalVoxaColors.current.primaryText else LocalVoxaColors.current.secondaryText,
                             fontSize = 18.sp, 
                             fontWeight = FontWeight.ExtraBold
                         )
@@ -472,7 +472,7 @@ fun QuestParentCard(quest: QuestEntity, viewModel: QuestsViewModel, isActionable
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = quest.description, 
-                            color = Slate500, 
+                            color = LocalVoxaColors.current.secondaryText,
                             fontSize = 13.sp
                         )
                     }
@@ -512,15 +512,15 @@ fun QuestParentCard(quest: QuestEntity, viewModel: QuestsViewModel, isActionable
                             QuestStatus.UNABLE, QuestStatus.PENDING -> {
                                 Button(
                                     onClick = { viewModel.deleteQuest(quest) },
-                                    colors = ButtonDefaults.buttonColors(containerColor = Slate700),
+                                    colors = ButtonDefaults.buttonColors(containerColor = LocalVoxaColors.current.surfaceVariant),
                                     shape = RoundedCornerShape(8.dp),
                                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
                                 ) {
-                                    Icon(Icons.Default.Delete, contentDescription = "Cancel", tint = Slate300, modifier = Modifier.size(16.dp))
+                                    Icon(Icons.Default.Delete, contentDescription = "Cancel", tint = LocalVoxaColors.current.secondaryText, modifier = Modifier.size(16.dp))
                                     Spacer(modifier = Modifier.width(4.dp))
                                     Text(
                                         text = if (quest.status == QuestStatus.UNABLE) stringResource(com.example.voxa.R.string.quests_parent_btn_ack_delete) else stringResource(com.example.voxa.R.string.quests_parent_btn_cancel), 
-                                        color = Slate300, 
+                                        color = LocalVoxaColors.current.secondaryText,
                                         fontWeight = FontWeight.Bold, 
                                         fontSize = 12.sp
                                     )
@@ -535,7 +535,7 @@ fun QuestParentCard(quest: QuestEntity, viewModel: QuestsViewModel, isActionable
                 // Points on Left (in RTL, last child of Row is leftmost)
                 Text(
                     text = "+${quest.points}", 
-                    color = if (isActionable) QuestGold else Slate500, 
+                    color = if (isActionable) QuestGold else LocalVoxaColors.current.secondaryText,
                     fontWeight = FontWeight.ExtraBold, 
                     fontSize = 22.sp
                 )
@@ -548,7 +548,7 @@ fun QuestParentCard(quest: QuestEntity, viewModel: QuestsViewModel, isActionable
 fun PurchasedRewardCard(purchase: PurchasedRewardEntity, viewModel: QuestsViewModel) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Slate800),
+        colors = CardDefaults.cardColors(containerColor = LocalVoxaColors.current.normalCard),
         shape = RoundedCornerShape(16.dp),
         border = BorderStroke(1.dp, QuestOrange.copy(alpha = 0.5f))
     ) {
@@ -568,9 +568,9 @@ fun PurchasedRewardCard(purchase: PurchasedRewardEntity, viewModel: QuestsViewMo
                 Text(text = purchase.icon, fontSize = 36.sp)
                 Spacer(modifier = Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(text = purchase.title, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
+                    Text(text = purchase.title, color = LocalVoxaColors.current.primaryText, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
                     Spacer(modifier = Modifier.height(2.dp))
-                    Text(text = stringResource(com.example.voxa.R.string.quests_child_spent, purchase.cost), color = Slate400, fontSize = 13.sp)
+                    Text(text = stringResource(com.example.voxa.R.string.quests_child_spent, purchase.cost), color = LocalVoxaColors.current.secondaryText, fontSize = 13.sp)
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
@@ -607,18 +607,20 @@ fun CreateQuestSheetContent(
             .padding(24.dp)
             .padding(bottom = 32.dp)
     ) {
-        Text(stringResource(com.example.voxa.R.string.quests_parent_new_quest), color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 22.sp)
+        Text(stringResource(com.example.voxa.R.string.quests_parent_new_quest), color = LocalVoxaColors.current.primaryText, fontWeight = FontWeight.ExtraBold, fontSize = 22.sp)
         Spacer(modifier = Modifier.height(20.dp))
 
         OutlinedTextField(
             value = title,
             onValueChange = { title = it },
-            label = { Text(stringResource(com.example.voxa.R.string.quests_parent_task_title), color = Slate400) },
+            label = { Text(stringResource(com.example.voxa.R.string.quests_parent_task_title), color = LocalVoxaColors.current.secondaryText) },
             colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = LocalVoxaColors.current.textFieldBackground,
+                unfocusedContainerColor = LocalVoxaColors.current.textFieldBackground,
                 focusedBorderColor = QuestTeal,
-                unfocusedBorderColor = Slate600,
-                focusedTextColor = Color.White,
-                unfocusedTextColor = Color.White
+                unfocusedBorderColor = LocalVoxaColors.current.inputBorder,
+                focusedTextColor = LocalVoxaColors.current.primaryText,
+                unfocusedTextColor = LocalVoxaColors.current.primaryText
             ),
             singleLine = true,
             shape = RoundedCornerShape(12.dp),
@@ -628,12 +630,14 @@ fun CreateQuestSheetContent(
         OutlinedTextField(
             value = description,
             onValueChange = { description = it },
-            label = { Text(stringResource(com.example.voxa.R.string.quests_parent_task_desc), color = Slate400) },
+            label = { Text(stringResource(com.example.voxa.R.string.quests_parent_task_desc), color = LocalVoxaColors.current.secondaryText) },
             colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = LocalVoxaColors.current.textFieldBackground,
+                unfocusedContainerColor = LocalVoxaColors.current.textFieldBackground,
                 focusedBorderColor = QuestTeal,
-                unfocusedBorderColor = Slate600,
-                focusedTextColor = Color.White,
-                unfocusedTextColor = Color.White
+                unfocusedBorderColor = LocalVoxaColors.current.inputBorder,
+                focusedTextColor = LocalVoxaColors.current.primaryText,
+                unfocusedTextColor = LocalVoxaColors.current.primaryText
             ),
             singleLine = true,
             shape = RoundedCornerShape(12.dp),
@@ -643,18 +647,20 @@ fun CreateQuestSheetContent(
         OutlinedTextField(
             value = points,
             onValueChange = { if (it.all { char -> char.isDigit() }) points = it },
-            label = { Text(stringResource(com.example.voxa.R.string.quests_parent_points_reward), color = Slate400) },
+            label = { Text(stringResource(com.example.voxa.R.string.quests_parent_points_reward), color = LocalVoxaColors.current.secondaryText) },
             colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = LocalVoxaColors.current.textFieldBackground,
+                unfocusedContainerColor = LocalVoxaColors.current.textFieldBackground,
                 focusedBorderColor = QuestTeal,
-                unfocusedBorderColor = Slate600,
-                focusedTextColor = Color.White,
-                unfocusedTextColor = Color.White
+                unfocusedBorderColor = LocalVoxaColors.current.inputBorder,
+                focusedTextColor = LocalVoxaColors.current.primaryText,
+                unfocusedTextColor = LocalVoxaColors.current.primaryText
             ),
             shape = RoundedCornerShape(12.dp),
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(20.dp))
-        Text(stringResource(com.example.voxa.R.string.quests_parent_select_emoji), color = Slate300, fontWeight = FontWeight.Medium)
+        Text(stringResource(com.example.voxa.R.string.quests_parent_select_emoji), color = LocalVoxaColors.current.secondaryText, fontWeight = FontWeight.Medium)
         Spacer(modifier = Modifier.height(12.dp))
         
         // Emoji Grid
@@ -682,9 +688,9 @@ fun CreateQuestSheetContent(
                 onClick = onDismiss,
                 modifier = Modifier.weight(1f).height(52.dp),
                 shape = RoundedCornerShape(12.dp),
-                border = BorderStroke(1.dp, Slate600)
+                border = BorderStroke(1.dp, LocalVoxaColors.current.inputBorder)
             ) {
-                Text(stringResource(com.example.voxa.R.string.quests_parent_cancel), color = Slate300, fontWeight = FontWeight.Bold)
+                Text(stringResource(com.example.voxa.R.string.quests_parent_cancel), color = LocalVoxaColors.current.secondaryText, fontWeight = FontWeight.Bold)
             }
             Spacer(modifier = Modifier.width(16.dp))
             Button(
@@ -708,7 +714,7 @@ fun EmojiSelector(icon: String, isSelected: Boolean, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .size(52.dp)
-            .background(if (isSelected) QuestTeal.copy(alpha = 0.3f) else Slate800, RoundedCornerShape(12.dp))
+            .background(if (isSelected) QuestTeal.copy(alpha = 0.3f) else LocalVoxaColors.current.normalCard, RoundedCornerShape(12.dp))
             .padding(4.dp),
         contentAlignment = Alignment.Center
     ) {

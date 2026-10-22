@@ -99,7 +99,7 @@ fun RoleSelectionScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Slate900)
+            .background(LocalVoxaColors.current.background)
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
@@ -136,7 +136,15 @@ fun RoleSelectionScreen(
                         .fillMaxSize()
                         .background(
                             brush = Brush.radialGradient(
-                                colors = listOf(QuestTeal.copy(alpha = 0.4f), Color.Transparent)
+                                colors = if (LocalVoxaColors.current.isDark) {
+                                    listOf(QuestTeal.copy(alpha = 0.4f), Color.Transparent)
+                                } else {
+                                    listOf(
+                                        QuestTeal.copy(alpha = 0.58f),
+                                        QuestTeal.copy(alpha = 0.24f),
+                                        Color.Transparent
+                                    )
+                                }
                             ),
                             shape = CircleShape
                         )
@@ -145,7 +153,10 @@ fun RoleSelectionScreen(
                 Box(
                     modifier = Modifier
                         .size(110.dp)
-                        .background(QuestTeal.copy(alpha = 0.2f), CircleShape),
+                        .background(
+                            QuestTeal.copy(alpha = if (LocalVoxaColors.current.isDark) 0.2f else 0.26f),
+                            CircleShape
+                        ),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(Icons.Default.SupervisorAccount, contentDescription = "Parent", tint = QuestTeal, modifier = Modifier.size(56.dp))
@@ -159,8 +170,8 @@ fun RoleSelectionScreen(
                 fontWeight = FontWeight.ExtraBold,
                 style = TextStyle(
                     shadow = Shadow(
-                        color = QuestTeal.copy(alpha = 0.6f),
-                        blurRadius = 12f
+                        color = QuestTeal.copy(alpha = if (LocalVoxaColors.current.isDark) 0.6f else 0.22f),
+                        blurRadius = if (LocalVoxaColors.current.isDark) 12f else 4f
                     )
                 )
             )
@@ -186,7 +197,15 @@ fun RoleSelectionScreen(
                         .fillMaxSize()
                         .background(
                             brush = Brush.radialGradient(
-                                colors = listOf(QuestPurple.copy(alpha = 0.4f), Color.Transparent)
+                                colors = if (LocalVoxaColors.current.isDark) {
+                                    listOf(QuestPurple.copy(alpha = 0.4f), Color.Transparent)
+                                } else {
+                                    listOf(
+                                        QuestPurple.copy(alpha = 0.58f),
+                                        QuestPurple.copy(alpha = 0.24f),
+                                        Color.Transparent
+                                    )
+                                }
                             ),
                             shape = CircleShape
                         )
@@ -195,7 +214,10 @@ fun RoleSelectionScreen(
                 Box(
                     modifier = Modifier
                         .size(110.dp)
-                        .background(QuestPurple.copy(alpha = 0.2f), CircleShape),
+                        .background(
+                            QuestPurple.copy(alpha = if (LocalVoxaColors.current.isDark) 0.2f else 0.26f),
+                            CircleShape
+                        ),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(activeProfileEmoji, fontSize = 56.sp)
@@ -209,8 +231,8 @@ fun RoleSelectionScreen(
                 fontWeight = FontWeight.ExtraBold,
                 style = TextStyle(
                     shadow = Shadow(
-                        color = QuestPurple.copy(alpha = 0.6f),
-                        blurRadius = 12f
+                        color = QuestPurple.copy(alpha = if (LocalVoxaColors.current.isDark) 0.6f else 0.22f),
+                        blurRadius = if (LocalVoxaColors.current.isDark) 12f else 4f
                     )
                 )
             )
@@ -248,7 +270,7 @@ fun PinSetupScreen(viewModel: QuestsViewModel, onBack: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Slate900)
+            .background(LocalVoxaColors.current.background)
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
@@ -262,7 +284,7 @@ fun PinSetupScreen(viewModel: QuestsViewModel, onBack: () -> Unit) {
         Spacer(modifier = Modifier.height(24.dp))
         Text(
             text = stringResource(com.example.voxa.R.string.quests_caregiver_gateway),
-            color = Color.White,
+            color = LocalVoxaColors.current.primaryText,
             fontSize = 28.sp,
             fontWeight = FontWeight.ExtraBold,
             textAlign = TextAlign.Center
@@ -270,7 +292,7 @@ fun PinSetupScreen(viewModel: QuestsViewModel, onBack: () -> Unit) {
         Spacer(modifier = Modifier.height(12.dp))
         Text(
             text = stringResource(com.example.voxa.R.string.quests_pin_prompt),
-            color = Slate300,
+            color = LocalVoxaColors.current.secondaryText,
             fontSize = 16.sp,
             textAlign = TextAlign.Center
         )
@@ -279,14 +301,16 @@ fun PinSetupScreen(viewModel: QuestsViewModel, onBack: () -> Unit) {
         OutlinedTextField(
             value = pin,
             onValueChange = { if (it.length <= 4 && it.all { char -> char.isDigit() }) pin = it },
-            label = { Text(stringResource(com.example.voxa.R.string.quests_set_pin_label), color = Slate400) },
+            label = { Text(stringResource(com.example.voxa.R.string.quests_set_pin_label), color = LocalVoxaColors.current.secondaryText) },
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.NumberPassword),
             colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = LocalVoxaColors.current.textFieldBackground,
+                unfocusedContainerColor = LocalVoxaColors.current.textFieldBackground,
                 focusedBorderColor = QuestTeal,
-                unfocusedBorderColor = Slate600,
-                focusedTextColor = Color.White,
-                unfocusedTextColor = Color.White
+                unfocusedBorderColor = LocalVoxaColors.current.inputBorder,
+                focusedTextColor = LocalVoxaColors.current.primaryText,
+                unfocusedTextColor = LocalVoxaColors.current.primaryText
             ),
             singleLine = true,
             shape = RoundedCornerShape(12.dp),
@@ -296,14 +320,16 @@ fun PinSetupScreen(viewModel: QuestsViewModel, onBack: () -> Unit) {
         OutlinedTextField(
             value = confirmPin,
             onValueChange = { if (it.length <= 4 && it.all { char -> char.isDigit() }) confirmPin = it },
-            label = { Text(stringResource(com.example.voxa.R.string.quests_confirm_pin_label), color = Slate400) },
+            label = { Text(stringResource(com.example.voxa.R.string.quests_confirm_pin_label), color = LocalVoxaColors.current.secondaryText) },
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.NumberPassword),
             colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = LocalVoxaColors.current.textFieldBackground,
+                unfocusedContainerColor = LocalVoxaColors.current.textFieldBackground,
                 focusedBorderColor = QuestTeal,
-                unfocusedBorderColor = Slate600,
-                focusedTextColor = Color.White,
-                unfocusedTextColor = Color.White
+                unfocusedBorderColor = LocalVoxaColors.current.inputBorder,
+                focusedTextColor = LocalVoxaColors.current.primaryText,
+                unfocusedTextColor = LocalVoxaColors.current.primaryText
             ),
             singleLine = true,
             shape = RoundedCornerShape(12.dp),
@@ -330,12 +356,12 @@ fun PinSetupScreen(viewModel: QuestsViewModel, onBack: () -> Unit) {
             shape = RoundedCornerShape(16.dp),
             modifier = Modifier.fillMaxWidth().height(60.dp)
         ) {
-            Text(stringResource(com.example.voxa.R.string.quests_set_pin_title), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            Text(stringResource(com.example.voxa.R.string.quests_set_pin_title), color = LocalVoxaColors.current.primaryText, fontWeight = FontWeight.Bold, fontSize = 18.sp)
         }
 
         Spacer(modifier = Modifier.height(16.dp))
         TextButton(onClick = onBack) {
-            Text(stringResource(com.example.voxa.R.string.quests_back_to_role), color = Slate400, fontSize = 16.sp)
+            Text(stringResource(com.example.voxa.R.string.quests_back_to_role), color = LocalVoxaColors.current.secondaryText, fontSize = 16.sp)
         }
     }
 }
@@ -363,7 +389,7 @@ fun PinEntryScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Slate900)
+            .background(LocalVoxaColors.current.background)
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
@@ -371,13 +397,13 @@ fun PinEntryScreen(
         Icon(
             imageVector = Icons.Default.Lock,
             contentDescription = "Security",
-            tint = Slate400,
+            tint = LocalVoxaColors.current.secondaryText,
             modifier = Modifier.size(80.dp).scale(scale)
         )
         Spacer(modifier = Modifier.height(24.dp))
         Text(
             text = stringResource(com.example.voxa.R.string.quests_caregiver_login),
-            color = Color.White,
+            color = LocalVoxaColors.current.primaryText,
             fontSize = 28.sp,
             fontWeight = FontWeight.ExtraBold
         )
@@ -386,14 +412,16 @@ fun PinEntryScreen(
         OutlinedTextField(
             value = pin,
             onValueChange = { if (it.length <= 4 && it.all { char -> char.isDigit() }) pin = it },
-            label = { Text(stringResource(com.example.voxa.R.string.quests_enter_pin_label), color = Slate400) },
+            label = { Text(stringResource(com.example.voxa.R.string.quests_enter_pin_label), color = LocalVoxaColors.current.secondaryText) },
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.NumberPassword),
             colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = LocalVoxaColors.current.textFieldBackground,
+                unfocusedContainerColor = LocalVoxaColors.current.textFieldBackground,
                 focusedBorderColor = QuestTeal,
-                unfocusedBorderColor = Slate600,
-                focusedTextColor = Color.White,
-                unfocusedTextColor = Color.White
+                unfocusedBorderColor = LocalVoxaColors.current.inputBorder,
+                focusedTextColor = LocalVoxaColors.current.primaryText,
+                unfocusedTextColor = LocalVoxaColors.current.primaryText
             ),
             singleLine = true,
             shape = RoundedCornerShape(12.dp),
@@ -419,7 +447,7 @@ fun PinEntryScreen(
             shape = RoundedCornerShape(16.dp),
             modifier = Modifier.fillMaxWidth().height(60.dp)
         ) {
-            Text(stringResource(com.example.voxa.R.string.quests_unlock_dashboard), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            Text(stringResource(com.example.voxa.R.string.quests_unlock_dashboard), color = LocalVoxaColors.current.primaryText, fontWeight = FontWeight.Bold, fontSize = 18.sp)
         }
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -431,7 +459,7 @@ fun PinEntryScreen(
         Spacer(modifier = Modifier.height(8.dp))
         
         TextButton(onClick = onBack) {
-            Text(stringResource(com.example.voxa.R.string.quests_back_to_role), color = Slate400, fontSize = 16.sp)
+            Text(stringResource(com.example.voxa.R.string.quests_back_to_role), color = LocalVoxaColors.current.secondaryText, fontSize = 16.sp)
         }
     }
 }

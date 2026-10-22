@@ -140,7 +140,7 @@ fun EmergencyScreen(viewModel: IVoxaViewModel) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Slate900)
+                .background(LocalVoxaColors.current.background)
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -152,7 +152,7 @@ fun EmergencyScreen(viewModel: IVoxaViewModel) {
                     modifier = Modifier.weight(1f).fillMaxHeight(),
                     title = stringResource(R.string.emergency_btn_call),
                     icon = Icons.Default.Phone,
-                    color = Color(0xFF2196F3),
+                    color = EmergencyCallBlue,
                     onClick = {
                         try {
                             val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$emergencyPhone"))
@@ -168,7 +168,7 @@ fun EmergencyScreen(viewModel: IVoxaViewModel) {
                     modifier = Modifier.weight(1f).fillMaxHeight(),
                     title = stringResource(R.string.emergency_btn_sms),
                     icon = Icons.Default.Mail,
-                    color = Color(0xFF4CAF50),
+                    color = EmergencySmsGreen,
                     onClick = {
                         try {
                             val smsPhone = emergencyPhone.ifBlank { "112" }
@@ -193,7 +193,7 @@ fun EmergencyScreen(viewModel: IVoxaViewModel) {
                     modifier = Modifier.weight(1f).fillMaxHeight(),
                     title = if (isFetchingLocation) stringResource(R.string.emergency_btn_getting_location) else stringResource(R.string.emergency_btn_location),
                     icon = Icons.Default.LocationOn,
-                    color = Color(0xFFFF9800),
+                    color = EmergencyLocationOrange,
                     onClick = {
                         if (isFetchingLocation) return@EmergencyBigButton
                         isFetchingLocation = true
@@ -239,7 +239,7 @@ fun EmergencyScreen(viewModel: IVoxaViewModel) {
                     modifier = Modifier.weight(1f).fillMaxHeight(),
                     title = if (isAlarmActive) stringResource(R.string.emergency_btn_siren_on) else stringResource(R.string.emergency_btn_siren),
                     icon = Icons.Default.NotificationsActive,
-                    color = Color(0xFFF44336),
+                    color = EmergencySirenRed,
                     progress = alarmProgress,
                     isActive = isAlarmActive,
                     onHoldChange = { isHoldingAlarm = it }
@@ -259,9 +259,9 @@ fun EmergencyBigButton(
 ) {
     Card(
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.15f)),
+        colors = CardDefaults.cardColors(containerColor = color.copy(alpha = if (LocalVoxaColors.current.isDark) 0.15f else 0.18f)),
         modifier = modifier
-            .border(1.dp, color.copy(alpha = 0.3f), RoundedCornerShape(24.dp))
+            .border(1.dp, color.copy(alpha = if (LocalVoxaColors.current.isDark) 0.3f else 0.38f), RoundedCornerShape(24.dp))
             .clip(RoundedCornerShape(24.dp))
             .clickable(onClick = onClick)
     ) {
@@ -279,7 +279,7 @@ fun EmergencyBigButton(
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = title,
-                color = Color.White,
+                color = LocalVoxaColors.current.primaryText,
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
@@ -298,8 +298,16 @@ fun EmergencyBigHoldButton(
     isActive: Boolean,
     onHoldChange: (Boolean) -> Unit
 ) {
-    val bgColor = if (isActive) color.copy(alpha = 0.3f) else color.copy(alpha = 0.15f)
-    val borderColor = if (isActive) color.copy(alpha = 0.8f) else color.copy(alpha = 0.3f)
+    val bgColor = if (LocalVoxaColors.current.isDark) {
+        if (isActive) color.copy(alpha = 0.3f) else color.copy(alpha = 0.15f)
+    } else {
+        color.copy(alpha = 0.18f)
+    }
+    val borderColor = if (LocalVoxaColors.current.isDark) {
+        if (isActive) color.copy(alpha = 0.8f) else color.copy(alpha = 0.3f)
+    } else {
+        color.copy(alpha = 0.38f)
+    }
 
     Card(
         shape = RoundedCornerShape(24.dp),

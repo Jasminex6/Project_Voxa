@@ -608,7 +608,7 @@ fun SayAndEarnScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Slate900)
+            .background(LocalVoxaColors.current.background)
     ) {
         Column(
             modifier = Modifier
@@ -631,7 +631,7 @@ fun SayAndEarnScreen(
                 ) {
                     if (onBack != null) {
                         IconButton(onClick = onBack) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
+                            Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = LocalVoxaColors.current.primaryText)
                         }
                     }
                     Column(modifier = Modifier.padding(end = 8.dp)) {
@@ -639,14 +639,14 @@ fun SayAndEarnScreen(
                             text = stringResource(R.string.say_and_earn_title),
                             fontSize = 20.sp,
                             fontWeight = FontWeight.ExtraBold,
-                            color = Color.White,
+                            color = LocalVoxaColors.current.primaryText,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
                         Text(
                             text = stringResource(R.string.say_and_earn_desc),
                             fontSize = 12.sp,
-                            color = Slate400,
+                            color = LocalVoxaColors.current.secondaryText,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -654,10 +654,11 @@ fun SayAndEarnScreen(
                 }
 
                 // 🪙 Live Animated Child Wallet Badge
+                val walletGold = if (LocalVoxaColors.current.isDark) QuestGold else QuestGoldLight
                 Surface(
                     shape = RoundedCornerShape(20.dp),
-                    color = QuestGold.copy(alpha = 0.15f),
-                    border = BorderStroke(1.5.dp, QuestGold.copy(alpha = 0.6f)),
+                    color = walletGold.copy(alpha = if (LocalVoxaColors.current.isDark) 0.15f else 0.10f),
+                    border = BorderStroke(1.5.dp, walletGold.copy(alpha = if (LocalVoxaColors.current.isDark) 0.6f else 0.48f)),
                     modifier = Modifier.wrapContentWidth()
                 ) {
                     Row(
@@ -670,7 +671,7 @@ fun SayAndEarnScreen(
                             text = "$childPoints",
                             fontSize = 17.sp,
                             fontWeight = FontWeight.ExtraBold,
-                            color = QuestGold,
+                            color = walletGold,
                             maxLines = 1,
                             softWrap = false
                         )
@@ -717,7 +718,7 @@ fun SayAndEarnScreen(
                 text = stringResource(R.string.speech_practice_choose_word),
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = Slate300,
+                color = LocalVoxaColors.current.secondaryText,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 6.dp)
@@ -734,12 +735,12 @@ fun SayAndEarnScreen(
                     Card(
                         shape = RoundedCornerShape(14.dp),
                         colors = CardDefaults.cardColors(
-                            containerColor = if (isSelected) QuestTeal.copy(alpha = 0.2f) else Slate800
+                            containerColor = if (isSelected) QuestTeal.copy(alpha = 0.2f) else LocalVoxaColors.current.normalCard
                         ),
                         border = if (isSelected)
                             BorderStroke(2.dp, QuestTeal)
                         else
-                            BorderStroke(1.dp, Slate700),
+                            BorderStroke(1.dp, LocalVoxaColors.current.glassBorder),
                         modifier = Modifier
                             .width(88.dp)
                             .clickable {
@@ -763,14 +764,14 @@ fun SayAndEarnScreen(
                                 text = word.arabic,
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = if (isSelected) QuestTeal else Color.White,
+                                color = if (isSelected) QuestTeal else LocalVoxaColors.current.primaryText,
                                 textAlign = TextAlign.Center,
                                 maxLines = 1
                             )
                             Text(
                                 text = word.english,
                                 fontSize = 10.sp,
-                                color = Slate400,
+                                color = LocalVoxaColors.current.secondaryText,
                                 textAlign = TextAlign.Center,
                                 maxLines = 1
                             )
@@ -797,7 +798,7 @@ fun SayAndEarnScreen(
                     Card(
                         shape = RoundedCornerShape(20.dp),
                         colors = CardDefaults.cardColors(
-                            containerColor = Slate800
+                            containerColor = LocalVoxaColors.current.normalCard
                         ),
                         border = BorderStroke(
                             1.5.dp,
@@ -834,22 +835,22 @@ fun SayAndEarnScreen(
                                 },
                                 fontSize = 17.sp,
                                 fontWeight = FontWeight.ExtraBold,
-                                color = if (isSuccess) SuccessGreen else Color.White,
+                                color = if (isSuccess) SuccessGreen else LocalVoxaColors.current.primaryText,
                                 textAlign = TextAlign.Center
                             )
 
                             // Match percentage chip
                             Surface(
                                 shape = RoundedCornerShape(8.dp),
-                                color = if (isSuccess) SuccessGreen.copy(alpha = 0.15f) else Slate700,
-                                border = BorderStroke(1.dp, if (isSuccess) SuccessGreen.copy(alpha = 0.4f) else Slate600),
+                                color = if (isSuccess) SuccessGreen.copy(alpha = 0.15f) else LocalVoxaColors.current.surfaceVariant,
+                                border = BorderStroke(1.dp, if (isSuccess) SuccessGreen.copy(alpha = 0.4f) else LocalVoxaColors.current.inputBorder),
                                 modifier = Modifier.padding(top = 6.dp)
                             ) {
                                 Text(
                                     text = "نسبة التطابق: ${result.matchPercent.toInt()}%",
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = if (isSuccess) SuccessGreen else Slate300,
+                                    color = if (isSuccess) SuccessGreen else LocalVoxaColors.current.secondaryText,
                                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                                 )
                             }
@@ -859,7 +860,7 @@ fun SayAndEarnScreen(
                                 Text(
                                     text = stringResource(R.string.say_and_earn_heard, result.bestCandidate),
                                     fontSize = 12.sp,
-                                    color = Slate400,
+                                    color = LocalVoxaColors.current.secondaryText,
                                     textAlign = TextAlign.Center
                                 )
                             }
@@ -882,13 +883,13 @@ fun SayAndEarnScreen(
                                         handleMicTap()
                                     },
                                     shape = RoundedCornerShape(12.dp),
-                                    border = BorderStroke(1.dp, Slate600),
+                                    border = BorderStroke(1.dp, LocalVoxaColors.current.inputBorder),
                                     modifier = Modifier.weight(1f),
                                     contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp)
                                 ) {
                                     Text(
                                         text = stringResource(R.string.say_and_earn_try_again),
-                                        color = Slate300,
+                                        color = LocalVoxaColors.current.secondaryText,
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 13.sp
                                     )
@@ -906,7 +907,7 @@ fun SayAndEarnScreen(
                                         selectedWordIndex = (selectedWordIndex + 1) % allWords.size
                                     },
                                     colors = ButtonDefaults.buttonColors(
-                                        containerColor = if (isSuccess) QuestTeal else Slate700
+                                        containerColor = if (isSuccess) QuestTeal else LocalVoxaColors.current.surfaceVariant
                                     ),
                                     shape = RoundedCornerShape(12.dp),
                                     modifier = Modifier.weight(1f),
@@ -935,12 +936,12 @@ fun SayAndEarnScreen(
                             text = currentWord.arabic,
                             fontSize = 32.sp,
                             fontWeight = FontWeight.ExtraBold,
-                            color = Color.White
+                            color = LocalVoxaColors.current.primaryText
                         )
                         Text(
                             text = currentWord.english,
                             fontSize = 16.sp,
-                            color = Slate400
+                            color = LocalVoxaColors.current.secondaryText
                         )
 
                         Spacer(modifier = Modifier.height(8.dp))
@@ -987,7 +988,7 @@ fun SayAndEarnScreen(
                             .size(90.dp)
                             .scale(rippleScale1)
                             .clip(CircleShape)
-                            .background(Color(0xFF00F2FE).copy(alpha = rippleAlpha1))
+                            .background(LocalVoxaColors.current.microphoneGlow.copy(alpha = if (LocalVoxaColors.current.isDark) rippleAlpha1 else 0.22f * rippleAlpha1))
                     )
                     // Pulsing ripple 2
                     Box(
@@ -995,7 +996,7 @@ fun SayAndEarnScreen(
                             .size(90.dp)
                             .scale(rippleScale2)
                             .clip(CircleShape)
-                            .background(Color(0xFF00F2FE).copy(alpha = rippleAlpha2))
+                            .background(LocalVoxaColors.current.microphoneGlow.copy(alpha = if (LocalVoxaColors.current.isDark) rippleAlpha2 else 0.22f * rippleAlpha2))
                     )
                 }
 
@@ -1023,11 +1024,11 @@ fun SayAndEarnScreen(
                         .size(100.dp)
                         .clip(CircleShape)
                         .background(
-                            if (isListening) Color(0xFF0F1E2E) else Slate800
+                            if (isListening && LocalVoxaColors.current.isDark) Color(0xFF0F1E2E) else LocalVoxaColors.current.normalCard
                         )
                         .border(
                             width = 2.dp,
-                            color = if (isListening) Color(0xFF00F2FE) else Slate700,
+                            color = if (isListening) LocalVoxaColors.current.microphone else LocalVoxaColors.current.surfaceVariant,
                             shape = CircleShape
                         )
                         .then(
@@ -1060,7 +1061,7 @@ fun SayAndEarnScreen(
                     Icon(
                         imageVector = if (isListening) Icons.Default.Mic else Icons.Default.MicOff,
                         contentDescription = if (isListening) "Listening Active" else "Listening Paused",
-                        tint = if (isListening) Color(0xFF00F2FE) else Slate400,
+                        tint = if (isListening) LocalVoxaColors.current.microphone else LocalVoxaColors.current.secondaryText,
                         modifier = Modifier.size(40.dp)
                     )
                 }
@@ -1074,7 +1075,7 @@ fun SayAndEarnScreen(
                     else -> stringResource(R.string.say_and_earn_tap_to_speak)
                 },
                 fontSize = 13.sp,
-                color = if (isListening) Color(0xFF00F2FE) else Slate300,
+                color = if (isListening) LocalVoxaColors.current.microphone else LocalVoxaColors.current.secondaryText,
                 fontWeight = if (isListening) FontWeight.Bold else FontWeight.Normal,
                 textAlign = TextAlign.Center
             )
@@ -1087,7 +1088,7 @@ fun SayAndEarnScreen(
                         .fillMaxWidth(0.5f)
                         .height(5.dp)
                         .clip(RoundedCornerShape(3.dp))
-                        .background(Slate900)
+                        .background(LocalVoxaColors.current.background)
                 ) {
                     Box(
                         modifier = Modifier
@@ -1095,7 +1096,7 @@ fun SayAndEarnScreen(
                             .fillMaxHeight()
                             .background(
                                 Brush.horizontalGradient(
-                                    colors = listOf(Color(0xFF00F2FE), Sky400)
+                                    colors = listOf(LocalVoxaColors.current.microphone, if (LocalVoxaColors.current.isDark) Sky400 else LocalVoxaColors.current.microphone)
                                 )
                             )
                     )
@@ -1108,7 +1109,7 @@ fun SayAndEarnScreen(
                 Text(
                     text = "\"$partialSpokenText\"",
                     fontSize = 12.sp,
-                    color = Slate400,
+                    color = LocalVoxaColors.current.secondaryText,
                     fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
                 )
             }

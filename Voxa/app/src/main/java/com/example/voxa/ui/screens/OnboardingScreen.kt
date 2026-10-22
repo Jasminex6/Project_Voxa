@@ -93,7 +93,7 @@ fun OnboardingScreen(
 
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = Slate900
+        color = LocalVoxaColors.current.background
     ) {
         Column(
             modifier = Modifier
@@ -174,7 +174,7 @@ fun OnboardingScreen(
                                 .padding(horizontal = 4.dp)
                                 .size(if (isSelected) 10.dp else 6.dp)
                                 .clip(CircleShape)
-                                .background(if (isSelected) Sky400 else Slate600)
+                                .background(if (isSelected) LocalVoxaColors.current.primaryAction else LocalVoxaColors.current.inputBorder)
                         )
                     }
                 }
@@ -201,7 +201,7 @@ fun OnboardingScreen(
                                 colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
                                 contentPadding = PaddingValues(0.dp)
                             ) {
-                                Text(stringResource(com.example.voxa.R.string.onboarding_back), color = Slate400, fontSize = 16.sp)
+                                Text(stringResource(com.example.voxa.R.string.onboarding_back), color = LocalVoxaColors.current.secondaryText, fontSize = 16.sp)
                             }
                         } else {
                             Spacer(modifier = Modifier.width(60.dp))
@@ -236,8 +236,8 @@ fun OnboardingScreen(
                             }
                         },
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Sky400,
-                            disabledContainerColor = Sky400.copy(alpha = 0.5f)
+                            containerColor = LocalVoxaColors.current.primaryAction,
+                            disabledContainerColor = LocalVoxaColors.current.primaryAction.copy(alpha = 0.5f)
                         ),
                         enabled = (pagerState.currentPage < 3) || 
                                  (pagerState.currentPage == 3 && allPermissionsGranted) || 
@@ -248,7 +248,7 @@ fun OnboardingScreen(
                     ) {
                         Text(
                             text = if (pagerState.currentPage == 5) stringResource(com.example.voxa.R.string.onboarding_get_started) else stringResource(com.example.voxa.R.string.onboarding_next),
-                            color = Slate900,
+                            color = LocalVoxaColors.current.onPrimaryAction,
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp
                         )
@@ -274,14 +274,14 @@ fun OnboardingWelcomePage() {
             text = stringResource(com.example.voxa.R.string.onboarding_title_1),
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.White,
+            color = LocalVoxaColors.current.primaryText,
             textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
             text = stringResource(com.example.voxa.R.string.onboarding_desc_1),
             fontSize = 16.sp,
-            color = Slate400,
+            color = LocalVoxaColors.current.secondaryText,
             textAlign = TextAlign.Center,
             lineHeight = 24.sp
         )
@@ -290,8 +290,8 @@ fun OnboardingWelcomePage() {
             modifier = Modifier
                 .size(160.dp)
                 .clip(RoundedCornerShape(32.dp))
-                .background(Sky400.copy(alpha = 0.1f))
-                .border(2.dp, Sky400.copy(alpha = 0.3f), RoundedCornerShape(32.dp)),
+                .background(LocalVoxaColors.current.primaryAction.copy(alpha = 0.1f))
+                .border(2.dp, LocalVoxaColors.current.primaryAction.copy(alpha = 0.3f), RoundedCornerShape(32.dp)),
             contentAlignment = Alignment.Center
         ) {
             Text(
@@ -323,7 +323,7 @@ fun OnboardingConceptPage() {
                 text = stringResource(com.example.voxa.R.string.onboarding_title_2),
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.White,
+                color = LocalVoxaColors.current.primaryText,
                 textAlign = TextAlign.Center
             )
             Spacer(modifier = Modifier.height(16.dp))
@@ -346,13 +346,13 @@ fun OnboardingConceptPage() {
                             Text(
                                 text = prefix,
                                 fontSize = 15.sp,
-                                color = Slate300,
+                                color = LocalVoxaColors.current.secondaryText,
                                 lineHeight = 26.sp
                             )
                             Text(
                                 text = rest,
                                 fontSize = 15.sp,
-                                color = Slate300,
+                                color = LocalVoxaColors.current.secondaryText,
                                 textAlign = TextAlign.Start,
                                 lineHeight = 26.sp
                             )
@@ -361,7 +361,7 @@ fun OnboardingConceptPage() {
                         Text(
                             text = line,
                             fontSize = 15.sp,
-                            color = Slate300,
+                            color = LocalVoxaColors.current.secondaryText,
                             textAlign = TextAlign.Start,
                             lineHeight = 26.sp,
                             modifier = Modifier.fillMaxWidth()
@@ -374,8 +374,8 @@ fun OnboardingConceptPage() {
                 modifier = Modifier
                     .size(160.dp)
                     .clip(RoundedCornerShape(32.dp))
-                    .background(Sky400.copy(alpha = 0.1f))
-                    .border(2.dp, Sky400.copy(alpha = 0.3f), RoundedCornerShape(32.dp)),
+                    .background(LocalVoxaColors.current.primaryAction.copy(alpha = 0.1f))
+                    .border(2.dp, LocalVoxaColors.current.primaryAction.copy(alpha = 0.3f), RoundedCornerShape(32.dp)),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -407,14 +407,14 @@ fun OnboardingPermissionsPage(
             text = stringResource(com.example.voxa.R.string.onboarding_title_3),
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.White,
+            color = LocalVoxaColors.current.primaryText,
             textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(12.dp))
         Text(
             text = stringResource(com.example.voxa.R.string.onboarding_desc_3),
             fontSize = 14.sp,
-            color = Slate400,
+            color = LocalVoxaColors.current.secondaryText,
             textAlign = TextAlign.Center,
             lineHeight = 20.sp
         )
@@ -462,13 +462,13 @@ fun PermissionItem(
 ) {
     Card(
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Slate800),
+        colors = CardDefaults.cardColors(containerColor = LocalVoxaColors.current.normalCard),
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() }
             .border(
                 width = 1.dp,
-                color = if (isGranted) Sky400.copy(alpha = 0.3f) else Slate700,
+                color = if (isGranted) LocalVoxaColors.current.primaryAction.copy(alpha = 0.3f) else LocalVoxaColors.current.surfaceVariant,
                 shape = RoundedCornerShape(12.dp)
             )
     ) {
@@ -482,22 +482,22 @@ fun PermissionItem(
                     text = title,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = LocalVoxaColors.current.primaryText
                 )
                 Text(
                     text = description,
                     fontSize = 11.sp,
-                    color = Slate400
+                    color = LocalVoxaColors.current.secondaryText
                 )
             }
             Switch(
                 checked = isGranted,
                 onCheckedChange = { onClick() },
                 colors = SwitchDefaults.colors(
-                    checkedThumbColor = Slate900,
-                    checkedTrackColor = Sky400,
-                    uncheckedThumbColor = Slate400,
-                    uncheckedTrackColor = Slate700
+                    checkedThumbColor = LocalVoxaColors.current.background,
+                    checkedTrackColor = LocalVoxaColors.current.primaryAction,
+                    uncheckedThumbColor = LocalVoxaColors.current.secondaryText,
+                    uncheckedTrackColor = LocalVoxaColors.current.surfaceVariant
                 )
             )
         }
@@ -525,14 +525,14 @@ fun OnboardingProfilePage(
             text = stringResource(com.example.voxa.R.string.onboarding_title_4),
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.White,
+            color = LocalVoxaColors.current.primaryText,
             textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = stringResource(com.example.voxa.R.string.onboarding_desc_4),
             fontSize = 13.sp,
-            color = Slate400,
+            color = LocalVoxaColors.current.secondaryText,
             textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(24.dp))
@@ -541,13 +541,15 @@ fun OnboardingProfilePage(
         OutlinedTextField(
             value = childName,
             onValueChange = onNameChange,
-            label = { Text(stringResource(com.example.voxa.R.string.onboarding_child_name), color = Slate400) },
+            label = { Text(stringResource(com.example.voxa.R.string.onboarding_child_name), color = LocalVoxaColors.current.secondaryText) },
             singleLine = true,
             colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = Color.White,
-                unfocusedTextColor = Color.White,
-                focusedBorderColor = Sky400,
-                unfocusedBorderColor = Slate700
+                focusedContainerColor = LocalVoxaColors.current.textFieldBackground,
+                unfocusedContainerColor = LocalVoxaColors.current.textFieldBackground,
+                focusedTextColor = LocalVoxaColors.current.primaryText,
+                unfocusedTextColor = LocalVoxaColors.current.primaryText,
+                focusedBorderColor = LocalVoxaColors.current.primaryAction,
+                unfocusedBorderColor = LocalVoxaColors.current.surfaceVariant
             ),
             modifier = Modifier.fillMaxWidth()
         )
@@ -564,10 +566,10 @@ fun OnboardingProfilePage(
                     modifier = Modifier
                         .weight(1f)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(if (isSelected) Sky400.copy(alpha = 0.2f) else Slate800)
+                        .background(if (isSelected) LocalVoxaColors.current.primaryAction.copy(alpha = 0.2f) else LocalVoxaColors.current.normalCard)
                         .border(
                             1.dp,
-                            if (isSelected) Sky400 else Color.Transparent,
+                            if (isSelected) LocalVoxaColors.current.primaryAction else Color.Transparent,
                             RoundedCornerShape(12.dp)
                         )
                         .clickable { onGenderChange(gender) }
@@ -576,7 +578,7 @@ fun OnboardingProfilePage(
                 ) {
                     Text(
                         text = if (gender == "Male") "👦 ${stringResource(com.example.voxa.R.string.profile_gender_male)}" else "👧 ${stringResource(com.example.voxa.R.string.profile_gender_female)}",
-                        color = if (isSelected) Sky400 else Color.White,
+                        color = if (isSelected) LocalVoxaColors.current.primaryAction else LocalVoxaColors.current.primaryText,
                         fontWeight = FontWeight.Bold,
                         fontSize = 15.sp
                     )
@@ -588,7 +590,7 @@ fun OnboardingProfilePage(
         // Avatar selector
         Text(
             text = stringResource(com.example.voxa.R.string.onboarding_avatar_title),
-            color = Color.White,
+            color = LocalVoxaColors.current.primaryText,
             fontSize = 14.sp,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.align(Alignment.Start)
@@ -607,7 +609,7 @@ fun OnboardingProfilePage(
                             modifier = Modifier
                                 .size(40.dp)
                                 .clip(CircleShape)
-                                .background(if (isSelected) Sky400 else Slate800)
+                                .background(if (isSelected) LocalVoxaColors.current.primaryAction else LocalVoxaColors.current.normalCard)
                                 .clickable { onAvatarSelect(avatar) },
                             contentAlignment = Alignment.Center
                         ) {
@@ -646,21 +648,21 @@ fun OnboardingEmergencyPage(
             text = stringResource(com.example.voxa.R.string.onboarding_emergency_title),
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.White,
+            color = LocalVoxaColors.current.primaryText,
             textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = stringResource(com.example.voxa.R.string.onboarding_emergency_desc),
             fontSize = 13.sp,
-            color = Slate400,
+            color = LocalVoxaColors.current.secondaryText,
             textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(24.dp))
 
         Card(
             shape = RoundedCornerShape(14.dp),
-            colors = CardDefaults.cardColors(containerColor = Slate800),
+            colors = CardDefaults.cardColors(containerColor = LocalVoxaColors.current.normalCard),
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(
@@ -670,13 +672,15 @@ fun OnboardingEmergencyPage(
                 OutlinedTextField(
                     value = contactName,
                     onValueChange = onNameChange,
-                    label = { Text(stringResource(com.example.voxa.R.string.onboarding_contact_name), color = Slate400) },
+                    label = { Text(stringResource(com.example.voxa.R.string.onboarding_contact_name), color = LocalVoxaColors.current.secondaryText) },
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedBorderColor = Sky400,
-                        unfocusedBorderColor = Slate600
+                focusedContainerColor = LocalVoxaColors.current.textFieldBackground,
+                unfocusedContainerColor = LocalVoxaColors.current.textFieldBackground,
+                        focusedTextColor = LocalVoxaColors.current.primaryText,
+                        unfocusedTextColor = LocalVoxaColors.current.primaryText,
+                        focusedBorderColor = LocalVoxaColors.current.primaryAction,
+                        unfocusedBorderColor = LocalVoxaColors.current.inputBorder
                     ),
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -693,15 +697,17 @@ fun OnboardingEmergencyPage(
                         value = contactRelation,
                         onValueChange = onRelationChange,
                         readOnly = !isCustomMode.value,
-                        label = { Text(stringResource(com.example.voxa.R.string.onboarding_relation), color = Slate400) },
-                        placeholder = { Text(stringResource(com.example.voxa.R.string.onboarding_relation_hint), color = Slate600) },
+                        label = { Text(stringResource(com.example.voxa.R.string.onboarding_relation), color = LocalVoxaColors.current.secondaryText) },
+                        placeholder = { Text(stringResource(com.example.voxa.R.string.onboarding_relation_hint), color = LocalVoxaColors.current.inputBorder) },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                         singleLine = true,
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White,
-                            focusedBorderColor = Sky400,
-                            unfocusedBorderColor = Slate600
+                focusedContainerColor = LocalVoxaColors.current.textFieldBackground,
+                unfocusedContainerColor = LocalVoxaColors.current.textFieldBackground,
+                            focusedTextColor = LocalVoxaColors.current.primaryText,
+                            unfocusedTextColor = LocalVoxaColors.current.primaryText,
+                            focusedBorderColor = LocalVoxaColors.current.primaryAction,
+                            unfocusedBorderColor = LocalVoxaColors.current.inputBorder
                         ),
                         modifier = Modifier
                             .fillMaxWidth()
@@ -711,11 +717,11 @@ fun OnboardingEmergencyPage(
                     ExposedDropdownMenu(
                         expanded = expanded,
                         onDismissRequest = { expanded = false },
-                        modifier = Modifier.background(Slate800)
+                        modifier = Modifier.background(LocalVoxaColors.current.normalCard)
                     ) {
                         options.forEach { selectionOption ->
                             DropdownMenuItem(
-                                text = { Text(selectionOption, color = Color.White) },
+                                text = { Text(selectionOption, color = LocalVoxaColors.current.primaryText) },
                                 onClick = {
                                     if (selectionOption == "Other") {
                                         isCustomMode.value = true
@@ -739,8 +745,8 @@ fun OnboardingEmergencyPage(
                             onPhoneChange(digits)
                         }
                     },
-                    label = { Text(stringResource(com.example.voxa.R.string.onboarding_phone_number), color = Slate400) },
-                    placeholder = { Text(stringResource(com.example.voxa.R.string.onboarding_phone_hint), color = Slate600) },
+                    label = { Text(stringResource(com.example.voxa.R.string.onboarding_phone_number), color = LocalVoxaColors.current.secondaryText) },
+                    placeholder = { Text(stringResource(com.example.voxa.R.string.onboarding_phone_hint), color = LocalVoxaColors.current.inputBorder) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                     isError = contactPhone.isNotEmpty() && contactPhone.length < 11,
@@ -750,10 +756,12 @@ fun OnboardingEmergencyPage(
                         }
                     },
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedBorderColor = Sky400,
-                        unfocusedBorderColor = Slate600,
+                focusedContainerColor = LocalVoxaColors.current.textFieldBackground,
+                unfocusedContainerColor = LocalVoxaColors.current.textFieldBackground,
+                        focusedTextColor = LocalVoxaColors.current.primaryText,
+                        unfocusedTextColor = LocalVoxaColors.current.primaryText,
+                        focusedBorderColor = LocalVoxaColors.current.primaryAction,
+                        unfocusedBorderColor = LocalVoxaColors.current.inputBorder,
                         errorBorderColor = MaterialTheme.colorScheme.error
                     ),
                     modifier = Modifier.fillMaxWidth()
@@ -765,7 +773,7 @@ fun OnboardingEmergencyPage(
 
         Card(
             shape = RoundedCornerShape(14.dp),
-            colors = CardDefaults.cardColors(containerColor = Slate800),
+            colors = CardDefaults.cardColors(containerColor = LocalVoxaColors.current.normalCard),
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(
@@ -775,20 +783,22 @@ fun OnboardingEmergencyPage(
                 Text(
                     text = stringResource(com.example.voxa.R.string.onboarding_emergency_msg_desc),
                     fontSize = 12.sp,
-                    color = Slate400,
+                    color = LocalVoxaColors.current.secondaryText,
                     lineHeight = 16.sp
                 )
                 OutlinedTextField(
                     value = message,
                     onValueChange = onMessageChange,
-                    label = { Text(stringResource(com.example.voxa.R.string.onboarding_emergency_sms), color = Slate400) },
+                    label = { Text(stringResource(com.example.voxa.R.string.onboarding_emergency_sms), color = LocalVoxaColors.current.secondaryText) },
                     minLines = 1,
                     maxLines = 5,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedBorderColor = Sky400,
-                        unfocusedBorderColor = Slate600
+                focusedContainerColor = LocalVoxaColors.current.textFieldBackground,
+                unfocusedContainerColor = LocalVoxaColors.current.textFieldBackground,
+                        focusedTextColor = LocalVoxaColors.current.primaryText,
+                        unfocusedTextColor = LocalVoxaColors.current.primaryText,
+                        focusedBorderColor = LocalVoxaColors.current.primaryAction,
+                        unfocusedBorderColor = LocalVoxaColors.current.inputBorder
                     ),
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -815,8 +825,8 @@ fun OnboardingLanguagePage(onLanguageSelected: (String) -> Unit) {
             modifier = Modifier
                 .size(100.dp)
                 .clip(RoundedCornerShape(28.dp))
-                .background(Sky400.copy(alpha = 0.1f))
-                .border(2.dp, Sky400.copy(alpha = 0.3f), RoundedCornerShape(28.dp)),
+                .background(LocalVoxaColors.current.primaryAction.copy(alpha = 0.1f))
+                .border(2.dp, LocalVoxaColors.current.primaryAction.copy(alpha = 0.3f), RoundedCornerShape(28.dp)),
             contentAlignment = Alignment.Center
         ) {
             Text(
@@ -832,7 +842,7 @@ fun OnboardingLanguagePage(onLanguageSelected: (String) -> Unit) {
             text = stringResource(com.example.voxa.R.string.onboarding_choose_lang),
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.White,
+            color = LocalVoxaColors.current.primaryText,
             textAlign = TextAlign.Center
         )
 
@@ -843,7 +853,7 @@ fun OnboardingLanguagePage(onLanguageSelected: (String) -> Unit) {
             text = stringResource(com.example.voxa.R.string.onboarding_choose_lang_ar),
             fontSize = 22.sp,
             fontWeight = FontWeight.Bold,
-            color = Slate300,
+            color = LocalVoxaColors.current.secondaryText,
             textAlign = TextAlign.Center
         )
 
@@ -855,8 +865,8 @@ fun OnboardingLanguagePage(onLanguageSelected: (String) -> Unit) {
                 .padding(bottom = 16.dp)
                 .clickable { onLanguageSelected("en") },
             shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = if (currentLang == "en") Slate700 else Slate800),
-            border = if (currentLang == "en") BorderStroke(2.dp, Sky400) else null
+            colors = CardDefaults.cardColors(containerColor = if (currentLang == "en") LocalVoxaColors.current.surfaceVariant else LocalVoxaColors.current.normalCard),
+            border = if (currentLang == "en") BorderStroke(2.dp, LocalVoxaColors.current.primaryAction) else null
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(20.dp),
@@ -865,7 +875,7 @@ fun OnboardingLanguagePage(onLanguageSelected: (String) -> Unit) {
             ) {
                 Text("🇬🇧", fontSize = 28.sp)
                 Spacer(modifier = Modifier.width(12.dp))
-                Text(stringResource(com.example.voxa.R.string.onboarding_english), color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                Text(stringResource(com.example.voxa.R.string.onboarding_english), color = LocalVoxaColors.current.primaryText, fontSize = 20.sp, fontWeight = FontWeight.Bold)
             }
         }
 
@@ -874,8 +884,8 @@ fun OnboardingLanguagePage(onLanguageSelected: (String) -> Unit) {
                 .fillMaxWidth()
                 .clickable { onLanguageSelected("ar") },
             shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = if (currentLang == "ar") Slate700 else Slate800),
-            border = if (currentLang == "ar") BorderStroke(2.dp, Sky400) else null
+            colors = CardDefaults.cardColors(containerColor = if (currentLang == "ar") LocalVoxaColors.current.surfaceVariant else LocalVoxaColors.current.normalCard),
+            border = if (currentLang == "ar") BorderStroke(2.dp, LocalVoxaColors.current.primaryAction) else null
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(20.dp),
@@ -884,7 +894,7 @@ fun OnboardingLanguagePage(onLanguageSelected: (String) -> Unit) {
             ) {
                 Text("🇸🇦", fontSize = 28.sp)
                 Spacer(modifier = Modifier.width(12.dp))
-                Text(stringResource(com.example.voxa.R.string.onboarding_arabic), color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                Text(stringResource(com.example.voxa.R.string.onboarding_arabic), color = LocalVoxaColors.current.primaryText, fontSize = 20.sp, fontWeight = FontWeight.Bold)
             }
         }
     }
