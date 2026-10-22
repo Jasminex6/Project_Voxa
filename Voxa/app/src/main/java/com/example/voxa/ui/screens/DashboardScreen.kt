@@ -197,7 +197,7 @@ fun DashboardScreen(
                                 )
                         ) {
                             Icon(
-                                imageVector = if (isDarkTheme) Icons.Default.DarkMode else Icons.Default.LightMode,
+                                imageVector = if (isDarkTheme) Icons.Default.LightMode else Icons.Default.DarkMode,
                                 contentDescription = if (isDarkTheme) "Switch to light mode" else "Switch to dark mode",
                                 tint = LocalVoxaColors.current.primaryText,
                                 modifier = Modifier.size(20.dp)
