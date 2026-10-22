@@ -178,6 +178,7 @@ fun SayAndEarnScreen(
     val activeProfile by viewModel.activeProfile.collectAsState()
     val enrolledIntents by viewModel.enrolledIntents.collectAsState()
     val childPoints by viewModel.childPoints.collectAsState()
+    val rewardGold = if (LocalVoxaColors.current.isDark) QuestGold else QuestGoldLight
 
     // Combined vocabulary: default core words + child's custom enrolled words
     val allWords = remember(enrolledIntents) {
@@ -654,11 +655,10 @@ fun SayAndEarnScreen(
                 }
 
                 // 🪙 Live Animated Child Wallet Badge
-                val walletGold = if (LocalVoxaColors.current.isDark) QuestGold else QuestGoldLight
                 Surface(
                     shape = RoundedCornerShape(20.dp),
-                    color = walletGold.copy(alpha = if (LocalVoxaColors.current.isDark) 0.15f else 0.10f),
-                    border = BorderStroke(1.5.dp, walletGold.copy(alpha = if (LocalVoxaColors.current.isDark) 0.6f else 0.48f)),
+                    color = rewardGold.copy(alpha = if (LocalVoxaColors.current.isDark) 0.15f else 0.10f),
+                    border = BorderStroke(1.5.dp, rewardGold.copy(alpha = if (LocalVoxaColors.current.isDark) 0.6f else 0.48f)),
                     modifier = Modifier.wrapContentWidth()
                 ) {
                     Row(
@@ -671,7 +671,7 @@ fun SayAndEarnScreen(
                             text = "$childPoints",
                             fontSize = 17.sp,
                             fontWeight = FontWeight.ExtraBold,
-                            color = walletGold,
+                            color = rewardGold,
                             maxLines = 1,
                             softWrap = false
                         )
@@ -704,7 +704,7 @@ fun SayAndEarnScreen(
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = stringResource(R.string.say_and_earn_streak_bonus),
-                                color = QuestGold,
+                                color = rewardGold,
                                 fontWeight = FontWeight.ExtraBold,
                                 fontSize = 13.sp
                             )
@@ -1005,10 +1005,14 @@ fun SayAndEarnScreen(
                     val earnedStars = matchResult?.coinsEarned ?: 5
                     val burstTotal = earnedStars + if (bonusAwarded) 2 else 0
                     Text(
-                        text = if (bonusAwarded) "+$burstTotal ⭐🔥" else "+$burstTotal ⭐",
+                        text = if (bonusAwarded) {
+                            "+$burstTotal ⭐🔥"
+                        } else {
+                            "+$burstTotal ⭐"
+                        },
                         fontSize = 28.sp,
                         fontWeight = FontWeight.ExtraBold,
-                        color = QuestGold,
+                        color = rewardGold,
                         modifier = Modifier
                             .graphicsLayer {
                                 translationY = coinAnimY.value

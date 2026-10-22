@@ -43,6 +43,7 @@ fun RewardsStoreScreen(
     val rewards by viewModel.rewards.collectAsState()
     val childPoints by viewModel.childPoints.collectAsState()
     val isParentAuthenticated by viewModel.isParentAuthenticated.collectAsState()
+    val rewardGold = if (LocalVoxaColors.current.isDark) QuestGold else QuestGoldLight
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
@@ -101,7 +102,7 @@ fun RewardsStoreScreen(
                 ) {
                     Text(stringResource(com.example.voxa.R.string.quests_rewards_available_stars), color = LocalVoxaColors.current.secondaryText, fontSize = 22.sp, fontWeight = FontWeight.Bold)
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("$childPoints", color = QuestGold, fontSize = 36.sp, fontWeight = FontWeight.ExtraBold)
+                        Text("$childPoints", color = rewardGold, fontSize = 36.sp, fontWeight = FontWeight.ExtraBold)
                         Spacer(modifier = Modifier.width(6.dp))
                         Text("⭐", fontSize = 28.sp)
                     }
@@ -176,6 +177,7 @@ fun RewardCard(
     onRedeem: () -> Unit,
     onDelete: () -> Unit
 ) {
+    val rewardGold = if (LocalVoxaColors.current.isDark) QuestGold else QuestGoldLight
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
 
@@ -234,7 +236,12 @@ fun RewardCard(
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth().height(48.dp)
                 ) {
-                    Text(stringResource(com.example.voxa.R.string.quests_rewards_cost_format, reward.cost), color = if (canAfford) LocalVoxaColors.current.primaryText else LocalVoxaColors.current.secondaryText, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
+                    Text(
+                        text = stringResource(com.example.voxa.R.string.quests_rewards_cost_format, reward.cost),
+                        color = if (canAfford) rewardGold else LocalVoxaColors.current.secondaryText,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 16.sp
+                    )
                 }
             }
 

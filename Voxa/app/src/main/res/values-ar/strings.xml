@@ -133,7 +133,7 @@
     <string name="profile_error">خطأ: %1$s</string>
     <string name="profile_cancel">إلغاء</string>
     <string name="p2p_section_title">📡 مشاركة الملف الشخصي</string>
-    <string name="p2p_send_button">إرسال</string>
+    <string name="p2p_send_button">مشاركة</string>
     <string name="p2p_receive_button">استقبال</string>
     <string name="p2p_receive_title">📥 استقبال ملف شخصي</string>
     <string name="p2p_receive_desc">افتح شاشة المشاركة على الجهاز الآخر.\nهذا الجهاز ينتظر الاتصال…</string>

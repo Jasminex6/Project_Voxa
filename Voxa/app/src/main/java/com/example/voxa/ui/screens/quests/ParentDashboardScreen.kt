@@ -47,6 +47,7 @@ fun ParentDashboardScreen(
     val approvedQuests by viewModel.approvedQuests.collectAsState()
     val unfulfilledPurchases by viewModel.unfulfilledPurchases.collectAsState()
     val childPoints by viewModel.childPoints.collectAsState()
+    val rewardGold = if (LocalVoxaColors.current.isDark) QuestGold else QuestGoldLight
     
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
@@ -77,7 +78,7 @@ fun ParentDashboardScreen(
                                 Icon(
                                     Icons.Default.ShoppingCart, 
                                     contentDescription = "Rewards Store", 
-                                    tint = QuestGold, 
+                                    tint = rewardGold,
                                     modifier = Modifier.size(26.dp)
                                 )
                             }
@@ -141,7 +142,7 @@ fun ParentDashboardScreen(
                                 ) {
                                     Text(
                                         text = stringResource(com.example.voxa.R.string.quests_parent_points, childPoints), 
-                                        color = QuestGold, 
+                                        color = rewardGold,
                                         fontSize = 30.sp, 
                                         fontWeight = FontWeight.ExtraBold, 
                                         textAlign = TextAlign.Center
@@ -396,6 +397,7 @@ fun ParentDashboardScreen(
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun QuestParentCard(quest: QuestEntity, viewModel: QuestsViewModel, isActionable: Boolean) {
+    val rewardGold = if (LocalVoxaColors.current.isDark) QuestGold else QuestGoldLight
     val borderColor = when (quest.status) {
         QuestStatus.SUBMITTED -> QuestTeal
         QuestStatus.UNABLE -> QuestOrange
@@ -535,7 +537,7 @@ fun QuestParentCard(quest: QuestEntity, viewModel: QuestsViewModel, isActionable
                 // Points on Left (in RTL, last child of Row is leftmost)
                 Text(
                     text = "+${quest.points}", 
-                    color = if (isActionable) QuestGold else LocalVoxaColors.current.secondaryText,
+                    color = if (isActionable) rewardGold else LocalVoxaColors.current.secondaryText,
                     fontWeight = FontWeight.ExtraBold, 
                     fontSize = 22.sp
                 )

@@ -38,6 +38,7 @@ fun ChildPlaygroundScreen(
     val childActiveQuests by viewModel.childActiveQuests.collectAsState()
     val childPoints by viewModel.childPoints.collectAsState()
     val activeProfile by viewModel.activeProfile.collectAsState()
+    val rewardGold = if (LocalVoxaColors.current.isDark) QuestGold else QuestGoldLight
 
     var showRewards by remember { mutableStateOf(false) }
 
@@ -77,7 +78,7 @@ fun ChildPlaygroundScreen(
                     },
                     actions = {
                         IconButton(onClick = { showRewards = true }) {
-                            Icon(Icons.Default.ShoppingCart, contentDescription = "Rewards", tint = QuestGold, modifier = Modifier.size(36.dp))
+                            Icon(Icons.Default.ShoppingCart, contentDescription = "Rewards", tint = rewardGold, modifier = Modifier.size(36.dp))
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
@@ -161,7 +162,7 @@ fun ChildPlaygroundScreen(
                             ) {
                                 Text(
                                     text = stringResource(com.example.voxa.R.string.quests_great_job), 
-                                    color = QuestGold, 
+                                    color = rewardGold,
                                     fontSize = 36.sp, 
                                     fontWeight = FontWeight.ExtraBold,
                                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -207,6 +208,7 @@ fun QuestChildCard(
     onUnable: () -> Unit
 ) {
     var isSubmitting by remember { mutableStateOf(false) }
+    val rewardGold = if (LocalVoxaColors.current.isDark) QuestGold else QuestGoldLight
 
     // Floating Animation
     val infiniteTransition = rememberInfiniteTransition(label = "floatingCard")
@@ -285,7 +287,12 @@ fun QuestChildCard(
                         Spacer(modifier = Modifier.height(4.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(text = stringResource(com.example.voxa.R.string.quests_reward_label), color = LocalVoxaColors.current.secondaryText, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                            Text(text = "${quest.points} ⭐", color = QuestGold, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
+                            Text(
+                                text = "${quest.points} ⭐",
+                                color = rewardGold,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.ExtraBold
+                            )
                         }
                     }
                 }
