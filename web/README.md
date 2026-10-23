@@ -4,14 +4,25 @@ This Next.js application includes a bilingual storefront, account/license dashbo
 
 ## Hosted storefront
 
-Live URL: https://voxa-web-pi.vercel.app/en (Arabic: `/ar`). Vercel project: `jazz16/voxa-web`. The site markets family and center benefits, includes an interactive synthetic center report, and generates working device-paired demonstration codes and QR codes. No real payments are collected.
+Live URL: [English](https://voxa-web-pi.vercel.app/en) / [العربية](https://voxa-web-pi.vercel.app/ar). Vercel project: `jazz16/voxa-web`. The site markets family and center benefits, includes an interactive synthetic center report, and generates short reusable demonstration codes and QR codes that redeem for device-bound licenses. No real payments are collected.
 
 Deployments are manual from this `web` folder with `vercel deploy --prod`. `.vercelignore` excludes local keys, environment files, and demo data. The ignored `.vercel/` folder links this checkout to the project. The public pages and configuration were checked without Vercel authentication.
+
+### Pages and layout
+
+| Page | Purpose |
+|---|---|
+| `/en` / `/ar` | Service introduction, family and center benefits, and the scrolling How it works explanation. |
+| `/{lang}/pricing` | Free, Family Pro, and Clinical SLP benefits, EGP/SAR prices, billing-period controls, and activation links. FAQs open in a dialog. |
+| `/{lang}/clinical` | Center workflow, family/team benefits, a clinic activation link, and an interactive illustrative report in a dialog. |
+| `/{lang}/plan-demo` | Plan selection, short code and QR generation, code copying, an Open in Voxa link, QR enlargement, and a 100-code CSV download. |
+
+Pricing, center benefits, and activation were checked at 1280×720 with their key information and compact footer visible without scrolling. The activation form uses a compact Generate button, with the code and its actions beside the QR (on its left in English). Arabic mirrors the layout. Smaller screens retain natural scrolling instead of clipping information. Support links open `mailto:voxasupport@gmail.com`, a demo contact placeholder.
 
 ## Hosted plan activation demo
 
 1. Open `/en/plan-demo` or `/ar/plan-demo`, choose Family Pro or Clinical SLP, and generate a short code and QR. No device ID is requested.
-2. In the updated demo APK, open My plan → Activate a code and scan the QR, or type its short `VOXA-F-...` / `VOXA-C-...` code.
+2. In the updated demo APK, open Profile → My plan → Activate a code and scan the QR, or type its short `VOXA-F-...` / `VOXA-C-...` code.
 3. Confirm the caregiver PIN. The app connects once to redeem the code, automatically supplies its installation ID, and receives a signed, device-bound license. Verification and cached access then work offline for seven days plus the normal seven-day grace period.
 
 The demo has 100 stable reusable codes, 50 per plan. The same code can be used on multiple test phones. Download all codes as CSV from the activation page. They are intentionally public hackathon codes, not purchased seats or single-use paid exchange codes. Changing the plan letter or checksum causes redemption to fail. The existing paid flow remains separate and enforces its own ownership/seat limits.
@@ -58,7 +69,7 @@ cd ../Voxa
 .\gradlew.bat :app:assembleDebug
 ```
 
-Install `app/build/outputs/apk/debug/app-debug.apk`. On the phone, use Profile → Subscription & license → Activate or renew, and paste the web exchange code. Confirm the caregiver PIN (or create one). Alternatively scan the QR in the app or open the custom activation link.
+Install `app/build/outputs/apk/debug/app-debug.apk`. On the phone, use Profile → My plan → Activate a code, and enter the web exchange code. Confirm the caregiver PIN (or create one). Alternatively scan the QR in the app or open the custom activation link. Plan status is shown in Profile and the sidebar.
 
 The exchange needs a connection once. The issued token is verified and stored locally; airplane mode does not prevent paid use through its signed period and grace. A paired token can also be pasted or supplied with `voxa://activate?token=...`; the token must name that exact installation. Never put a signing private key in an APK.
 
@@ -81,7 +92,7 @@ Use a separate deployment/environment and set `VOXA_DEMO_MODE=false`. Do not cop
 5. Configure the Stripe endpoint `/api/webhooks/stripe` for checkout completion/async success, subscription updates/deletion, invoice paid/payment failed, and charge refunded. Set `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`; configure the Stripe customer portal. Only verified paid checkout grants access. Renewal events retrieve current provider state and do not extend access for an unpaid invoice.
 6. For Paymob EGP, configure `PAYMOB_SECRET_KEY`, `PAYMOB_PUBLIC_KEY`, `PAYMOB_HMAC_SECRET`, and comma-separated `PAYMOB_INTEGRATION_IDS`. Use `/api/webhooks/paymob` as the processed callback. Wallets, cards, and other methods depend on those merchant integrations; the app does not claim unsupported methods. In this implementation these plans are prepaid, not auto-recurring.
 7. Optionally configure `RESEND_API_KEY` and a verified `VOXA_FROM_EMAIL`. Successful live fulfillment emails the authenticated checkout address with an account link. It does not email reusable activation tokens or voice information. Delivery uses persistent deduplication plus the provider's idempotency key; failed configured delivery makes the payment webhook retry. No live email is sent in demo mode.
-8. Deploy `web/` as the Next.js root on the chosen Vercel project. No Vercel account/project or deployment token was supplied here; no public deployment was performed. Use durable PostgreSQL, never the local JSON demo store, on a hosted deployment.
+8. Deploy `web/` as the Next.js root. The public activation preview is already deployed to `jazz16/voxa-web`; customer accounts and real commerce need the production configuration above. Use durable PostgreSQL for those flows, never the local JSON demo store. Publishing this Git branch does not automatically redeploy the site.
 
 ## Production Android release
 
@@ -119,4 +130,4 @@ cd ../Voxa
 
 The smoke test makes synthetic local demo accounts/orders and verifies signatures without printing activation credentials. Unit tests cover tampering, grace boundaries, ownership, device limits, idempotency, unpaid renewals, Paymob's documented HMAC sequence, and the report allowlist. The device test exercises Android Keystore, offline cached access, clock rollback, and an untrusted deep link requiring caregiver confirmation.
 
-Live merchant callbacks, production database behavior, cross-device Nearby transfer, scanner module availability, recognition languages, clinical validity, and public deployment still require real environment/device validation. Additional voice assets, biomarker analysis, multi-child batch handover, center invitations/calendar/dues, and automatic weekly report delivery are not represented as finished features. See the repository's `IMPLEMENTATION_STATUS.md` for the scope audit.
+The hosted preview, reusable code generation, and device-bound license exchange have been verified. Layout checks covered English and Arabic pricing/activation, the landing hero, center benefits, FAQ dialogs, report week selection, and code copying. Live merchant callbacks, production database behavior, cross-device Nearby transfer, scanner availability on other phones, recognition languages, and clinical validity still require their own environment/device validation. Additional voice assets, biomarker analysis, multi-child batch handover, center invitations/calendar/dues, and automatic weekly report delivery are not represented as finished features. See [`IMPLEMENTATION_STATUS.md`](../IMPLEMENTATION_STATUS.md) for the scope audit.

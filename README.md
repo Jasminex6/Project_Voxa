@@ -1,244 +1,158 @@
-# 🧪 Project Voxa (فوكسا)
+# Voxa (فوكسا)
 
-> **"Amplifying communication patterns the child already has."**  
-> *CU AI Nexus Hackathon 2026 · Healthcare & Wellbeing / Inclusive AI & Accessibility*
+> Amplifying communication patterns the child already has.
+>
+> CU AI Nexus Hackathon 2026 · Healthcare & Wellbeing / Inclusive AI & Accessibility
 
-**Voxa** is a fully offline, on-device assistive communication Android app designed for minimally verbal and non-speaking autistic children. Many of these children communicate through consistent, personalized vocalizations — a specific hum, a repeated syllable, or a unique sound sequence — that only immediate caregivers can interpret. Voxa bridges this communication gap by acting as a **personalized vocal-intent translator**: caregivers enroll custom sound samples, and the app recognizes them on-device in real time, translating them into clear first-person Arabic speech (e.g., *"أنا عايز ميّه"* — *"I want water"*).
+Voxa is an Android assistive communication app for minimally verbal and non-speaking autistic children. Caregivers associate a child's familiar vocalizations with Arabic phrases, and Voxa recognizes those sounds locally to help the child communicate. Speech practice, caregiver-approved tasks, and rewards support daily use.
 
-Beyond translation, Voxa helps children **practice pronunciation**, build **executive function** through parent-approved redeemable task quests, and provides a dedicated **emergency toolkit** — all within a secure, private, bilingual (Arabic / English) interface that requires no internet connection.
+Core communication works offline. Plan activation needs a connection once; progress reports are generated on the phone and shared deliberately by the caregiver. Recordings and recognition templates are excluded from those reports.
 
----
+## Live website
 
-## ✨ Key Highlights
+- [English storefront](https://voxa-web-pi.vercel.app/en) · [العربية](https://voxa-web-pi.vercel.app/ar)
+- [Compare plans](https://voxa-web-pi.vercel.app/en/pricing)
+- [Voxa for centers](https://voxa-web-pi.vercel.app/en/clinical)
+- [Generate an activation code and QR](https://voxa-web-pi.vercel.app/en/plan-demo)
 
-| Principle | Implementation |
+This branch, `codex/voxa-platform-integration`, builds on `justinbeiber` and includes the Android licensing integration and bilingual web platform. The hosted preview demonstrates plan activation without charging money or asking for payment details.
+
+Plans, center benefits, and activation controls fit in one desktop view at the checked 1280×720 viewport. The activation form has a compact Generate button, with Copy code and Open in Voxa beside the QR. FAQs and the sample progress report open in dialogs. How it works remains a scrolling explanation; narrow screens retain normal scrolling so content stays readable.
+
+## Try plan activation
+
+1. Open the [activation page](https://voxa-web-pi.vercel.app/en/plan-demo), select Family Pro or Clinical SLP, and generate a code and QR.
+2. In the updated Android **debug demo**, open **Profile → My plan → Activate a code**.
+3. Scan the QR inside Voxa or enter the short `VOXA-F-...` / `VOXA-C-...` code. Confirm the caregiver PIN, or create one if prompted.
+4. The app automatically supplies its installation ID and receives a signed, device-bound license. Plan access then works offline for seven days, followed by seven days of grace.
+
+The website has **100 stable reusable demo codes: 50 per plan**. Download the complete CSV from the activation page. A code can be reused on other test phones; entering a device code on the website is unnecessary. These public hackathon codes demonstrate activation, rather than payment verification or purchased seats. Release APKs do not trust the demo signer.
+
+## Features
+
+| Area | Current behavior |
 |---|---|
-| 🔒 **100 % Offline & Private** | All AI inference runs on-device — zero cloud calls, zero data leaves the phone |
-| 🧠 **Personalized Few-Shot Learning** | Caregivers enroll as few as 5 audio samples per word; the app learns the child's unique vocal patterns |
-| 🌍 **Bilingual UI** | Full Arabic (عربي) and English interface with runtime language switching |
-| 🔊 **Dual Audio Output** | Pre-recorded Egyptian Arabic voice packs + Android TTS fallback with Tashkeel vowelization |
-| 👨‍👩‍👧 **Dual Profiles** | Separate **Child** and **Caregiver** roles with PIN-protected caregiver access |
-| ♿ **Accessibility-First** | Designed for children who are non-speaking, with large touch targets, emoji avatars, and calming color palettes |
+| Communication | Caregiver-enrolled vocalizations are matched locally and played back as Arabic phrases using bundled audio or Android TTS. |
+| Enrollment and library | Record training examples, manage vocabulary per child, and replay recordings made on the local device. |
+| Speech practice | Arabic/English word practice uses Android's on-device speech recognizer and text matching, with rewards and per-profile history. It requires Android 12+ and a supported installed language service; online recognition is not used as a fallback. |
+| Quests and rewards | Caregivers create tasks, review submissions, award points, and fulfill rewards. Caregiver actions are PIN protected. |
+| Profiles and handover | Create and switch child profiles, choose avatars and voices, and transfer profiles between trusted nearby devices. Sending a profile requires a paid tier. |
+| My plan | Compact plan status and activation controls live in Profile, with a plan indicator in the sidebar. |
+| Progress reports | Family and Clinical users can export summary JSON or PDF after caregiver confirmation. Authenticated web accounts support formatted report uploads, deduplication, and newest-first ordering. |
+| Emergency tools | Contact dialer, SMS/WhatsApp launchers, location sharing, and a siren. External calls, messages, and location sharing depend on the relevant services, permissions, and connectivity. |
+| Languages | Arabic and English interfaces, including right-to-left website layouts. |
 
----
+## Plans
 
-## 📱 Implemented Screens
+Catalog prices are defined in [`web/lib/catalog.ts`](web/lib/catalog.ts). The hosted demo charges nothing.
 
-| # | Screen | Description |
-|---|---|---|
-| 1 | 🏠 **Home (Dashboard)** | Pulsing mic toggle for live listening, real-time translation display with confidence scores, volume meter, and activity log timeline |
-| 2 | ➕ **Enrollment** | Guided multi-sample recording flow with live volume visualization, silence trimming, YAMNet embedding extraction, and prototypical centroid computation |
-| 3 | 📚 **Library** | Manage enrolled words per child — view, replay, and delete custom vocabulary entries |
-| 4 | 🎮 **Practice** | Duolingo-style pronunciation game with 6 built-in Egyptian Arabic words, listen-then-repeat flow, DTW-based similarity scoring, and star ratings |
-| 5 | 🎯 **Quests** | Executive function system with role selection (Child / Caregiver PIN gate), parent-created tasks, child submission flow, point wallet, and a rewards store |
-| 6 | 🚨 **Emergency** | One-tap phone dialer, SMS launcher, WhatsApp call/message/location sharing, and a hold-to-activate synthesized siren alarm |
-| 7 | 👤 **Profile** | Create, switch, and delete child profiles; select avatar emoji and voice pack gender (Male / Female); P2P profile sharing via Google Nearby Connections |
-
-Additionally:
-- **Onboarding Flow** — 6-page guided first-time setup: language selection, permissions (mic, notifications, location), child profile creation, emergency contact setup, and a feature tour
-- **Sidebar Settings** — Language toggle (EN ↔ AR), emergency contact editor, profile export/import (JSON), and timeline clearing
-
----
-
-## 🏗️ Architecture — Audio Classification Pipeline (v4)
-
-The current architecture uses **YAMNet-based Prototypical Matching** with centroid-based scoring:
-
-```
-    Microphone (16kHz Mono 16-bit PCM)
-                   ↓
-   ┌─────────────────────────────────┐
-   │ Energy-Based VAD State Machine  │  → Extracts speech segments (0.4s – 2.0s)
-   │ M=8 speech trigger, N=15 end   │    Discards silence, noise, too-short/long
-   └─────────────────────────────────┘
-                   ↓
-   ┌─────────────────────────────────┐
-   │   Silence Trim + Pad/Crop      │  → Normalizes to exactly 1.44s (23040 samples)
-   │   Center-pad or center-crop    │    Matches enrollment preprocessing
-   └─────────────────────────────────┘
-                   ↓
-   ┌─────────────────────────────────┐
-   │   YAMNet Neural Encoder        │  → Extracts 2048-D Temporal-Halved embedding
-   │   (yamnet.tflite — 15.3 MB)    │    Concatenation of first 2 YAMNet frames
-   └─────────────────────────────────┘
-                   ↓
-   ┌─────────────────────────────────┐
-   │   Prototypical Matcher          │  → Cosine similarity against enrolled centroids
-   │   + Centroid Count Penalty      │    K-Means bifurcation for high-variance intents
-   │   + OOD Gate (μ − 2σ)          │    Per-intent out-of-distribution threshold
-   │   + Margin Gate (Δ ≥ 0.04)     │    Rejects ambiguous matches
-   └─────────────────────────────────┘
-                   ↓
-   ┌─────────────────────────────────┐
-   │   Arabic Playback System        │  → Gendered voice packs (boy/girl folders)
-   │   + TTS Fallback + Tashkeel    │    Android TextToSpeech with vowelization
-   └─────────────────────────────────┘
-```
-
-### Enrollment Pipeline
-
-During enrollment, caregivers record multiple samples per word. Each sample is:
-1. **Trimmed** — leading/trailing silence removed
-2. **Normalized** — pad/crop to 1.44s window
-3. **Encoded** — YAMNet extracts a 2048-D L2-normalized embedding
-4. **QC Filtered** — outlier rejection via μ + 2σ rule
-5. **Bifurcated** — if pairwise distances are high, K-Means (K=2) splits into two centroids
-6. **OOD Calibrated** — per-intent threshold set at μ − 2σ of enrollment similarities
-
----
-
-## 🎯 Quests & Rewards System
-
-A structured executive function module that teaches responsibility through a **task → review → reward** loop:
-
-| Role | Capabilities |
-|---|---|
-| 👨 **Caregiver** (PIN-protected) | Create quests with custom titles, descriptions, emoji icons, and point values; approve/reject child submissions; manage rewards store; view activity history |
-| 👦 **Child** | View active quests; mark as "Done" or "Unable"; earn points into a digital wallet; browse and purchase rewards with accumulated points |
-
-Rewards are real-world items created by the caregiver (e.g., "30 min iPad time" for 50 points). Purchased rewards appear in the caregiver's fulfillment queue.
-
----
-
-## 🗣️ Speech Practice Module
-
-A Duolingo-style pronunciation practice game shipped with 6 built-in Egyptian Arabic words:
-
-| Word | Arabic | Emoji | Reference Audio |
+| Plan | EGP | SAR | Main access |
 |---|---|---|---|
-| Water | مايه | 💧 | `practice/water_ref.wav` |
-| Milk | لبن | 🥛 | `practice/milk_ref.wav` |
-| Bread | عيش | 🍞 | `practice/bread_ref.wav` |
-| Help | مساعدة | 🆘 | `practice/help_ref.wav` |
-| Mom | ماما | 👩 | `practice/mama_ref.wav` |
-| Dad | بابا | 👨 | `practice/baba_ref.wav` |
+| Free | 0 | 0 | One child profile, three custom words, practice preview, and receiving a nearby handover. |
+| Family Pro | 349/month or 2,799/year | 99/month or 899/year | Unlimited custom sounds, multiple profiles, full practice library, report export, sending/receiving handovers, and two activated devices. |
+| Clinical SLP | 2,999/month | 1,799/month | Family features with licensing for up to 25 activated devices. No annual clinic price is configured. |
 
-**Flow**: Listen to reference → Hold to record → MFCC extraction + DTW comparison → Similarity score (0–100%) → Star rating (1–3 ⭐) → Stats saved per child profile.
+Expiry preserves existing profiles and trained sounds. Emergency tools and existing translations remain available. Paid access is verified locally through its signed expiry and grace period.
 
----
+## Reports and privacy
 
-## 🚨 Emergency Module
+The phone creates reports containing a pseudonymous subject ID, reporting dates, practice activity counts, text-match summaries, and task-status counts. Reports exclude child names, recordings, voice embeddings, acoustic templates, contacts, and free-text notes. Caregivers choose whether and where to share them.
 
-Designed for real-world safety — all actions work without internet:
+The website's center report uses illustrative data. Actual reports can be uploaded through the configured web account flow; the public hosted activation demo does not provision customer accounts. Automatic weekly uploads, doctor access, center membership invitations, appointments, calendars, and payment-dues management are not implemented in this preview.
 
-| Action | Method |
-|---|---|
-| 📞 **Quick Dial** | Opens phone dialer pre-filled with the saved emergency contact |
-| ✉️ **SMS Alert** | Launches SMS with pre-composed emergency message |
-| 💬 **WhatsApp Call** | Opens WhatsApp call to emergency contact |
-| 💬 **WhatsApp Message** | Sends pre-composed alert via WhatsApp |
-| 📍 **Send Location** | Fetches GPS coordinates and shares Google Maps link via WhatsApp |
-| 🔊 **Emergency Siren** | Hold-to-activate synthesized sine wave alarm (600–850Hz oscillation) with fallback to bundled MP3 siren |
+Practice matching scores describe recognized-text similarity, rather than a clinical assessment. Older practice history includes successful attempts only, and task counts show current status rather than weekly completion history.
 
-Emergency contacts and messages are configured during onboarding and editable from the sidebar.
+## Recognition architecture
 
----
+The active Android communication engine uses **MFCC features and DTW template matching**:
 
-## 🗂️ Data Layer
-
-### Room Database (SQLite)
-
-| Entity | Table | Key Fields |
-|---|---|---|
-| `ChildProfile` | `child_profiles` | name, gender, avatarEmoji, speakerEmbedding, isActive |
-| `EnrolledIntent` | `enrolled_intents` | profileId (FK), intentName, outputPhrase, audioAssetPath, oodThreshold |
-| `AcousticTemplate` | `acoustic_templates` | intentId (FK), templateFeatures (serialized centroids), templateFilePath |
-| `PracticeStats` | `practice_stats` | profileId (FK), word, score, stars, timestamp |
-| `QuestEntity` | `quests` | profileId, title, description, icon, points, status (PENDING/SUBMITTED/UNABLE/APPROVED/REJECTED) |
-| `RewardEntity` | `rewards` | profileId, title, cost, icon |
-| `PurchasedRewardEntity` | `purchased_rewards` | rewardId, profileId, timestamp, isFulfilled |
-
-### Local Storage
-- **Audio templates**: Saved as `.pcm` files in internal storage (paths stored in Room, not blobs)
-- **Emergency contacts**: `SharedPreferences` (app-wide, not per-child)
-- **Language preference**: `SharedPreferences` (`app_language` key: `"en"` / `"ar"`)
-
----
-
-## 📁 Monorepo Layout
-
-```
-Voxa_Project/
-├── Voxa/                          # 📱 Android Application
-│   └── app/src/main/
-│       ├── java/com/example/voxa/
-│       │   ├── MainActivity.kt            # App entry, navigation, bottom bar
-│       │   ├── ai/                        # 🧠 AI/ML Pipeline
-│       │   │   ├── IVoxaClassifierEngine.kt   # Classification interface contract
-│       │   │   ├── VoxaClassifierEngine.kt    # Full pipeline orchestrator (v4)
-│       │   │   ├── VoxaVAD.kt                 # Energy-based VAD state machine
-│       │   │   ├── YamnetEncoder.kt           # YAMNet TFLite 2048-D encoder
-│       │   │   ├── PrototypicalMatcher.kt     # Centroid scoring, OOD/Margin gates
-│       │   │   └── archive/                   # Legacy MFCC/DTW/SpeakerVerifier
-│       │   ├── data/                      # 💾 Room Entities, DAOs, Database
-│       │   ├── services/                  # 🎙️ Foreground Listener Service
-│       │   ├── ui/                        # 🎨 Compose Screens & ViewModels
-│       │   │   ├── screens/               #     Dashboard, Enrollment, Library,
-│       │   │   │   │                      #     Practice, Emergency, Profile, Onboarding
-│       │   │   │   └── quests/            #     Quests: RoleSelect, ChildPlayground,
-│       │   │   │                          #     ParentDashboard, RewardsStore
-│       │   │   └── theme/                 #     Color, Theme, Typography
-│       │   └── utils/                     # 🔧 AudioPlayer, AudioFileHelper,
-│       │                                  #     ProfileSharingManager, TFLiteModelLoader
-│       ├── assets/
-│       │   ├── yamnet.tflite              # YAMNet feature extractor (15.3 MB)
-│       │   ├── ecapa_speaker_id.tflite    # ECAPA-TDNN speaker verification (20 MB)
-│       │   └── practice/                  # Reference .wav files for practice mode
-│       └── res/
-│           ├── values/strings.xml         # English string resources
-│           ├── values-ar/strings.xml      # Arabic string resources
-│           └── raw/                       # Emergency siren MP3, sound effects
-│
-├── models/                        # 🧠 Pre-trained TFLite models (source copies)
-├── notebooks/                     # 📓 Python research: MFCC, DTW, VAD, ECAPA, YAMNet prototyping
-├── Docs/                          # 📚 Project plans, technical specs, team docs
-├── Assets/                        # 🎨 Logo files and branding assets
-└── README.md                      # ← You are here
+```text
+Microphone: 16 kHz mono PCM
+  → Energy-based voice activity detection
+  → Silence trimming, matching enrollment preprocessing
+  → 40-dimensional MFCC features
+  → DTW comparison with enrolled templates (top-two consensus)
+  → Absolute-distance and ambiguity gates
+  → Arabic phrase playback and cooldown
 ```
 
----
+Enrollment stores multiple local feature templates for each intent. YAMNet and prototypical-matching code/assets remain in the repository from earlier experiments; they are not the active `VoxaClassifierEngine` pipeline. Speech practice uses the separate on-device speech-recognition flow described above.
 
-## 🛠️ Tech Stack
+Android stores profiles, vocabulary, practice history, tasks, and rewards in Room. The version 8 → 9 migration preserves existing data. License verification and storage are handled on the device; signing private keys belong only on the server.
 
-| Layer | Technology |
-|---|---|
-| **Language** | Kotlin |
-| **UI Framework** | Jetpack Compose + Material 3 |
-| **Database** | Room (SQLite) with KSP annotation processing |
-| **AI/ML Runtime** | TensorFlow Lite (LiteRT) |
-| **Audio Capture** | Android `AudioRecord` API (16kHz Mono PCM) |
-| **Background Processing** | Android Foreground Service + WakeLock |
-| **Location** | Google Play Services Fused Location Provider |
-| **P2P Sharing** | Google Nearby Connections API (BLE + WiFi Direct) |
-| **Serialization** | Gson |
-| **Min SDK** | 26 (Android 8.0) |
-| **Target SDK** | 36 |
-| **Build System** | Gradle (KTS) with version catalogs |
+## Repository layout
 
----
+```text
+Voxa/                     Android app: Kotlin, Jetpack Compose, Room
+  app/src/main/           App UI, recognition engine, licensing, report export
+  app/src/test/           JVM tests
+  app/src/androidTest/    Device and migration tests
+web/                      Next.js website and backend routes
+  components/             Storefront, activation, accounts, report views
+  lib/                    Catalog, licenses, reports, commerce adapters
+  db/                     PostgreSQL schema
+  scripts/                Local setup, hosted demo, migrations, smoke checks
+  tests/                  Web/backend tests
+config/                   Public verification keys and synthetic test fixtures
+models/                   Model assets from recognition experiments
+notebooks/                Audio research and prototypes
+IMPLEMENTATION_STATUS.md  Verification record and remaining launch work
+```
 
-## 🚀 Build Instructions
+## Run locally
 
-### Prerequisites
-- **Android Studio** Ladybug (2024.2+) or newer
-- **Android SDK 36** (compile) / **SDK 26** (min)
-- **JDK 11** configured in your IDE
-- **A physical Android device** (microphone + speaker testing requires real hardware)
+Use Node.js 22.19+, JDK 21, an Android SDK matching the Gradle configuration (compile SDK 36.1), and a compatible Android Studio. The app supports Android 8.0+ for core features; on-device speech practice requires Android 12+ and an available language service. Use a physical phone for microphone, scanner, and speaker checks.
 
-### Steps
-1. Clone the repository.
-2. Open Android Studio → **Open Project** → select the `Voxa/` directory.
-3. Wait for Gradle sync to complete.
-4. Connect your Android device via USB or wireless debugging.
-5. Click **Run ▶️** (select `app` configuration).
+From the repository root:
 
----
+```powershell
+cd web
+npm ci
+npm run setup:demo
+npm run dev
+```
 
-## 👥 Team
+Open [localhost](http://127.0.0.1:3000/en). The setup creates ignored local demo keys and configuration plus public verification fixtures. The local simulated checkout is separate from the public hosted reusable-code demo.
 
-**CU AI Nexus Hackathon 2026** — Cairo University  
-Track: Healthcare & Wellbeing / Inclusive AI & Accessibility
+To build an Android debug APK against the hosted activation demo, open another terminal at the repository root:
 
----
+```powershell
+cd Voxa
+.\gradlew.bat :app:assembleDebug -PVOXA_WEB_URL=https://voxa-web-pi.vercel.app
+```
 
-*Built with ❤️ for every child who deserves to be heard.*
+Install `Voxa/app/build/outputs/apk/debug/app-debug.apk`, or open `Voxa/` in Android Studio and run the app. For localhost activation instead, build without the URL override and run `adb reverse tcp:3000 tcp:3000` on the connected device.
+
+See [`web/README.md`](web/README.md) for hosted-demo configuration, report uploads, deployment, and production signing/payment setup. Never commit `.env` files, signing keys, local orders, or child data.
+
+## Verification
+
+From `web/`, after local demo setup:
+
+```powershell
+npm run typecheck
+npm test
+npm run build
+# With the local demo server running:
+node scripts/smoke.mjs
+```
+
+From `Voxa/`:
+
+```powershell
+.\gradlew.bat :app:testDebugUnitTest :app:assembleDebug
+```
+
+The recorded integration checks include 24 web/backend tests, 37 Android JVM tests, Android builds, a database-preservation migration test, and a Samsung test that decodes QR fixtures and verifies both hosted demo plans. The latest layout change passed a production build and browser checks. See [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md) for the scope and limits of these checks.
+
+GitHub Actions runs the web checks and Android build on pushes and pull requests. Device tests need a suitable emulator or connected phone; the license-state test must only run on a disposable QA device because it initializes license preferences.
+
+## Deployment and remaining work
+
+The website is deployed manually from `web/` to Vercel project `jazz16/voxa-web`; pushing this Git branch does not publish another website deployment. Stripe/Paymob adapters, account flows, and report storage code exist, but live merchant accounts, a production database/auth service, email delivery, and production licensing/signing are not configured for the hosted preview.
+
+The contact address `voxasupport@gmail.com` is a demo placeholder. The center view is a service explanation and sample report, rather than a live secretary or doctor dashboard. Production distribution still needs configured services, release signing, explicit migrations for database versions below 8, and reviewed legal/privacy documents. Full details are in [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md).
+
+## Team
+
+CU AI Nexus Hackathon 2026 — Cairo University · Healthcare & Wellbeing / Inclusive AI & Accessibility
