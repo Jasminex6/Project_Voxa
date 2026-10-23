@@ -19,11 +19,12 @@ export function Shell({
     document.documentElement.dir = ar ? "rtl" : "ltr";
   }, [lang, ar]);
   const query = useSearchParams().toString();
+  const home = /^\/(en|ar)\/?$/.test(pathname);
   const other =
     pathname.replace(/^\/(en|ar)/, ar ? "/en" : "/ar") +
     (query ? `?${query}` : "");
   return (
-    <div lang={lang} dir={ar ? "rtl" : "ltr"}>
+    <div className={`site-shell ${home ? "home-shell" : "compact-shell"}`} lang={lang} dir={ar ? "rtl" : "ltr"}>
       <a className="skip" href="#content">
         {ar ? "انتقل إلى المحتوى" : "Skip to content"}
       </a>
@@ -74,6 +75,15 @@ export function Shell({
       </header>
       <main id="content">{children}</main>
       <footer className="footer">
+        {!home ? <div className="compact-footer-row">
+          <Link className="brand" href={`/${lang}`}>voxa<span className="brand-dot">.</span></Link>
+          <span>© {new Date().getFullYear()} · {ar ? "نموذج الهاكاثون" : "Hackathon preview"}</span>
+          <nav aria-label={ar ? "روابط إضافية" : "Footer"}>
+            <Link href={`/${lang}/privacy`}>{ar ? "الخصوصية" : "Privacy"}</Link>
+            <Link href={`/${lang}/terms`}>{ar ? "الشروط" : "Terms"}</Link>
+            <a href="mailto:voxasupport@gmail.com">voxasupport@gmail.com</a>
+          </nav>
+        </div> : <>
         <div className="footer-main">
           <Link className="brand" href={`/${lang}`}>
             <AudioLines />
@@ -103,6 +113,7 @@ export function Shell({
               : "Built with care. Runs on your device."}
           </span>
         </div>
+        </>}
       </footer>
     </div>
   );

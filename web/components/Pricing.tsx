@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowUpRight, Check, ShieldCheck, WifiOff } from "lucide-react";
 import {
   catalog,
@@ -13,6 +13,7 @@ import type { Lang } from "./Shell";
 
 export function Pricing({ lang }: { lang: Lang }) {
   const ar = lang === "ar";
+  const faqDialog = useRef<HTMLDialogElement>(null);
   const [currency, setCurrency] = useState<Currency>("EGP"),
     [interval, setInterval] = useState<Interval>("monthly");
   const [config, setConfig] = useState<{
@@ -114,7 +115,7 @@ export function Pricing({ lang }: { lang: Lang }) {
   };
   return (
     <section className="section pricing-page">
-      <div className="page-intro">
+      <div className="pricing-heading"><div className="page-intro">
         <div className="eyebrow">
           {ar ? "خطط تنمو معك" : "ROOM TO GROW, AT YOUR PACE"}
         </div>
@@ -172,9 +173,9 @@ export function Pricing({ lang }: { lang: Lang }) {
             <option>SAR</option>
           </select>
         </label>
-      </div>
+      </div></div>
       {(config?.demo || config?.publicDemo) && (
-        <div className="notice">
+        <div className="pricing-demo-note">
           <SparkleDot />
           {ar
             ? "عرض تجريبي: لا يتم تحصيل أي مبلغ."
@@ -345,9 +346,12 @@ export function Pricing({ lang }: { lang: Lang }) {
           <WifiOff />
           {ar ? "وصول مدفوع يعمل دون إنترنت" : "Paid access works offline"}
         </span>
+        <button className="text-link" onClick={() => faqDialog.current?.showModal()}>{ar ? "أسئلة عن الخطط" : "Questions about plans?"}</button>
       </div>
+      <dialog ref={faqDialog} className="information-dialog" aria-labelledby="pricing-faq-title">
+        <button className="button quiet small dialog-close" onClick={() => faqDialog.current?.close()}>{ar ? "إغلاق" : "Close"}</button>
       <div className="faq">
-        <h2>{ar ? "أسئلة قبل البداية" : "A few things you might wonder."}</h2>
+        <h2 id="pricing-faq-title">{ar ? "أسئلة قبل البداية" : "A few things you might wonder."}</h2>
         {[
           [
             ar ? "هل أحتاج إلى الإنترنت؟" : "Do I need internet?",
@@ -389,6 +393,7 @@ export function Pricing({ lang }: { lang: Lang }) {
           </details>
         ))}
       </div>
+      </dialog>
     </section>
   );
 }

@@ -1,5 +1,4 @@
-import Link from "next/link";
-import { ArrowUpRight, ShieldCheck } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 import { CenterExperience } from "./CenterExperience";
 import type { Lang } from "./Shell";
 
@@ -17,6 +16,5 @@ export function CenterMarketing({ lang }: { lang: Lang }) {
       <article><div className="eyebrow">{ar ? "للأسرة" : "FOR THE FAMILY"}</div><h2>{ar ? "خطوة واضحة بين كل زيارتين." : "A practical next step after the visit."}</h2><p>{ar ? "ممارسة كلام ومهام ومكافآت على الجهاز، وتقارير يختار ولي الأمر مشاركتها. يواصل الطفل استخدام أصواته المألوفة للتواصل في يومه." : "On-device speech practice, tasks, and rewards keep families involved. Caregivers choose when to share a summary, while the child communicates with sounds already familiar to them."}</p></article>
     </div>
     <div className="privacy-callout"><ShieldCheck /><div><h2>{ar ? "ملخص مفيد، وخصوصية محفوظة." : "Useful summaries. Private voices."}</h2><p>{ar ? "تقارير أرقام وأنشطة، دون صوت أو بصمات صوتية أو ملاحظات خاصة. يختار ولي الأمر التصدير والمشاركة." : "Reports contain activity counts, not recordings, voice embeddings, or private notes. Export and sharing stay under caregiver control."}</p></div></div>
-    <div className="final-cta"><div className="eyebrow">{ar ? "ابدأ بتجربة عملية" : "SEE IT IN PRACTICE"}</div><h2>{ar ? "جرّب سير العمل على جهازك." : "Try the workflow on your own device."}</h2><p>{ar ? "فعّل عرض Clinical SLP، أو تواصل معنا لمناقشة تجربة فوكسا في مركزك." : "Activate the Clinical SLP demo, or talk with Voxa about a center pilot."}</p><div className="hero-actions"><Link className="button primary" href={`/${lang}/plan-demo?tier=CLINICAL_SLP`}>{ar ? "إنشاء رمز Clinical SLP" : "Generate a Clinical SLP code"}<ArrowUpRight size={17} /></Link><a className="button quiet" href="mailto:voxasupport@gmail.com?subject=Voxa%20center%20pilot">{ar ? "تواصل بشأن تجربة بالمركز" : "Discuss a center pilot"}</a></div></div>
   </section>;
 }

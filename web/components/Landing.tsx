@@ -64,7 +64,7 @@ export function Landing({ lang }: { lang: Lang }) {
               {ar ? "اختر خطتك" : "Find your plan"}
               <ArrowUpRight size={18} />
             </Link>
-
+            <Link className="text-link" href={`/${lang}/clinical`}>{ar ? "فوكسا للمراكز" : "Voxa for centers"}<ArrowRight size={16} /></Link>
           </div>
           <div className="trust-row">
             <span>
