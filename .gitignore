@@ -36,6 +36,7 @@ desktop.ini
 .kotlin/
 *.class
 *.jar
+!Voxa/gradle/wrapper/gradle-wrapper.jar
 *.war
 *.ear
 
