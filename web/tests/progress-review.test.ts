@@ -7,9 +7,44 @@ import {
   matchRate,
   reportSchema,
   reportV2Schema,
+  reviewHighlights,
 } from "../lib/report";
 
 const fresh = () => structuredClone(example);
+test("short highlights match the real Android exporter in both languages", () => {
+  const expected = JSON.parse(
+    readFileSync(
+      new URL(
+        "../../config/progress-review-highlights-example.json",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+  );
+  const r = reportV2Schema.parse(fresh());
+  assert.deepEqual(reviewHighlights(r, false), expected.en);
+  assert.deepEqual(reviewHighlights(r, true), expected.ar);
+  assert.equal(reviewHighlights(r, false).length, 3);
+});
+test("changing real report counts changes the insight instead of returning sample text", () => {
+  const r = fresh();
+  r.practice.targets.find((t) => t.code === "core_milk")!.current.matched--;
+  r.practice.current.matched--;
+  r.practice.daily.find((d) => d.date === "2026-10-19")!.counts.matched--;
+  const summary = reviewHighlights(reportV2Schema.parse(r), false);
+  assert.match(summary[0].detail, /Milk \(Arabic\): 5 of 12/);
+});
+test("the short view never claims a trend before sufficient earlier tracking", () => {
+  const r = reportV2Schema.parse(fresh());
+  r.captureStartedAt = r.period.start;
+  const summary = reviewHighlights(r, false);
+  assert.ok(
+    summary.every(
+      (h) => h.title !== "More app matches" && h.title !== "Worth discussing",
+    ),
+  );
+  assert.match(summary[0].detail, /isn't enough earlier data/);
+});
 test("accepts Cairo midnight and cutoff gaps as resolved by Android java.time", () => {
   for (const period of [
     {

@@ -403,3 +403,127 @@ export function targetName(code: string, ar: boolean) {
     `${ar ? "هدف شخصي" : "Personal target"} ${code.replace("personal_", "")}`
   );
 }
+
+export function reviewHighlights(report: ProgressReview, ar: boolean) {
+  const current = report.practice.current,
+    tasks = report.tasks;
+  const eligible =
+    Date.parse(report.captureStartedAt) >
+    Date.parse(report.period.previousStart)
+      ? []
+      : report.practice.targets.filter(
+          (t) =>
+            t.code !== "other" &&
+            usable(t.current) >= 5 &&
+            usable(t.previous) >= 5 &&
+            t.current.activeDays >= 2 &&
+            t.previous.activeDays >= 2,
+        );
+  const highlights: { title: string; detail: string }[] = [];
+  const label = (t: ProgressReview["practice"]["targets"][number]) =>
+    `${targetName(t.code, ar)} (${t.language === "ar" ? (ar ? "العربية" : "Arabic") : ar ? "الإنجليزية" : "English"})`;
+  const change = (
+    t: ProgressReview["practice"]["targets"][number],
+    up: boolean,
+  ) => ({
+    title: up
+      ? ar
+        ? "مطابقات أكثر في التطبيق"
+        : "More app matches"
+      : ar
+        ? "نقطة للنقاش في المتابعة"
+        : "Worth discussing",
+    detail: ar
+      ? `${label(t)}: طابق التطبيق ${t.current.matched} من ${usable(t.current)}، مقابل ${t.previous.matched} من ${usable(t.previous)} سابقاً.`
+      : `${label(t)}: ${t.current.matched} of ${usable(t.current)} matched, ${up ? "up" : "down"} from ${t.previous.matched} of ${usable(t.previous)}.`,
+  });
+  const captures = usable(current) + current.noSpeech + current.technical;
+  if (captures > 0 && (current.noSpeech + current.technical) / captures >= 0.25)
+    highlights.push({
+      title: ar ? "راجع ظروف التسجيل" : "Check recording conditions",
+      detail: ar
+        ? `لم يُلتقط كلام أو حدث عطل في ${current.noSpeech + current.technical} من ${captures} تسجيلات. افحص الميكروفون وجرب مكاناً أهدأ.`
+        : `${current.noSpeech + current.technical} of ${captures} captures had no speech or a technical issue. Check the microphone and try a quieter setting.`,
+    });
+  else {
+    const sorted = [...eligible].sort(
+      (a, b) =>
+        matchRate(a.current)! -
+        matchRate(a.previous)! -
+        (matchRate(b.current)! - matchRate(b.previous)!),
+    );
+    const down = sorted[0],
+      up = [...eligible].sort(
+        (a, b) =>
+          matchRate(b.current)! -
+          matchRate(b.previous)! -
+          (matchRate(a.current)! - matchRate(a.previous)!),
+      )[0];
+    if (down && matchRate(down.current)! < matchRate(down.previous)!)
+      highlights.push(change(down, false));
+    if (up && matchRate(up.current)! > matchRate(up.previous)!)
+      highlights.push(change(up, true));
+  }
+  if (highlights.length === 0) {
+    const focus = report.practice.targets
+      .filter(
+        (t) =>
+          t.code !== "other" &&
+          usable(t.current) >= 5 &&
+          t.current.activeDays >= 2,
+      )
+      .sort((a, b) => matchRate(a.current)! - matchRate(b.current)!)[0];
+    if (eligible.length)
+      highlights.push({
+        title: ar ? "استجابة متقاربة" : "Similar app responses",
+        detail: ar
+          ? "لم تتغير معدلات المطابقة للأهداف القابلة للمقارنة. استمر في متابعة الأهداف نفسها."
+          : "Match rates are unchanged on comparable targets. Keep tracking the same words.",
+      });
+    else if (focus && matchRate(focus.current)! < 100)
+      highlights.push({
+        title: ar ? "هدف للمتابعة" : "A target to follow up",
+        detail: ar
+          ? `${label(focus)}: طابق التطبيق ${focus.current.matched} من ${usable(focus.current)}. لا توجد مقارنة سابقة كافية بعد.`
+          : `${label(focus)}: ${focus.current.matched} of ${usable(focus.current)} matched. There isn't enough earlier data to compare yet.`,
+      });
+    else
+      highlights.push({
+        title: ar ? "جارٍ بناء صورة أولية" : "Building a starting picture",
+        detail:
+          usable(current) === 0
+            ? ar
+              ? "لم تُسجل ممارسة بالتتبع الجديد خلال هذه الفترة. ابدأ بجلسة قصيرة."
+              : "No practice from the new tracking in this period. Start with a short session."
+            : ar
+              ? "كرر الكلمات واللغة نفسيهما حتى تتضح التغيرات في المراجعة المقبلة."
+              : "Repeat the same words and language so a later review can show changes.",
+      });
+  }
+  if (tasks.awaitingReview > 0)
+    highlights.push({
+      title: ar
+        ? `مهام تنتظر تأكيدك: ${tasks.awaitingReview}`
+        : tasks.awaitingReview === 1
+          ? "1 task needs your review"
+          : `${tasks.awaitingReview} tasks need your review`,
+      detail: ar
+        ? "أكد إتمام المهام وسجل المساعدة المطلوبة."
+        : "Confirm completion and note any help needed.",
+    });
+  else {
+    const known =
+        tasks.support.independent +
+        tasks.support.prompted +
+        tasks.support.assisted,
+      helped = tasks.support.prompted + tasks.support.assisted;
+    if (known > 0)
+      highlights.push({
+        title: ar ? "المساعدة في المنزل" : "Support at home",
+        detail: ar
+          ? `حسب ولي الأمر، لزمت المساعدة في ${helped} من ${known} مهام سُجل فيها مستوى المساعدة.`
+          : `The caregiver reported help on ${helped} of ${known} tasks with a recorded support level.`,
+      });
+  }
+  return highlights.slice(0, 3);
+}

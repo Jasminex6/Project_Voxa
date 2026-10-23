@@ -26,11 +26,12 @@ class ProgressReportDeviceTest {
         assertTrue(json.toByteArray().size < 65536)
         val dir = context.getExternalFilesDir(null)!!
         File(dir, "progress-review-example.json").writeText(json)
+        File(dir, "progress-review-highlights.json").writeText(ProgressReport.gson.toJson(mapOf("en" to ReviewHighlights.build(report,false),"ar" to ReviewHighlights.build(report,true))))
         for (language in listOf("en", "ar")) {
             val file = File(dir, "progress-review-$language.pdf")
             ProgressPdf.write(file, report, language == "ar", sample = true)
             PdfRenderer(ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)).use { renderer ->
-                assertEquals(2, renderer.pageCount)
+                assertEquals(1, renderer.pageCount)
                 repeat(renderer.pageCount) { index -> renderer.openPage(index).use { page ->
                     val bitmap = Bitmap.createBitmap(page.width * 2, page.height * 2, Bitmap.Config.ARGB_8888)
                     bitmap.eraseColor(Color.WHITE); page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
@@ -41,14 +42,14 @@ class ProgressReportDeviceTest {
         }
     }
 
-    @Test fun largeAndEmptyReportsPaginateWithoutClipping() {
+    @Test fun largeAndEmptyReportsStayOnOnePageWithoutClipping() {
         val sample = ReportSamples.review()
         val target = sample.practice.targets.first()
         val large = sample.copy(practice = sample.practice.copy(targets = (1..41).map { target.copy(code = "personal_$it") }))
         for (report in listOf(sample.copy(practice = sample.practice.copy(targets = emptyList())), large)) for (ar in listOf(false, true)) {
             val file = File(context.cacheDir, "report-layout-check.pdf")
             ProgressPdf.write(file, report, ar)
-            PdfRenderer(ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)).use { assertTrue(it.pageCount >= 2) }
+            PdfRenderer(ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)).use { assertEquals(1,it.pageCount) }
             file.delete()
         }
     }

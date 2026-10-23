@@ -1,0 +1,30 @@
+{
+  "en": [
+    {
+      "detail": "Milk (Arabic): 6 of 12 matched, down from 8 of 12.",
+      "title": "Worth discussing"
+    },
+    {
+      "detail": "Bread (English): 6 of 8 matched, up from 4 of 8.",
+      "title": "More app matches"
+    },
+    {
+      "detail": "Confirm completion and note any help needed.",
+      "title": "1 task needs your review"
+    }
+  ],
+  "ar": [
+    {
+      "detail": "لبن (العربية): طابق التطبيق 6 من 12، مقابل 8 من 12 سابقاً.",
+      "title": "نقطة للنقاش في المتابعة"
+    },
+    {
+      "detail": "عيش (الإنجليزية): طابق التطبيق 6 من 8، مقابل 4 من 8 سابقاً.",
+      "title": "مطابقات أكثر في التطبيق"
+    },
+    {
+      "detail": "أكد إتمام المهام وسجل المساعدة المطلوبة.",
+      "title": "مهام تنتظر تأكيدك: 1"
+    }
+  ]
+}

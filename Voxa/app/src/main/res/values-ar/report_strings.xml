@@ -7,7 +7,7 @@
     <string name="report_assisted">بمساعدة مباشرة</string>
     <string name="report_not_recorded">لم يُسجل</string>
     <string name="report_review">مراجعة التقدم</string>
-    <string name="report_intro">راجع نمط الممارسة ومطابقة كل هدف داخل التطبيق ومتابعة المهام والمساعدة المطلوبة. اختر الفترة قبل المشاركة.</string>
+    <string name="report_intro">لمحة قصيرة من نشاط هذا الطفل. راجع أهم الملاحظات أو صدّر تقرير PDF من صفحة واحدة.</string>
     <string name="report_week">٧ أيام</string>
     <string name="report_month">٣٠ يوماً</string>
     <string name="report_history_retained">إزالة بطاقات المهام المكتملة؟ تبقى أعداد أنشطتها في مراجعات التقدم المحلية. حذف ملف الطفل يزيل نشاط تقاريره أيضاً.</string>

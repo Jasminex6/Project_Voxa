@@ -90,4 +90,34 @@ class ProgressAnalyticsTest {
         assertEquals(50, report.practice.targets.sumOf { it.current.usable })
         assertEquals("other", report.practice.targets.last().code)
     }
+
+    @Test fun highlightsChangeWithObservedCountsAndStayShort() {
+        fun trials(code: String, daysAgo: Int, matches: Int) = (0..9).map {
+            row(code, daysAgo + it % 2, if(it<matches) PracticeOutcome.SCORED else PracticeOutcome.UNRECOGNIZED, it<matches)
+        }
+        val rows=trials("core_water",0,8)+trials("core_water",8,4)+trials("core_milk",0,2)+trials("core_milk",8,6)
+        val queued=QuestEntity(id=1,profileId=1,title="PRIVATE",description="PRIVATE",icon="",points=1,status=QuestStatus.SUBMITTED)
+        val insights=ReviewHighlights.build(build(rows,quests=listOf(queued)),false)
+        assertEquals(3,insights.size)
+        assertTrue(insights[0].detail.contains("Milk (Arabic): 2 of 10"))
+        assertTrue(insights[1].detail.contains("Water (Arabic): 8 of 10"))
+        assertEquals("1 task needs your review",insights[2].title)
+        val changed=ReviewHighlights.build(build(trials("core_water",0,6)+trials("core_water",8,4)),false)
+        assertTrue(changed.single().detail.contains("6 of 10"))
+        assertFalse(insights.toString().contains("PRIVATE"))
+    }
+
+    @Test fun highlightsDoNotInventAComparisonFromSparseOrLegacyData() {
+        val sparse=ReviewHighlights.build(build(listOf(row("core_water",1),row("core_water",8))),false)
+        assertEquals("Building a starting picture",sparse.single().title)
+        val empty=ReviewHighlights.build(build(),false)
+        assertTrue(empty.single().detail.startsWith("No practice from the new tracking"))
+    }
+
+    @Test fun captureProblemsTakePriorityOverPracticeTrends() {
+        val rows=(0..5).map {row("core_water",it%2,PracticeOutcome.TECHNICAL,false)}+row("core_water",1)
+        val insights=ReviewHighlights.build(build(rows),false)
+        assertEquals("Check recording conditions",insights.single().title)
+        assertTrue(insights.single().detail.startsWith("6 of 7 captures"))
+    }
 }

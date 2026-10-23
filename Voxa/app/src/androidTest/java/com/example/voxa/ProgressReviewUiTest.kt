@@ -41,10 +41,11 @@ class ProgressReviewUiTest {
         val context=InstrumentationRegistry.getInstrumentation().targetContext
         for(language in listOf(false,true)) for(mode in listOf(false,true)) {
             ui.runOnIdle { ar=language;dark=mode }
-            ui.onNodeWithText(if(language) "انتظام الممارسة" else "Practice consistency").assertIsDisplayed()
+            ui.onNodeWithText(if(language) "أيام الممارسة" else "Practice days").assertIsDisplayed()
             val bitmap=ui.onRoot().captureToImage().asAndroidBitmap()
             File(context.getExternalFilesDir(null),"report-ui-${if(language) "ar" else "en"}-${if(mode) "dark" else "light"}.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG,100,it) }
-            ui.onNodeWithText(if(language) "التغطية والخصوصية" else "Coverage and privacy").performScrollTo().assertIsDisplayed()
+            ui.onNodeWithText(if(language) "التفاصيل" else "Details").performScrollTo().performClick()
+            ui.onNodeWithText(if(language) "إخفاء التفاصيل" else "Hide details").assertIsDisplayed()
         }
     }
 }
