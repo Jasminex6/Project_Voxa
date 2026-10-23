@@ -8,6 +8,14 @@ Voxa is an Android assistive communication app for minimally verbal and non-spea
 
 Core communication works offline. Plan activation needs a connection once; progress reports are generated on the phone and shared deliberately by the caregiver. Recordings and recognition templates are excluded from those reports.
 
+## Download the Android app
+
+**[Download Voxa 1.12.3 APK](https://github.com/Jasminex6/Project_Voxa/releases/download/v1.12.3/voxa-1.12.3.apk)** · Android 8.0+ · approximately 93 MB
+
+Download the APK and open it on your Android phone. Allow installation from your browser or file manager if Android asks.
+
+[Release notes, installation steps and checksums](https://github.com/Jasminex6/Project_Voxa/releases/tag/v1.12.3).
+
 ## Live website
 
 - [English storefront](https://voxa-web-pi.vercel.app/en) · [العربية](https://voxa-web-pi.vercel.app/ar)
@@ -15,7 +23,7 @@ Core communication works offline. Plan activation needs a connection once; progr
 - [Voxa for centers](https://voxa-web-pi.vercel.app/en/clinical)
 - [Generate an activation code and QR](https://voxa-web-pi.vercel.app/en/plan-demo)
 
-This branch, `codex/voxa-platform-integration`, builds on `justinbeiber`, integrates `dark/light_theme`, and includes the Android licensing integration and bilingual web platform. The hosted preview demonstrates plan activation without charging money or asking for payment details.
+The `main` branch builds on `justinbeiber`, integrates `dark/light_theme`, and includes the Android licensing integration and bilingual web platform. The hosted preview demonstrates plan activation without charging money or asking for payment details.
 
 Plans, center benefits, and activation controls fit in one desktop view at the checked 1280×720 viewport. The activation form has a compact Generate button, with Copy code and Open in Voxa beside the QR. FAQs and the sample progress report open in dialogs. How it works remains a scrolling explanation; narrow screens retain normal scrolling so content stays readable.
 
