@@ -9,7 +9,7 @@
     <string name="license_pairing_copy">نسخ معرّف التثبيت</string>
     <string name="license_pairing_copied">تم نسخ معرّف التثبيت</string>
     <string name="license_free_name">مجانية</string>
-    <string name="license_free_details">ملف طفل واحد · ٣ كلمات</string>
+    <string name="license_free_details">ملف طفل واحد · التدريب الصوتي وإضافة الكلمات بالكامل</string>
     <string name="license_enter_code">تفعيل رمز</string>
     <string name="license_compare">مقارنة الخطط</string>
     <string name="license_grace_badge">فترة سماح</string>
@@ -22,7 +22,7 @@
     <string name="license_free_status">الخطة المجانية نشطة</string>
     <string name="license_purchase_hint">اشتريت خطة من موقع فوكسا؟ الصق رمز التفعيل هنا، ثم أكّد باستخدام رمز ولي الأمر.</string>
     <string name="license_purchase_code">رمز تفعيل الشراء</string>
-    <string name="license_free">مجاني · ملف طفل واحد · ٣ كلمات</string>
+    <string name="license_free">مجاني · ملف طفل واحد · الميزات الصوتية بالكامل</string>
     <string name="license_valid_until">الوصول المدفوع حتى %1$s</string>
     <string name="license_grace">فترة سماح لمدة سبعة أيام. اتصل لتجديد الاشتراك.</string>
     <string name="license_expired">انتهى الوصول المميز. ملفات الأطفال ونماذج الصوت محفوظة.</string>

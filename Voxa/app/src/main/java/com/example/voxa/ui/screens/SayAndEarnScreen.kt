@@ -2,12 +2,9 @@ package com.example.voxa.ui.screens
 
 import android.Manifest
 import android.content.Context
-import android.content.Intent
 import android.content.pm.PackageManager
-import android.os.Build
 import android.os.Bundle
 import android.speech.RecognitionListener
-import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -43,6 +40,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -56,6 +54,9 @@ import com.example.voxa.ui.microphoneGesture
 import com.example.voxa.ui.theme.*
 import com.example.voxa.utils.AudioPlayer
 import com.example.voxa.utils.FuzzyMatcher
+import com.example.voxa.utils.PracticeSpeechRecognizer
+import com.example.voxa.utils.PracticeSpeechClient
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -171,18 +172,18 @@ val DEFAULT_SAY_AND_EARN_WORDS = listOf(
 @Composable
 fun SayAndEarnScreen(
     viewModel: IVoxaViewModel,
-    onBack: (() -> Unit)? = null
+    onBack: (() -> Unit)? = null,
+    speechClientFactory: (Context) -> PracticeSpeechClient? = PracticeSpeechRecognizer::client
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val activeProfile by viewModel.activeProfile.collectAsState()
     val enrolledIntents by viewModel.enrolledIntents.collectAsState()
     val childPoints by viewModel.childPoints.collectAsState()
-    val license by viewModel.license.collectAsState()
     val rewardGold = if (LocalVoxaColors.current.isDark) QuestGold else QuestGoldLight
 
     // Combined vocabulary: default core words + child's custom enrolled words
-    val allWords = remember(enrolledIntents, license.effectiveTier) {
+    val allWords = remember(enrolledIntents) {
         val customWords = enrolledIntents.map { intent ->
             SayAndEarnWord(
                 english = intent.outputPhrase,
@@ -192,8 +193,7 @@ fun SayAndEarnScreen(
                 audioAssetPath = intent.audioAssetPath
             )
         }
-        if (license.hasFullPractice) (DEFAULT_SAY_AND_EARN_WORDS + customWords).distinctBy { it.arabic }
-        else DEFAULT_SAY_AND_EARN_WORDS.take(3)
+        (DEFAULT_SAY_AND_EARN_WORDS + customWords).distinctBy { it.arabic }
     }
 
     var selectedWordIndex by remember { mutableIntStateOf(0) }
@@ -204,6 +204,7 @@ fun SayAndEarnScreen(
     // Audio & Speech recognition states
     var isListening by remember { mutableStateOf(false) }
     var isProcessing by remember { mutableStateOf(false) }
+    var isPreparing by remember { mutableStateOf(false) }
     var partialSpokenText by remember { mutableStateOf("") }
     var matchResult by remember { mutableStateOf<FuzzyMatcher.MatchResult?>(null) }
     var showResult by remember { mutableStateOf(false) }
@@ -272,133 +273,124 @@ fun SayAndEarnScreen(
     }
 
     // SpeechRecognizer instance
-    var speechRecognizer by remember { mutableStateOf<SpeechRecognizer?>(null) }
+    var speechRecognizer by remember { mutableStateOf<PracticeSpeechClient?>(null) }
+    var recognitionGeneration by remember { mutableLongStateOf(0L) }
+    var recognizerReady by remember { mutableStateOf(false) }
+    var recognitionStartJob by remember { mutableStateOf<Job?>(null) }
 
-    // Track whether the background listening service was active when entering Practice
-    var wasServiceRunningBeforePractice by remember { mutableStateOf(false) }
+    fun cancelRecognition() {
+        // Invalidate BEFORE cancelling: Android can report ERROR_CLIENT while
+        // cancelling, or deliver queued results after the selected word changes.
+        recognitionGeneration++
+        recognitionStartJob?.cancel()
+        recognitionStartJob = null
+        val oldRecognizer = speechRecognizer
+        speechRecognizer = null
+        isListening = false
+        isProcessing = false
+        isPreparing = false
+        recognizerReady = false
+        micRmsLevel = 0f
+        runCatching { oldRecognizer?.cancel() }
+        runCatching { oldRecognizer?.destroy() }
+    }
 
     DisposableEffect(Unit) {
-        if (com.example.voxa.services.VoxaListenerService.isRunning) {
-            wasServiceRunningBeforePractice = true
-            viewModel.toggleListening() // Pause background listener so Practice has exclusive mic access
-        }
         onDispose {
-            try {
-                speechRecognizer?.cancel()
-                speechRecognizer?.destroy()
-                speechRecognizer = null
-            } catch (e: Exception) {
-                android.util.Log.w("SayAndEarn", "Error destroying speech recognizer on dispose: ${e.message}")
-            }
-            // Automatically resume background listening when returning to Home/Main if it was active before
-            if (wasServiceRunningBeforePractice && !com.example.voxa.services.VoxaListenerService.isRunning) {
-                viewModel.toggleListening()
-            }
+            cancelRecognition()
         }
     }
 
     fun stopListening() {
+        if (!recognizerReady) {
+            // A press released before the service is ready captured no speech.
+            // Cancel it silently instead of submitting an empty failed attempt.
+            cancelRecognition()
+            return
+        }
         try {
-            if (isListening) {
-                isProcessing = true
-                coroutineScope.launch {
-                    delay(5000)
-                    if (isProcessing) {
-                        isProcessing = false
-                    }
-                }
-            }
             speechRecognizer?.stopListening()
         } catch (e: Exception) {
             android.util.Log.w("SayAndEarn", "Error stopping listening: ${e.message}")
-            isProcessing = false
         }
         isListening = false
         micRmsLevel = 0f
     }
 
-    fun startListeningInternal() {
-        // 1. If background listening service is holding the microphone, pause it and wait for AudioRecord to close
-        if (com.example.voxa.services.VoxaListenerService.isRunning) {
-            wasServiceRunningBeforePractice = true
+    fun startListeningInternal(startupRetry: Int = 0) {
+        cancelRecognition()
+        val requestGeneration = recognitionGeneration
+        var completed = false
+        var readyForSpeech = false
+        var heardSpeech = false
+        fun isCurrent() = requestGeneration == recognitionGeneration && !completed
+        // Match main: pause Home only when Practice requests the microphone.
+        val waitingForHome = com.example.voxa.services.VoxaListenerService.isRunning
+        if (waitingForHome) {
             viewModel.toggleListening()
             Toast.makeText(context, "تم إيقاف خدمة الاستماع مؤقتاً للتمرين 🎙️", Toast.LENGTH_SHORT).show()
-            coroutineScope.launch {
-                delay(350)
-                startListeningInternal()
-            }
-            return
         }
-
-        // 2. Re-create a fresh SpeechRecognizer instance to avoid ERROR_RECOGNIZER_BUSY
-        try {
-            speechRecognizer?.cancel()
-            speechRecognizer?.destroy()
-        } catch (e: Exception) {
-            android.util.Log.w("SayAndEarn", "Cleaned up old recognizer: ${e.message}")
-        }
-        speechRecognizer = null
 
         val targetWord = allWords.getOrElse(selectedWordIndex) { DEFAULT_SAY_AND_EARN_WORDS[0] }
         val targetLang = selectedLanguage
-        val observedProfileId = activeProfile?.id ?: return
+        val observedProfileId = activeProfile?.id
         var observationSaved = false
         fun observe(outcome: com.example.voxa.data.PracticeOutcome, result: FuzzyMatcher.MatchResult? = null) {
             if (observationSaved) return
             observationSaved = true
+            if (observedProfileId == null) return
             viewModel.recordPracticeObservation(observedProfileId, targetWord.english, targetWord.reportCode,
                 targetLang, outcome, result?.isMatched == true, result?.matchPercent?.toInt() ?: 0, result?.starsEarned ?: 0)
         }
-        val recognizer = if (android.os.Build.VERSION.SDK_INT >= 31 && SpeechRecognizer.isOnDeviceRecognitionAvailable(context)) {
-            SpeechRecognizer.createOnDeviceSpeechRecognizer(context)
-        } else {
-            null
-        }
+        // Match main: let the installed speech service choose its supported
+        // online/offline backend, including Arabic and devices running Android 8–11.
+        val recognizer = runCatching { speechClientFactory(context) }.getOrNull()
         speechRecognizer = recognizer
 
         if (recognizer == null) {
+            completed = true
             observe(com.example.voxa.data.PracticeOutcome.TECHNICAL)
-            Toast.makeText(context, R.string.license_offline_unavailable, Toast.LENGTH_LONG).show()
-            matchResult = FuzzyMatcher.MatchResult(
-                isMatched = false,
-                isExact = false,
-                editDistance = 999,
-                bestCandidate = "",
-                coinsEarned = 0,
-                feedbackMessage = context.getString(R.string.license_offline_unavailable)
-            )
-            showResult = true
+            Toast.makeText(context, "Speech recognition is not available on this device", Toast.LENGTH_LONG).show()
+            showResult = false
+            matchResult = null
             return
         }
-
-        // Dynamically capture target word and language at start of recognition
 
         showResult = false
         matchResult = null
         partialSpokenText = ""
         isListening = true
+        isPreparing = true
         isProcessing = false
         bonusAwarded = false
 
         recognizer.setRecognitionListener(object : RecognitionListener {
             override fun onReadyForSpeech(params: Bundle?) {
+                if (!isCurrent()) return
+                readyForSpeech = true
+                recognizerReady = true
+                isPreparing = false
                 android.util.Log.d("SayAndEarn", "SpeechRecognizer: Ready for speech (target: ${targetWord.english})")
                 isListening = true
                 isProcessing = false
             }
 
             override fun onBeginningOfSpeech() {
+                if (!isCurrent()) return
+                heardSpeech = true
                 android.util.Log.d("SayAndEarn", "SpeechRecognizer: Beginning of speech")
                 isProcessing = false
             }
 
             override fun onRmsChanged(rmsdB: Float) {
+                if (!isCurrent()) return
                 micRmsLevel = (rmsdB / 10f).coerceIn(0f, 1f)
             }
 
             override fun onBufferReceived(buffer: ByteArray?) {}
 
             override fun onEndOfSpeech() {
+                if (!isCurrent()) return
                 android.util.Log.d("SayAndEarn", "SpeechRecognizer: End of speech")
                 isListening = false
                 isProcessing = true
@@ -406,8 +398,24 @@ fun SayAndEarnScreen(
             }
 
             override fun onError(error: Int) {
-                observe(when (error) {
-                    SpeechRecognizer.ERROR_NO_MATCH -> com.example.voxa.data.PracticeOutcome.UNRECOGNIZED
+                if (!isCurrent()) return
+                completed = true
+                val startupError = !readyForSpeech && error in setOf(
+                    SpeechRecognizer.ERROR_CLIENT, SpeechRecognizer.ERROR_RECOGNIZER_BUSY,
+                    SpeechRecognizer.ERROR_AUDIO, SpeechRecognizer.ERROR_SERVER_DISCONNECTED,
+                    SpeechRecognizer.ERROR_NO_MATCH
+                )
+                if (startupError && startupRetry < 2) {
+                    // Warm-up/disconnection is not a pronunciation attempt. Retry
+                    // this same user action, unless they cancel or switch words.
+                    recognitionStartJob = coroutineScope.launch {
+                        delay(250)
+                        if (recognitionGeneration == requestGeneration) startListeningInternal(startupRetry + 1)
+                    }
+                    return
+                }
+                observe(if (!readyForSpeech) com.example.voxa.data.PracticeOutcome.TECHNICAL else when (error) {
+                    SpeechRecognizer.ERROR_NO_MATCH -> if (heardSpeech) com.example.voxa.data.PracticeOutcome.UNRECOGNIZED else com.example.voxa.data.PracticeOutcome.NO_SPEECH
                     SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> com.example.voxa.data.PracticeOutcome.NO_SPEECH
                     else -> com.example.voxa.data.PracticeOutcome.TECHNICAL
                 })
@@ -415,11 +423,15 @@ fun SayAndEarnScreen(
                 android.util.Log.e("SayAndEarn", "SpeechRecognizer onError: $error ($errorName) for target: ${targetWord.english}")
                 isListening = false
                 isProcessing = false
+                isPreparing = false
+                recognizerReady = false
                 micRmsLevel = 0f
 
                 val errorMsg = when (error) {
                     SpeechRecognizer.ERROR_NO_MATCH ->
-                        if (targetLang == "ar") "لم نتمكن من تمييز الكلمة. حاول نطقها بوضوح! 🗣️" else "Could not recognize word. Speak clearly! 🗣️"
+                        if (!heardSpeech) {
+                            if (targetLang == "ar") "لم نسمع صوتاً. اضغط على المايك وتحدث! 🎙️" else "No speech heard. Tap the mic and try again! 🎙️"
+                        } else if (targetLang == "ar") "لم نتمكن من تمييز الكلمة. حاول نطقها بوضوح! 🗣️" else "Could not recognize word. Speak clearly! 🗣️"
                     SpeechRecognizer.ERROR_SPEECH_TIMEOUT ->
                         if (targetLang == "ar") "لم نسمع صوتاً. اضغط على المايك وتحدث! 🎙️" else "No speech heard before timeout. Try again! 🎙️"
                     SpeechRecognizer.ERROR_AUDIO ->
@@ -427,15 +439,24 @@ fun SayAndEarnScreen(
                     SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS ->
                         context.getString(R.string.say_and_earn_mic_permission)
                     SpeechRecognizer.ERROR_NETWORK, SpeechRecognizer.ERROR_NETWORK_TIMEOUT ->
-                        context.getString(R.string.license_offline_unavailable)
+                        if (targetLang == "ar") "يلزم اتصال بالإنترنت للتعرف على الصوت 🌐" else "Internet connection required for speech recognition 🌐"
                     SpeechRecognizer.ERROR_SERVER ->
-                        context.getString(R.string.license_offline_unavailable)
+                        if (targetLang == "ar") "خطأ بخادم الصوت. تحقق من اتصال الإنترنت 🌐" else "Speech server error. Check internet connection 🌐"
                     SpeechRecognizer.ERROR_RECOGNIZER_BUSY ->
                         if (targetLang == "ar") "الميكروفون مشغول. جاري إعادة التعيين... اضغط مجدداً ⏳" else "Recognizer busy. Resetting... tap mic again ⏳"
                     SpeechRecognizer.ERROR_CLIENT ->
                         if (targetLang == "ar") "حدث خطأ في النظام. اضغط مجدداً للمحاولة 🔄" else "Client error. Tap mic again to retry 🔄"
                     else ->
                         if (targetLang == "ar") "لم نسمع بوضوح (كود $errorName). حاول مجدداً! 🎙️" else "Could not recognize ($errorName). Try again! 🎙️"
+                }
+
+                if (!readyForSpeech || error != SpeechRecognizer.ERROR_NO_MATCH || !heardSpeech) {
+                    // Setup, transport, and device errors belong to the service,
+                    // not to the child's pronunciation score or streak.
+                    showResult = false
+                    matchResult = null
+                    Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
+                    return
                 }
 
                 matchResult = FuzzyMatcher.MatchResult(
@@ -451,13 +472,29 @@ fun SayAndEarnScreen(
             }
 
             override fun onResults(results: Bundle?) {
+                if (!isCurrent()) return
+                completed = true
                 isListening = false
                 isProcessing = false
+                isPreparing = false
+                recognizerReady = false
                 micRmsLevel = 0f
                 val candidates = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION) ?: arrayListOf()
                 android.util.Log.d("SayAndEarn", "SpeechRecognizer onResults candidates: $candidates for target: ${targetWord.english}/${targetWord.arabic}")
 
                 if (candidates.isEmpty()) {
+                    if (!readyForSpeech) {
+                        observe(com.example.voxa.data.PracticeOutcome.TECHNICAL)
+                        showResult = false
+                        matchResult = null
+                        return
+                    }
+                    if (!heardSpeech) {
+                        observe(com.example.voxa.data.PracticeOutcome.NO_SPEECH)
+                        showResult = false
+                        matchResult = null
+                        return
+                    }
                     observe(com.example.voxa.data.PracticeOutcome.UNRECOGNIZED)
                     matchResult = FuzzyMatcher.MatchResult(
                         isMatched = false,
@@ -514,8 +551,10 @@ fun SayAndEarnScreen(
             }
 
             override fun onPartialResults(partialResults: Bundle?) {
+                if (!isCurrent()) return
                 val matches = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                 if (!matches.isNullOrEmpty()) {
+                    if (matches[0].isNotBlank()) heardSpeech = true
                     partialSpokenText = matches[0]
                     android.util.Log.d("SayAndEarn", "Partial speech: ${matches[0]}")
                 }
@@ -524,30 +563,33 @@ fun SayAndEarnScreen(
             override fun onEvent(eventType: Int, params: Bundle?) {}
         })
 
-        val isEn = targetLang == "en"
-        val langTag = if (isEn) "en-US" else "ar-EG"
-        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, context.packageName)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, langTag)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, langTag)
-            if (isEn) {
-                putExtra("android.speech.extra.EXTRA_ADDITIONAL_LANGUAGES", arrayOf("en-US", "en-GB", "en"))
-            } else {
-                putExtra("android.speech.extra.EXTRA_ADDITIONAL_LANGUAGES", arrayOf("ar-EG", "ar-SA", "ar"))
-            }
-            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 5)
-            putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
-            putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
-        }
+        val intent = PracticeSpeechRecognizer.request(context, targetLang)
 
-        try {
-            recognizer.startListening(intent)
-        } catch (e: Exception) {
-            observe(com.example.voxa.data.PracticeOutcome.TECHNICAL)
-            isListening = false
-            android.util.Log.e("SayAndEarn", "Error starting speech recognizer: ${e.message}", e)
-            Toast.makeText(context, "Could not start voice recognizer: ${e.message}", Toast.LENGTH_SHORT).show()
+        recognitionStartJob = coroutineScope.launch {
+            if (waitingForHome) {
+                val released = kotlinx.coroutines.withTimeoutOrNull(2000) {
+                    while (com.example.voxa.services.VoxaListenerService.isRunning) delay(25)
+                    true
+                } == true
+                if (!released && isCurrent()) {
+                    completed = true
+                    isListening = false
+                    isPreparing = false
+                    Toast.makeText(context, R.string.practice_mic_busy, Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
+            }
+            if (!isCurrent()) return@launch
+            try {
+                recognizer.startListening(intent)
+            } catch (e: Exception) {
+                if (!isCurrent()) return@launch
+                completed = true
+                observe(com.example.voxa.data.PracticeOutcome.TECHNICAL)
+                isListening = false
+                isPreparing = false
+                Toast.makeText(context, R.string.practice_mic_busy, Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
@@ -761,10 +803,7 @@ fun SayAndEarnScreen(
                         modifier = Modifier
                             .width(88.dp)
                             .clickable {
-                                stopListening()
-                                try {
-                                    speechRecognizer?.cancel()
-                                } catch (e: Exception) {}
+                                cancelRecognition()
                                 selectedWordIndex = index
                                 showResult = false
                                 matchResult = null
@@ -821,7 +860,7 @@ fun SayAndEarnScreen(
                             1.5.dp,
                             if (isSuccess) SuccessGreen.copy(alpha = 0.6f) else ErrorRed.copy(alpha = 0.6f)
                         ),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth().testTag("practice_result")
                     ) {
                         Column(
                             modifier = Modifier
@@ -890,10 +929,7 @@ fun SayAndEarnScreen(
                             ) {
                                 OutlinedButton(
                                     onClick = {
-                                        stopListening()
-                                        try {
-                                            speechRecognizer?.cancel()
-                                        } catch (e: Exception) {}
+                                        cancelRecognition()
                                         showResult = false
                                         matchResult = null
                                         partialSpokenText = ""
@@ -914,10 +950,7 @@ fun SayAndEarnScreen(
 
                                 Button(
                                     onClick = {
-                                        stopListening()
-                                        try {
-                                            speechRecognizer?.cancel()
-                                        } catch (e: Exception) {}
+                                        cancelRecognition()
                                         showResult = false
                                         matchResult = null
                                         partialSpokenText = ""
@@ -1079,6 +1112,7 @@ fun SayAndEarnScreen(
             // Status text below mic
             Text(
                 text = when {
+                    isPreparing -> stringResource(R.string.practice_mic_preparing)
                     isListening -> stringResource(if (micMode == "hold") R.string.dashboard_release_to_stop else R.string.say_and_earn_listening)
                     isProcessing -> stringResource(R.string.say_and_earn_processing)
                     else -> stringResource(if (micMode == "hold") R.string.dashboard_hold_mic else R.string.say_and_earn_tap_to_speak)

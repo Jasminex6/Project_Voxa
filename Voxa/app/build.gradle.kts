@@ -30,8 +30,8 @@ android {
         applicationId = "com.example.voxa"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.12.0"
+        versionCode = 2
+        versionName = "1.12.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         manifestPlaceholders["voxaWebHost"] = URI(webUrl.get()).host

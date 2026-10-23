@@ -45,10 +45,13 @@ class LicenseVerifierTest {
     @Test fun freeLimitsApplyOnlyToNewPremiumActions() {
         val free = ActiveLicense()
         assertTrue(free.canCreateProfile(0)); assertFalse(free.canCreateProfile(1))
-        assertTrue(free.canEnrollIntent(2)); assertFalse(free.canEnrollIntent(3))
-        assertFalse(free.canEnrollIntent(5))
+        assertTrue(free.hasFullPractice)
+        assertTrue(free.canEnrollIntent(3))
+        assertTrue(free.canEnrollIntent(100))
         assertFalse(free.canSendProfiles)
         val expired = ActiveLicense(tier = LicenseTier.CLINICAL_SLP, status = LicenseStatus.EXPIRED)
         assertEquals(LicenseTier.FREE, expired.effectiveTier)
+        assertTrue(expired.hasFullPractice)
+        assertTrue(expired.canEnrollIntent(100))
     }
 }

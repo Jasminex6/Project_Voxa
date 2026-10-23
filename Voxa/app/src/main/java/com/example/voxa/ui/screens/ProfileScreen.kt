@@ -96,6 +96,11 @@ fun ProfileScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                 color = LocalVoxaColors.current.primaryText
             )
         }
+        Text(
+            text = "Voxa ${com.example.voxa.BuildConfig.VERSION_NAME}",
+            color = LocalVoxaColors.current.secondaryText,
+            fontSize = 12.sp
+        )
         Spacer(modifier = Modifier.height(16.dp))
 
         // ── PROFILE CREATION FORM ──

@@ -13,7 +13,7 @@
     <string name="license_pairing_copy">Copy installation ID</string>
     <string name="license_pairing_copied">Installation ID copied</string>
     <string name="license_free_name">Free</string>
-    <string name="license_free_details">1 child profile · 3 words</string>
+    <string name="license_free_details">1 child profile · full voice practice and enrollment</string>
     <string name="license_enter_code">Activate a code</string>
     <string name="license_compare">Compare plans</string>
     <string name="license_grace_badge">Grace period</string>
@@ -26,7 +26,7 @@
     <string name="license_free_status">Free plan active</string>
     <string name="license_purchase_hint">Purchased a plan on the Voxa website? Paste your activation code below, then confirm with your caregiver PIN.</string>
     <string name="license_purchase_code">Purchase activation code</string>
-    <string name="license_free">Free · 1 profile · 3 words</string>
+    <string name="license_free">Free · 1 profile · full voice features</string>
     <string name="license_valid_until">Paid access until %1$s</string>
     <string name="license_grace">Seven-day grace period. Reconnect to renew.</string>
     <string name="license_expired">Premium access has expired. Your profiles and voice templates are preserved.</string>

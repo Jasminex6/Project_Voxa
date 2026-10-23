@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="practice_mic_preparing">Getting microphone ready…</string>
+    <string name="practice_mic_busy">The microphone is unavailable. Please try again.</string>
     <string name="theme_switch_light">Switch to light mode</string>
     <string name="theme_switch_dark">Switch to dark mode</string>
     <string name="p2p_share_title">Share %1$s\'s profile</string>

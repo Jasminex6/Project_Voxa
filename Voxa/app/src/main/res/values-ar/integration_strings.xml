@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="practice_mic_preparing">جارٍ تجهيز الميكروفون…</string>
+    <string name="practice_mic_busy">الميكروفون غير متاح حالياً. حاول مرة أخرى.</string>
     <string name="theme_switch_light">التبديل إلى الوضع الفاتح</string>
     <string name="theme_switch_dark">التبديل إلى الوضع الداكن</string>
     <string name="p2p_share_title">مشاركة ملف %1$s</string>
