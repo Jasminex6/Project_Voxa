@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="report_help_title">ما مقدار المساعدة المطلوبة؟</string>
+    <string name="report_help_note">ملاحظة اختيارية من ولي الأمر توضح سياق المراجعة، ولا تغير مكافأة الطفل.</string>
+    <string name="report_independent">أتمها بشكل مستقل</string>
+    <string name="report_prompted">بتذكير أو توجيه لفظي</string>
+    <string name="report_assisted">بمساعدة مباشرة</string>
+    <string name="report_not_recorded">لم يُسجل</string>
+    <string name="report_review">مراجعة التقدم</string>
+    <string name="report_intro">راجع نمط الممارسة ومطابقة كل هدف داخل التطبيق ومتابعة المهام والمساعدة المطلوبة. اختر الفترة قبل المشاركة.</string>
+    <string name="report_week">٧ أيام</string>
+    <string name="report_month">٣٠ يوماً</string>
+    <string name="report_history_retained">إزالة بطاقات المهام المكتملة؟ تبقى أعداد أنشطتها في مراجعات التقدم المحلية. حذف ملف الطفل يزيل نشاط تقاريره أيضاً.</string>
+</resources>

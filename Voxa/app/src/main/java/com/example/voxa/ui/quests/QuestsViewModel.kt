@@ -104,7 +104,7 @@ class QuestsViewModel(application: Application) : AndroidViewModel(application) 
     fun createQuest(title: String, description: String, icon: String, points: Int) {
         val profileId = activeProfile.value?.id ?: return
         viewModelScope.launch {
-            questDao.insertQuest(
+            questDao.createObservedQuest(
                 QuestEntity(
                     profileId = profileId,
                     title = title,
@@ -124,7 +124,7 @@ class QuestsViewModel(application: Application) : AndroidViewModel(application) 
     
     fun markQuestSubmitted(quest: QuestEntity) {
         viewModelScope.launch {
-            questDao.updateQuestStatus(quest.id, QuestStatus.SUBMITTED, null)
+            if (!questDao.transitionObservedQuest(quest.id, QuestStatus.SUBMITTED, null)) return@launch
             val context = getApplication<Application>()
             sendNotification(
                 context.getString(com.example.voxa.R.string.quests_notification_task_done_title),
@@ -171,13 +171,13 @@ class QuestsViewModel(application: Application) : AndroidViewModel(application) 
     
     fun markQuestUnable(quest: QuestEntity) {
         viewModelScope.launch {
-            questDao.updateQuestStatus(quest.id, QuestStatus.UNABLE, null)
+            questDao.transitionObservedQuest(quest.id, QuestStatus.UNABLE, null)
         }
     }
 
-    fun approveQuest(quest: QuestEntity, note: String?) {
+    fun approveQuest(quest: QuestEntity, note: String?, support: String = "notRecorded") {
         viewModelScope.launch {
-            questDao.updateQuestStatus(quest.id, QuestStatus.APPROVED, note)
+            if (!questDao.transitionObservedQuest(quest.id, QuestStatus.APPROVED, note, support)) return@launch
             // Add points to child's wallet
             QuestPrefs.addPoints(getApplication(), quest.profileId, quest.points)
             // Update local state instantly
@@ -187,7 +187,7 @@ class QuestsViewModel(application: Application) : AndroidViewModel(application) 
 
     fun rejectQuest(quest: QuestEntity, note: String?) {
         viewModelScope.launch {
-            questDao.updateQuestStatus(quest.id, QuestStatus.REJECTED, note)
+            questDao.transitionObservedQuest(quest.id, QuestStatus.REJECTED, note)
         }
     }
 

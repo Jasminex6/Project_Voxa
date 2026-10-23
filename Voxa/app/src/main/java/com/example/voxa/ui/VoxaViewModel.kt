@@ -615,6 +615,23 @@ class VoxaViewModel(application: Application) : AndroidViewModel(application), I
         }
     }
 
+    override fun recordPracticeObservation(profileId: Long, word: String, targetCode: String?, language: String,
+        outcome: com.example.voxa.data.PracticeOutcome, matched: Boolean, score: Int, stars: Int) {
+        viewModelScope.launch {
+            try {
+                if (voxaDao.getProfileById(profileId) == null) return@launch
+                val code = com.example.voxa.data.license.ProgressReport.targetCode(getApplication(), profileId, word, targetCode)
+                val now = System.currentTimeMillis()
+                voxaDao.recordObservedPractice(
+                    com.example.voxa.data.PracticeObservation(profileId = profileId, targetCode = code,
+                        language = language, outcome = outcome, matched = matched, timestamp = now),
+                    if (outcome == com.example.voxa.data.PracticeOutcome.SCORED)
+                        PracticeStats(profileId = profileId, word = word, score = score, stars = stars, timestamp = now) else null
+                )
+            } catch (e: Exception) { Log.e("VoxaReport", "Could not store practice observation", e) }
+        }
+    }
+
     override fun updateCaregiverPhones(phone1: String, phone2: String, phone3: String) {
         val profile = _activeProfile.value ?: return
         viewModelScope.launch {

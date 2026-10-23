@@ -359,7 +359,7 @@ fun ParentDashboardScreen(
                     },
                     text = { 
                         Text(
-                            stringResource(com.example.voxa.R.string.quests_parent_clear_history_confirm_msg), 
+                            stringResource(com.example.voxa.R.string.report_history_retained),
                             color = LocalVoxaColors.current.secondaryText
                         ) 
                     },
@@ -397,6 +397,28 @@ fun ParentDashboardScreen(
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun QuestParentCard(quest: QuestEntity, viewModel: QuestsViewModel, isActionable: Boolean) {
+    var confirming by remember(quest.id) { mutableStateOf(false) }
+    var support by remember(quest.id) { mutableStateOf("notRecorded") }
+    if (confirming) AlertDialog(
+        onDismissRequest = { confirming = false },
+        title = { Text(stringResource(com.example.voxa.R.string.report_help_title)) },
+        text = { Column {
+            Text(stringResource(com.example.voxa.R.string.report_help_note))
+            listOf("independent" to com.example.voxa.R.string.report_independent,
+                "prompted" to com.example.voxa.R.string.report_prompted,
+                "assisted" to com.example.voxa.R.string.report_assisted,
+                "notRecorded" to com.example.voxa.R.string.report_not_recorded).forEach { (code, label) ->
+                Row(Modifier.fillMaxWidth().clickable { support = code }, verticalAlignment = Alignment.CenterVertically) {
+                    RadioButton(selected = support == code, onClick = { support = code })
+                    Text(stringResource(label))
+                }
+            }
+        } },
+        confirmButton = { TextButton(onClick = { viewModel.approveQuest(quest, null, support); confirming = false }) {
+            Text(stringResource(com.example.voxa.R.string.quests_parent_approve))
+        } },
+        dismissButton = { TextButton(onClick = { confirming = false }) { Text(stringResource(android.R.string.cancel)) } }
+    )
     val rewardGold = if (LocalVoxaColors.current.isDark) QuestGold else QuestGoldLight
     val borderColor = when (quest.status) {
         QuestStatus.SUBMITTED -> QuestTeal
@@ -501,7 +523,7 @@ fun QuestParentCard(quest: QuestEntity, viewModel: QuestsViewModel, isActionable
                                     Text(stringResource(com.example.voxa.R.string.quests_parent_reject), fontWeight = FontWeight.Bold, fontSize = 12.sp)
                                 }
                                 Button(
-                                    onClick = { viewModel.approveQuest(quest, null) },
+                                    onClick = { confirming = true; support = "notRecorded" },
                                     colors = ButtonDefaults.buttonColors(containerColor = SuccessGreen),
                                     shape = RoundedCornerShape(8.dp),
                                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)

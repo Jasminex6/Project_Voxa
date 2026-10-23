@@ -57,6 +57,8 @@ interface IVoxaViewModel {
     fun deleteProfile(profile: ChildProfile) {}
     fun updateProfileGender(profile: ChildProfile, newGender: String) {}
     fun recordPracticeAttempt(word: String, score: Int, stars: Int) {}
+    fun recordPracticeObservation(profileId: Long, word: String, targetCode: String?, language: String,
+        outcome: com.example.voxa.data.PracticeOutcome, matched: Boolean = false, score: Int = 0, stars: Int = 0) {}
     fun updateCaregiverPhones(phone1: String, phone2: String, phone3: String) {}
     fun addPracticeCoins(coins: Int) {}
     fun importP2PProfile(dto: P2PSharingDto, onSuccess: () -> Unit, onError: (String) -> Unit) {}

@@ -4,7 +4,7 @@
     <string name="gender_male">Boy</string>
     <string name="gender_female">Girl</string>
     <string name="license_search_profiles">Search child profiles</string>
-    <string name="license_progress_title">Practice progress</string>
+    <string name="license_progress_title">Progress review</string>
     <string name="license_progress_count">%1$d recorded attempts on this device</string>
     <string name="license_progress_note">Exports contain summary counts only. Older history may include successful attempts only. Scores are not clinical measurements.</string>
     <string name="license_progress_share">Export report</string>

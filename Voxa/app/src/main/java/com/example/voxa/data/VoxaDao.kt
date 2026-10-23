@@ -11,6 +11,17 @@ import androidx.room.*
  */
 @Dao
 interface VoxaDao {
+    @Insert
+    suspend fun insertPracticeObservation(observation: PracticeObservation)
+
+    @Query("SELECT * FROM practice_observations WHERE profileId = :profileId ORDER BY timestamp")
+    suspend fun getPracticeObservations(profileId: Long): List<PracticeObservation>
+
+    @Transaction
+    suspend fun recordObservedPractice(observation: PracticeObservation, scoredHistory: PracticeStats?) {
+        insertPracticeObservation(observation)
+        if (scoredHistory != null) insertPracticeStats(scoredHistory)
+    }
     @Query("SELECT COUNT(*) FROM child_profiles")
     suspend fun profileCount(): Int
 

@@ -115,7 +115,7 @@ class ThemeIntegrationTest {
         }
     }
 
-    private class TestModel : IVoxaViewModel {
+    internal class TestModel : IVoxaViewModel {
         override val license = MutableStateFlow(ActiveLicense(tier = LicenseTier.FAMILY_PRO, status = LicenseStatus.ACTIVE))
         override val pendingActivation = MutableStateFlow<String?>(null)
         override fun requestActivation(value: String?) { pendingActivation.value = value }

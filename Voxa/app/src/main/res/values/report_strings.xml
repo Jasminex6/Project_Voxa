@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="report_help_title">How much help was needed?</string>
+    <string name="report_help_note">Optional caregiver observation. This gives the review context; it does not change the child\'s reward.</string>
+    <string name="report_independent">Completed independently</string>
+    <string name="report_prompted">With reminders or verbal prompts</string>
+    <string name="report_assisted">With direct assistance</string>
+    <string name="report_not_recorded">Not recorded</string>
+    <string name="report_review">Review progress</string>
+    <string name="report_intro">Review practice patterns, target-by-target app matches, task follow-through, and help needed. Choose a period before sharing.</string>
+    <string name="report_week">7 days</string>
+    <string name="report_month">30 days</string>
+    <string name="report_history_retained">Remove completed task cards? Their activity counts remain in local progress reviews. Deleting the child profile also removes its report activity.</string>
+</resources>

@@ -22,6 +22,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
+import com.example.voxa.utils.AppLanguage
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -74,23 +81,25 @@ fun OnboardingScreen(
     val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
 
     // Child profile setup state
-    var childName by remember { mutableStateOf("") }
-    var childGender by remember { mutableStateOf("Male") }
-    var selectedAvatar by remember { mutableStateOf("👦") }
+    var childName by rememberSaveable { mutableStateOf("") }
+    var childGender by rememberSaveable { mutableStateOf("Male") }
+    var selectedAvatar by rememberSaveable { mutableStateOf("👦") }
 
     val avatars = listOf("👦", "👧", "👶", "🦸", "🥷", "🦄", "🐼", "🦊", "🦁", "🦖")
 
     // Emergency setup state
-    var emergencyContactName by remember { mutableStateOf("") }
-    var emergencyContactRelation by remember { mutableStateOf("") }
-    var emergencyContactPhone by remember { mutableStateOf("") }
-    var emergencyMessage by remember { mutableStateOf("") }
+    var emergencyContactName by rememberSaveable { mutableStateOf("") }
+    var emergencyContactRelation by rememberSaveable { mutableStateOf("") }
+    var emergencyContactPhone by rememberSaveable { mutableStateOf("") }
+    var emergencyMessage by rememberSaveable { mutableStateOf("") }
 
     val isEmergencyValid = emergencyContactName.isNotBlank() &&
             emergencyContactRelation.isNotBlank() &&
             emergencyContactPhone.length == 11 && emergencyContactPhone.all { it.isDigit() } &&
             emergencyMessage.isNotBlank()
 
+    val direction = if (LocalConfiguration.current.locales[0].language == "ar") LayoutDirection.Rtl else LayoutDirection.Ltr
+    CompositionLocalProvider(LocalLayoutDirection provides direction) {
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = LocalVoxaColors.current.background
@@ -117,12 +126,7 @@ fun OnboardingScreen(
             ) { page ->
                 when (page) {
                     0 -> OnboardingLanguagePage(onLanguageSelected = { lang ->
-                        val prefs = context.getSharedPreferences("voxa_settings", Context.MODE_PRIVATE)
-                        prefs.edit().putString("app_language", lang).apply()
-                        val intent = android.content.Intent(context, com.example.voxa.MainActivity::class.java).apply {
-                            addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP or android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
-                        }
-                        context.startActivity(intent)
+                        AppLanguage.select(context, lang)
                     })
                     1 -> OnboardingWelcomePage()
                     2 -> OnboardingConceptPage()
@@ -257,6 +261,7 @@ fun OnboardingScreen(
                 }
             }
         }
+    }
     }
 }
 
@@ -809,9 +814,7 @@ fun OnboardingEmergencyPage(
 
 @Composable
 fun OnboardingLanguagePage(onLanguageSelected: (String) -> Unit) {
-    val context = LocalContext.current
-    val prefs = context.getSharedPreferences("voxa_settings", Context.MODE_PRIVATE)
-    val currentLang = prefs.getString("app_language", "en") ?: "en"
+    val currentLang = LocalConfiguration.current.locales[0].language
 
     Column(
         modifier = Modifier
@@ -863,7 +866,7 @@ fun OnboardingLanguagePage(onLanguageSelected: (String) -> Unit) {
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 16.dp)
-                .clickable { onLanguageSelected("en") },
+                .selectable(selected = currentLang == "en", role = Role.RadioButton, onClick = { onLanguageSelected("en") }),
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = if (currentLang == "en") LocalVoxaColors.current.surfaceVariant else LocalVoxaColors.current.normalCard),
             border = if (currentLang == "en") BorderStroke(2.dp, LocalVoxaColors.current.primaryAction) else null
@@ -882,7 +885,7 @@ fun OnboardingLanguagePage(onLanguageSelected: (String) -> Unit) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { onLanguageSelected("ar") },
+                .selectable(selected = currentLang == "ar", role = Role.RadioButton, onClick = { onLanguageSelected("ar") }),
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = if (currentLang == "ar") LocalVoxaColors.current.surfaceVariant else LocalVoxaColors.current.normalCard),
             border = if (currentLang == "ar") BorderStroke(2.dp, LocalVoxaColors.current.primaryAction) else null

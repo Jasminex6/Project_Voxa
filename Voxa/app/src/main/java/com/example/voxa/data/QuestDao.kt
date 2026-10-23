@@ -9,6 +9,34 @@ import kotlinx.coroutines.flow.Flow
  */
 @Dao
 interface QuestDao {
+    @Insert
+    suspend fun insertTaskObservation(observation: TaskObservation)
+
+    @Query("SELECT * FROM task_observations WHERE profileId = :profileId ORDER BY timestamp, id")
+    suspend fun getTaskObservations(profileId: Long): List<TaskObservation>
+
+    @Query("SELECT * FROM quests WHERE id = :questId")
+    suspend fun getQuest(questId: Long): QuestEntity?
+
+    @Transaction
+    suspend fun createObservedQuest(quest: QuestEntity): Long {
+        val id = insertQuest(quest)
+        insertTaskObservation(TaskObservation(profileId = quest.profileId, taskId = id,
+            fromStatus = null, toStatus = "pending", timestamp = quest.timestamp))
+        return id
+    }
+
+    @Transaction
+    suspend fun transitionObservedQuest(questId: Long, status: QuestStatus, note: String?, support: String = "notRecorded", at: Long = System.currentTimeMillis()): Boolean {
+        require(support in listOf("independent", "prompted", "assisted", "notRecorded"))
+        val quest = getQuest(questId) ?: return false
+        if (quest.status == status) return false
+        updateQuestStatus(questId, status, note)
+        insertTaskObservation(TaskObservation(profileId = quest.profileId, taskId = questId,
+            fromStatus = quest.status.name.lowercase(), toStatus = status.name.lowercase(),
+            support = if (status == QuestStatus.APPROVED) support else "notRecorded", timestamp = at))
+        return true
+    }
     @Query("SELECT * FROM quests WHERE profileId = :profileId ORDER BY timestamp DESC")
     suspend fun getQuestsForProfile(profileId: Long): List<QuestEntity>
 

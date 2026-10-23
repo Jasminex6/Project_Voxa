@@ -1,6 +1,6 @@
 <resources>
     <string name="license_search_profiles">البحث في ملفات الأطفال</string>
-    <string name="license_progress_title">تقدم الممارسة</string>
+    <string name="license_progress_title">مراجعة التقدم</string>
     <string name="license_progress_count">%1$d محاولة مسجلة على هذا الجهاز</string>
     <string name="license_progress_note">يحتوي التصدير على ملخصات عددية فقط. قد يشمل السجل القديم المحاولات الناجحة فقط. الدرجات ليست قياسات سريرية.</string>
     <string name="license_progress_share">تصدير التقرير</string>

@@ -24,6 +24,8 @@
 -keepattributes Signature,*Annotation*,InnerClasses,EnclosingMethod
 -keep class com.example.voxa.data.P2PSharingDto { *; }
 -keep class com.example.voxa.data.IntentWithTemplates { *; }
+-keep class com.example.voxa.data.license.ProgressReview { *; }
+-keep class com.example.voxa.data.license.Report** { *; }
 -keepclassmembers class com.example.voxa.data.** { <fields>; }
 -keep class org.tensorflow.lite.** { *; }
 -keep class com.google.ai.edge.litert.** { *; }

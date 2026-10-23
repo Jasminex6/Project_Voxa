@@ -2,10 +2,10 @@
 import { useEffect, useRef, useState } from "react";
 import { FileChartColumn, Printer, Upload, X } from "lucide-react";
 import { api } from "@/lib/browser";
-import { reportSchema } from "@/lib/report";
+import { reportSchema, usable } from "@/lib/report";
 import type { Report } from "@/lib/store";
 import type { Lang } from "./Shell";
-
+import { ReportReview } from "./ReportReview";
 export function Reports({ lang }: { lang: Lang }) {
   const ar = lang === "ar",
     [reports, setReports] = useState<Report[]>([]),
@@ -25,14 +25,14 @@ export function Reports({ lang }: { lang: Lang }) {
     try {
       if (file.size > 65536)
         throw new Error(
-          ar ? "الملف كبير جداً" : "Report exceeds the 64 KB limit",
+          ar ? "الملف أكبر من الحد المسموح" : "Report exceeds the 64 KB limit",
         );
       const parsed = reportSchema.safeParse(JSON.parse(await file.text()));
       if (!parsed.success)
         throw new Error(
           ar
-            ? "صيغة التقرير غير صحيحة. التسجيلات والحقول الإضافية غير مقبولة."
-            : "Invalid report format. Recordings and extra fields are not accepted.",
+            ? "صيغة غير صحيحة أو بيانات متناقضة. الأسماء والتسجيلات والحقول الإضافية غير مقبولة."
+            : "Invalid or contradictory report. Names, recordings, and extra fields are not accepted.",
         );
       await api("reports", parsed.data);
       setReports(await api<Report[]>("reports"));
@@ -48,17 +48,17 @@ export function Reports({ lang }: { lang: Lang }) {
       <div className="report-heading">
         <div>
           <div className="eyebrow">
-            {ar ? "ملخصات الممارسة" : "PRACTICE SUMMARIES"}
+            {ar ? "مراجعات الممارسة والمهام" : "PRACTICE & TASK REVIEWS"}
           </div>
-          <h2>{ar ? "تقاريرك، بوضوح." : "Your reports, clearly."}</h2>
+          <h2>{ar ? "متابعة لها معنى." : "Progress with context."}</h2>
         </div>
         <button
-          disabled={busy}
           className="button quiet small"
+          disabled={busy}
           onClick={() => input.current?.click()}
         >
           <Upload size={15} />
-          {ar ? "رفع تقرير JSON" : "Upload report JSON"}
+          {ar ? "رفع بيانات تقرير" : "Upload report data"}
         </button>
         <input
           ref={input}
@@ -70,11 +70,11 @@ export function Reports({ lang }: { lang: Lang }) {
       </div>
       <p>
         {ar
-          ? "صدّر ملخصاً من تطبيق Android، ثم ارفعه بإرادتك إلى حسابك. تُحفظ الملخصات فقط؛ لا ترفع تسجيلات أو أسماء أو ملاحظات خاصة."
-          : "Export a summary from Android, then choose to upload it to your account. Only summaries are stored; do not upload recordings, names, or private notes."}
+          ? "صدّر JSON من التطبيق ثم اختر رفعه إلى حسابك. لا أسماء أو تسجيلات أو ملاحظات خاصة."
+          : "Export JSON from Voxa, then choose to upload it to your account. No names, recordings, or private notes."}
       </p>
       {error && (
-        <p role="alert" className="error">
+        <p className="error" role="alert">
           {error}
         </p>
       )}
@@ -85,20 +85,31 @@ export function Reports({ lang }: { lang: Lang }) {
         </div>
       ) : (
         <div className="report-rows">
-          {reports.map((report) => (
-            <button key={report.id} onClick={() => setSelected(report)}>
+          {reports.map((r) => (
+            <button key={r.id} onClick={() => setSelected(r)}>
               <FileChartColumn size={18} />
               <span>
-                <b>{ar ? "ملخص ممارسة" : "Practice summary"}</b>
+                <b>
+                  {r.summary.schemaVersion === 2
+                    ? ar
+                      ? "مراجعة الممارسة والمهام"
+                      : "Practice & task review"
+                    : ar
+                      ? "ملخص قديم"
+                      : "Legacy summary"}
+                </b>
                 <small>
-                  {new Date(report.generatedAt).toLocaleDateString(
+                  {new Date(r.generatedAt).toLocaleDateString(
                     ar ? "ar-EG" : "en",
                   )}{" "}
-                  · {report.summary.practice.recordedAttempts}{" "}
-                  {ar ? "محاولة" : "attempts"}
+                  ·{" "}
+                  {r.summary.schemaVersion === 2
+                    ? usable(r.summary.practice.current)
+                    : r.summary.practice.recordedAttempts}{" "}
+                  {ar ? "محاولات" : "attempts"}
                 </small>
               </span>
-              <code dir="ltr">{report.subjectId.slice(0, 8)}…</code>
+              <code>{r.subjectId.slice(0, 8)}</code>
             </button>
           ))}
         </div>
@@ -106,7 +117,7 @@ export function Reports({ lang }: { lang: Lang }) {
       {selected && (
         <article className="report-detail">
           <div className="report-heading">
-            <h2>{ar ? "ملخص تقدم الممارسة" : "Practice progress summary"}</h2>
+            <span />
             <div>
               <button
                 className="icon-button"
@@ -124,75 +135,51 @@ export function Reports({ lang }: { lang: Lang }) {
               </button>
             </div>
           </div>
-          <p className="report-subject">
-            {ar ? "معرف الطفل المستعار" : "Pseudonymous subject"}:{" "}
-            <code dir="ltr">{selected.subjectId}</code>
-          </p>
-          <div className="report-metrics">
-            <div>
-              <b>{selected.summary.practice.recordedAttempts}</b>
-              <span>{ar ? "محاولات مسجلة" : "Recorded attempts"}</span>
-            </div>
-            <div>
-              <b>{selected.summary.practice.activeDays}</b>
-              <span>{ar ? "أيام نشطة" : "Active days"}</span>
-            </div>
-            <div>
-              <b>
-                {selected.summary.practice.meanMatchScore?.toFixed(1) ?? "—"}
-              </b>
-              <span>{ar ? "متوسط مطابقة النص" : "Mean text-match score"}</span>
-            </div>
-          </div>
-          <p className="notice">
-            {ar
-              ? "هذه بيانات ممارسة، وليست تشخيصاً. قد يشمل السجل القديم المحاولات الناجحة فقط. تعدادات المهام تصف الحالة الحالية."
-              : selected.summary.historyCaveat}
-          </p>
-          <div className="report-table">
-            <table>
-              <caption>
-                {ar ? "نشاط يومي بتوقيت UTC" : "Daily activity · UTC"}
-              </caption>
-              <thead>
-                <tr>
-                  <th>{ar ? "التاريخ" : "Date"}</th>
-                  <th>{ar ? "المحاولات" : "Attempts"}</th>
-                  <th>{ar ? "متوسط المطابقة" : "Mean match"}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[...selected.summary.practice.daily]
-                  .sort((a, b) => b.date.localeCompare(a.date))
-                  .map((day) => (
-                    <tr key={day.date}>
-                      <td>{day.date}</td>
-                      <td>{day.recordedAttempts}</td>
-                      <td>{day.meanMatchScore.toFixed(1)}</td>
+          {selected.summary.schemaVersion === 2 ? (
+            <ReportReview report={selected.summary} lang={lang} />
+          ) : (
+            <>
+              <h2>
+                {ar
+                  ? "ملخص سابق، ببيانات محدودة"
+                  : "Earlier summary, limited evidence"}
+              </h2>
+              <p className="notice">
+                {ar
+                  ? "السجل القديم قد يشمل النجاحات فقط. لا يدعم مقارنات موثوقة أو قياس الاستقلالية. صدّر مراجعة جديدة من الإصدار المحدّث."
+                  : selected.summary.historyCaveat +
+                    " Export a new review from the updated app for structured comparisons."}
+              </p>
+              <div className="report-metrics">
+                <div>
+                  <b>{selected.summary.practice.recordedAttempts}</b>
+                  <span>
+                    {ar ? "نتائج قديمة مسجلة" : "Older scored entries"}
+                  </span>
+                </div>
+                <div>
+                  <b>{selected.summary.practice.activeDays}</b>
+                  <span>{ar ? "أيام في السجل" : "Days represented"}</span>
+                </div>
+              </div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>{ar ? "التاريخ" : "Date"}</th>
+                    <th>{ar ? "النتائج المسجلة" : "Scored entries"}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {selected.summary.practice.daily.map((d) => (
+                    <tr key={d.date}>
+                      <td>{d.date}</td>
+                      <td>{d.recordedAttempts}</td>
                     </tr>
                   ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="task-summary">
-            {Object.entries(selected.summary.tasks).map(([key, value]) => (
-              <span key={key}>
-                {
-                  (
-                    {
-                      total: ar ? "الإجمالي" : "Total",
-                      approved: ar ? "معتمدة" : "Approved",
-                      pending: ar ? "معلقة" : "Pending",
-                      submitted: ar ? "مقدمة" : "Submitted",
-                      unable: ar ? "غير مكتملة" : "Unable",
-                      rejected: ar ? "مرفوضة" : "Rejected",
-                    } as Record<string, string>
-                  )[key]
-                }
-                <b>{value}</b>
-              </span>
-            ))}
-          </div>
+                </tbody>
+              </table>
+            </>
+          )}
         </article>
       )}
     </section>

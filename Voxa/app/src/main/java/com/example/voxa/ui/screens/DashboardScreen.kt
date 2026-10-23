@@ -689,9 +689,7 @@ fun DashboardScreen(
                                                 .background(if (currentLang == "en") LocalVoxaColors.current.primaryAction else Color.Transparent)
                                                 .clickable {
                                                     if (currentLang != "en") {
-                                                        prefs.edit().putString("app_language", "en").apply()
-                                                        val activity = context as? android.app.Activity
-                                                        activity?.recreate()
+                                                        com.example.voxa.utils.AppLanguage.select(context, "en")
                                                     }
                                                 }
                                                 .padding(horizontal = 16.dp, vertical = 6.dp),
@@ -705,9 +703,7 @@ fun DashboardScreen(
                                                 .background(if (currentLang == "ar") LocalVoxaColors.current.primaryAction else Color.Transparent)
                                                 .clickable {
                                                     if (currentLang != "ar") {
-                                                        prefs.edit().putString("app_language", "ar").apply()
-                                                        val activity = context as? android.app.Activity
-                                                        activity?.recreate()
+                                                        com.example.voxa.utils.AppLanguage.select(context, "ar")
                                                     }
                                                 }
                                                 .padding(horizontal = 16.dp, vertical = 6.dp),

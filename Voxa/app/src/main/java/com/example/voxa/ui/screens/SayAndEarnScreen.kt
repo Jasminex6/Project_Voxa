@@ -70,7 +70,8 @@ data class SayAndEarnWord(
     val englishAliases: List<String> = emptyList(),
     val arabicAliases: List<String> = emptyList(),
     val aliases: List<String> = emptyList(),
-    val audioAssetPath: String? = null
+    val audioAssetPath: String? = null,
+    val reportCode: String? = null
 ) {
     fun getAliases(language: String): List<String> {
         val isEn = language.equals("en", ignoreCase = true)
@@ -155,7 +156,7 @@ val DEFAULT_SAY_AND_EARN_WORDS = listOf(
         arabicAliases = listOf("انام", "نوم", "نعسان", "توتو"),
         audioAssetPath = null
     )
-)
+).map { it.copy(reportCode = "core_${it.english.lowercase(java.util.Locale.US)}") }
 
 /**
  * 🪙 SayAndEarnScreen — Gamified Pronunciation Reward System
@@ -338,6 +339,16 @@ fun SayAndEarnScreen(
         }
         speechRecognizer = null
 
+        val targetWord = allWords.getOrElse(selectedWordIndex) { DEFAULT_SAY_AND_EARN_WORDS[0] }
+        val targetLang = selectedLanguage
+        val observedProfileId = activeProfile?.id ?: return
+        var observationSaved = false
+        fun observe(outcome: com.example.voxa.data.PracticeOutcome, result: FuzzyMatcher.MatchResult? = null) {
+            if (observationSaved) return
+            observationSaved = true
+            viewModel.recordPracticeObservation(observedProfileId, targetWord.english, targetWord.reportCode,
+                targetLang, outcome, result?.isMatched == true, result?.matchPercent?.toInt() ?: 0, result?.starsEarned ?: 0)
+        }
         val recognizer = if (android.os.Build.VERSION.SDK_INT >= 31 && SpeechRecognizer.isOnDeviceRecognitionAvailable(context)) {
             SpeechRecognizer.createOnDeviceSpeechRecognizer(context)
         } else {
@@ -346,6 +357,7 @@ fun SayAndEarnScreen(
         speechRecognizer = recognizer
 
         if (recognizer == null) {
+            observe(com.example.voxa.data.PracticeOutcome.TECHNICAL)
             Toast.makeText(context, R.string.license_offline_unavailable, Toast.LENGTH_LONG).show()
             matchResult = FuzzyMatcher.MatchResult(
                 isMatched = false,
@@ -360,8 +372,6 @@ fun SayAndEarnScreen(
         }
 
         // Dynamically capture target word and language at start of recognition
-        val targetWord = allWords.getOrElse(selectedWordIndex) { DEFAULT_SAY_AND_EARN_WORDS[0] }
-        val targetLang = selectedLanguage
 
         showResult = false
         matchResult = null
@@ -396,6 +406,11 @@ fun SayAndEarnScreen(
             }
 
             override fun onError(error: Int) {
+                observe(when (error) {
+                    SpeechRecognizer.ERROR_NO_MATCH -> com.example.voxa.data.PracticeOutcome.UNRECOGNIZED
+                    SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> com.example.voxa.data.PracticeOutcome.NO_SPEECH
+                    else -> com.example.voxa.data.PracticeOutcome.TECHNICAL
+                })
                 val errorName = getSpeechErrorName(error)
                 android.util.Log.e("SayAndEarn", "SpeechRecognizer onError: $error ($errorName) for target: ${targetWord.english}")
                 isListening = false
@@ -412,9 +427,9 @@ fun SayAndEarnScreen(
                     SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS ->
                         context.getString(R.string.say_and_earn_mic_permission)
                     SpeechRecognizer.ERROR_NETWORK, SpeechRecognizer.ERROR_NETWORK_TIMEOUT ->
-                        if (targetLang == "ar") "يلزم اتصال بالإنترنت للتعرف على الصوت 🌐" else "Internet connection required for speech recognition 🌐"
+                        context.getString(R.string.license_offline_unavailable)
                     SpeechRecognizer.ERROR_SERVER ->
-                        if (targetLang == "ar") "خطأ بخادم الصوت. تحقق من اتصال الإنترنت 🌐" else "Speech server error. Check internet connection 🌐"
+                        context.getString(R.string.license_offline_unavailable)
                     SpeechRecognizer.ERROR_RECOGNIZER_BUSY ->
                         if (targetLang == "ar") "الميكروفون مشغول. جاري إعادة التعيين... اضغط مجدداً ⏳" else "Recognizer busy. Resetting... tap mic again ⏳"
                     SpeechRecognizer.ERROR_CLIENT ->
@@ -443,6 +458,7 @@ fun SayAndEarnScreen(
                 android.util.Log.d("SayAndEarn", "SpeechRecognizer onResults candidates: $candidates for target: ${targetWord.english}/${targetWord.arabic}")
 
                 if (candidates.isEmpty()) {
+                    observe(com.example.voxa.data.PracticeOutcome.UNRECOGNIZED)
                     matchResult = FuzzyMatcher.MatchResult(
                         isMatched = false,
                         isExact = false,
@@ -475,7 +491,7 @@ fun SayAndEarnScreen(
                 showResult = true
 
                 // Persist evaluated attempts, not only rewards, so history is not success-biased.
-                viewModel.recordPracticeAttempt(targetWord.english, result.matchPercent.toInt(), result.starsEarned)
+                observe(com.example.voxa.data.PracticeOutcome.SCORED, result)
 
                 if (result.isMatched) {
                     var totalCoins = result.coinsEarned
@@ -528,6 +544,7 @@ fun SayAndEarnScreen(
         try {
             recognizer.startListening(intent)
         } catch (e: Exception) {
+            observe(com.example.voxa.data.PracticeOutcome.TECHNICAL)
             isListening = false
             android.util.Log.e("SayAndEarn", "Error starting speech recognizer: ${e.message}", e)
             Toast.makeText(context, "Could not start voice recognizer: ${e.message}", Toast.LENGTH_SHORT).show()

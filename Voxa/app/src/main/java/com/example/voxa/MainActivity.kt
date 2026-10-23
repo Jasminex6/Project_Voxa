@@ -56,15 +56,7 @@ import com.example.voxa.ui.screens.quests.QuestsMainScreen
 class MainActivity : ComponentActivity() {
 
     override fun attachBaseContext(newBase: Context) {
-        val prefs = newBase.getSharedPreferences("voxa_settings", MODE_PRIVATE)
-        val lang = prefs.getString("app_language", "en") ?: "en"
-        val locale = java.util.Locale(lang)
-        java.util.Locale.setDefault(locale)
-        val config = android.content.res.Configuration(newBase.resources.configuration)
-        config.setLocale(locale)
-        // Layout direction is left to Compose to handle text natively
-        val context = newBase.createConfigurationContext(config)
-        super.attachBaseContext(context)
+        super.attachBaseContext(com.example.voxa.utils.AppLanguage.localizedContext(newBase))
     }
 
     // The ViewModel acts as the central brain/storekeeper for the UI. It retrieves flows

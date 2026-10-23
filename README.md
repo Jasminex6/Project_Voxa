@@ -65,11 +65,13 @@ Expiry preserves existing profiles and trained sounds. Emergency tools and exist
 
 ## Reports and privacy
 
-The phone creates reports containing a pseudonymous subject ID, reporting dates, practice activity counts, text-match summaries, and task-status counts. Reports exclude child names, recordings, voice embeddings, acoustic templates, contacts, and free-text notes. Caregivers choose whether and where to share them.
+Profile → Progress review shows 7 or 30 calendar days of practice, comparable-target changes, task follow-through, caregiver-reported help, and the review queue. PDF and JSON exports require caregiver PIN confirmation and work offline. A report distinguishes app matches, unrecognized responses, no-speech captures, and technical problems; the last two never reduce its match rate. Its review prompts identify topics for the next conversation rather than assign a clinical score.
 
 The website's center report uses illustrative data. Actual reports can be uploaded through the configured web account flow; the public hosted activation demo does not provision customer accounts. Automatic weekly uploads, doctor access, center membership invitations, appointments, calendars, and payment-dues management are not implemented in this preview.
 
-Practice matching scores describe recognized-text similarity, rather than a clinical assessment. Older practice history includes successful attempts only, and task counts show current status rather than weekly completion history.
+Comparisons use the same target and language with repeated observations in both periods and sufficient tracking coverage. Older scores are retained but excluded from these rates because earlier versions sometimes recorded successes only. New task assignments, confirmations, help levels, and caregiver review delays use durable observations; the current task snapshot is labeled separately. Clearing completed task cards retains these numeric observations; deleting the profile removes them.
+
+Reports exclude names, recordings, embeddings, templates, transcripts, task text, contacts, and private notes. Personal targets use pseudonymous numbers. The center preview renders the same format using fictional data and offers bilingual sample PDFs. See [report design and formulas](REPORT_DESIGN.md) for definitions, sample thresholds, privacy, and limitations.
 
 ## Recognition architecture
 
@@ -87,7 +89,7 @@ Microphone: 16 kHz mono PCM
 
 Enrollment stores multiple local feature templates for each intent. YAMNet and prototypical-matching code/assets remain in the repository from earlier experiments; they are not the active `VoxaClassifierEngine` pipeline. Speech practice uses the separate on-device speech-recognition flow described above.
 
-Android stores profiles, vocabulary, practice history, tasks, and rewards in Room. The version 8 → 9 migration preserves existing data. License verification and storage are handled on the device; signing private keys belong only on the server.
+Android stores profiles, vocabulary, practice history, tasks, and rewards in Room. Explicit 8 → 9 → 10 migrations preserve existing data; version 10 adds structured report observations. License verification and storage are handled on the device; signing private keys belong only on the server.
 
 ## Repository layout
 
@@ -152,7 +154,9 @@ From `Voxa/`:
 .\gradlew.bat :app:testDebugUnitTest :app:assembleDebug
 ```
 
-The recorded integration checks include 24 web/backend tests, 40 Android JVM tests, Android builds, a database-preservation migration test, and a Samsung test that decodes QR fixtures and verifies both hosted demo plans. After the theme merge, eight integration checks passed on both the Pixel emulator and Samsung for the real dashboard theme switch and saved preference, plan-code entry, report controls, text contrast, selected-profile transfer data, import rollback, migration, and hosted demo activation. Debug and minified release APKs built, and release vital lint passed. The updated debug APK was installed on the Samsung without clearing app data. Two-phone Nearby radio transfer was not repeated for this merge. The latest website layout change passed a production build and browser checks. See [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md) for the scope and limits of these checks.
+The progress-review update passed 30 web/backend tests, 49 Android JVM tests, and 14 targeted checks on the Samsung, including actual onboarding language switching/recreation, bilingual review UI in both themes, PDF generation/pagination, preserved database upgrades, selected-profile transfer/import rollback, and live demo activation. The 13 report/theme/transfer/migration/license checks also passed on the emulator. The local HTTP smoke test covers both report versions, privacy validation, ownership and deduplication. All four pages of the bilingual sample PDFs were rendered and visually inspected. Two-phone Nearby radio transfer was not repeated. See [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md) for the scope and limits of verification.
+
+Onboarding language changes apply immediately by recreating the existing activity; setup fields and the current step survive recreation. The same locale helper serves Home's language setting. Current work is isolated on `codex/progress-review-onboarding`, branched from the merged platform integration.
 
 GitHub Actions runs the web checks and Android build on pushes and pull requests. Device tests need a suitable emulator or connected phone; the license-state test must only run on a disposable QA device because it initializes license preferences.
 

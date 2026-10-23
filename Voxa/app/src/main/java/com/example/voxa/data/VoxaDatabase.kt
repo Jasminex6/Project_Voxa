@@ -19,8 +19,8 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  * - exportSchema = false: Prevents Room from exporting the DB schema design to a JSON file during builds.
  */
 @Database(
-    entities = [ChildProfile::class, EnrolledIntent::class, AcousticTemplate::class, PracticeStats::class, QuestEntity::class, RewardEntity::class, PurchasedRewardEntity::class],
-    version = 9,
+    entities = [ChildProfile::class, EnrolledIntent::class, AcousticTemplate::class, PracticeStats::class, QuestEntity::class, RewardEntity::class, PurchasedRewardEntity::class, PracticeObservation::class, TaskObservation::class],
+    version = 10,
     exportSchema = false
 )
 abstract class VoxaDatabase : RoomDatabase() {
@@ -33,6 +33,14 @@ abstract class VoxaDatabase : RoomDatabase() {
     abstract fun questDao(): QuestDao
 
     companion object {
+        val MIGRATION_9_10 = object : Migration(9, 10) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("CREATE TABLE IF NOT EXISTS practice_observations (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, profileId INTEGER NOT NULL, targetCode TEXT NOT NULL, language TEXT NOT NULL, outcome TEXT NOT NULL, matched INTEGER NOT NULL, timestamp INTEGER NOT NULL, FOREIGN KEY(profileId) REFERENCES child_profiles(id) ON UPDATE NO ACTION ON DELETE CASCADE)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_practice_observations_profileId_timestamp ON practice_observations(profileId, timestamp)")
+                db.execSQL("CREATE TABLE IF NOT EXISTS task_observations (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, profileId INTEGER NOT NULL, taskId INTEGER NOT NULL, fromStatus TEXT, toStatus TEXT NOT NULL, support TEXT NOT NULL, timestamp INTEGER NOT NULL, FOREIGN KEY(profileId) REFERENCES child_profiles(id) ON UPDATE NO ACTION ON DELETE CASCADE)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_task_observations_profileId_timestamp ON task_observations(profileId, timestamp)")
+            }
+        }
         val MIGRATION_8_9 = object : Migration(8, 9) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 // Existing enrollments were recorded locally, so retain their audio previews.
@@ -60,6 +68,8 @@ abstract class VoxaDatabase : RoomDatabase() {
          * that only ONE connection is open across the entire app.
          */
         fun getDatabase(context: Context): VoxaDatabase {
+            val tracking = context.getSharedPreferences("voxa_report_tracking", Context.MODE_PRIVATE)
+            if (!tracking.contains("startedAt")) tracking.edit().putLong("startedAt", System.currentTimeMillis()).commit()
             // If the database instance already exists, return it immediately to save CPU cycles.
             return INSTANCE ?: synchronized(this) {
                 // synchronized(this) locks this block of code. 
@@ -70,7 +80,7 @@ abstract class VoxaDatabase : RoomDatabase() {
                     VoxaDatabase::class.java,
                     "voxa_database"
                 )
-                .addMigrations(MIGRATION_8_9)
+                .addMigrations(MIGRATION_8_9, MIGRATION_9_10)
                 // Preserve trained profiles. Unsupported older schemas require an explicit
                 // migration; never silently erase a child's local database during an update.
                 .build()

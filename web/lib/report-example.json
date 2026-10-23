@@ -1,0 +1,223 @@
+{
+  "captureStartedAt": "2026-10-01T10:00:00Z",
+  "generatedAt": "2026-10-23T12:00:00Z",
+  "legacyScoredAttempts": 3,
+  "measure": "voxa_app_match_v1",
+  "period": {
+    "days": 7,
+    "end": "2026-10-23T12:00:00Z",
+    "previousEnd": "2026-10-16T12:00:00Z",
+    "previousStart": "2026-10-09T21:00:00Z",
+    "start": "2026-10-16T21:00:00Z",
+    "timeZone": "Africa/Cairo"
+  },
+  "practice": {
+    "current": {
+      "activeDays": 6,
+      "matched": 30,
+      "noSpeech": 2,
+      "scored": 30,
+      "technical": 1,
+      "unrecognized": 20
+    },
+    "daily": [
+      {
+        "counts": {
+          "activeDays": 0,
+          "matched": 0,
+          "noSpeech": 0,
+          "scored": 0,
+          "technical": 0,
+          "unrecognized": 0
+        },
+        "date": "2026-10-17"
+      },
+      {
+        "counts": {
+          "activeDays": 1,
+          "matched": 4,
+          "noSpeech": 0,
+          "scored": 4,
+          "technical": 0,
+          "unrecognized": 2
+        },
+        "date": "2026-10-18"
+      },
+      {
+        "counts": {
+          "activeDays": 1,
+          "matched": 3,
+          "noSpeech": 0,
+          "scored": 3,
+          "technical": 0,
+          "unrecognized": 3
+        },
+        "date": "2026-10-19"
+      },
+      {
+        "counts": {
+          "activeDays": 1,
+          "matched": 7,
+          "noSpeech": 0,
+          "scored": 7,
+          "technical": 0,
+          "unrecognized": 3
+        },
+        "date": "2026-10-20"
+      },
+      {
+        "counts": {
+          "activeDays": 1,
+          "matched": 4,
+          "noSpeech": 0,
+          "scored": 4,
+          "technical": 0,
+          "unrecognized": 5
+        },
+        "date": "2026-10-21"
+      },
+      {
+        "counts": {
+          "activeDays": 1,
+          "matched": 7,
+          "noSpeech": 1,
+          "scored": 7,
+          "technical": 0,
+          "unrecognized": 3
+        },
+        "date": "2026-10-22"
+      },
+      {
+        "counts": {
+          "activeDays": 1,
+          "matched": 5,
+          "noSpeech": 1,
+          "scored": 5,
+          "technical": 1,
+          "unrecognized": 4
+        },
+        "date": "2026-10-23"
+      }
+    ],
+    "omittedTargets": 0,
+    "previous": {
+      "activeDays": 6,
+      "matched": 24,
+      "noSpeech": 0,
+      "scored": 24,
+      "technical": 0,
+      "unrecognized": 20
+    },
+    "targets": [
+      {
+        "code": "core_water",
+        "current": {
+          "activeDays": 4,
+          "matched": 16,
+          "noSpeech": 2,
+          "scored": 16,
+          "technical": 1,
+          "unrecognized": 8
+        },
+        "language": "ar",
+        "previous": {
+          "activeDays": 4,
+          "matched": 12,
+          "noSpeech": 0,
+          "scored": 12,
+          "technical": 0,
+          "unrecognized": 12
+        }
+      },
+      {
+        "code": "core_milk",
+        "current": {
+          "activeDays": 2,
+          "matched": 6,
+          "noSpeech": 0,
+          "scored": 6,
+          "technical": 0,
+          "unrecognized": 6
+        },
+        "language": "ar",
+        "previous": {
+          "activeDays": 2,
+          "matched": 8,
+          "noSpeech": 0,
+          "scored": 8,
+          "technical": 0,
+          "unrecognized": 4
+        }
+      },
+      {
+        "code": "core_bread",
+        "current": {
+          "activeDays": 2,
+          "matched": 6,
+          "noSpeech": 0,
+          "scored": 6,
+          "technical": 0,
+          "unrecognized": 2
+        },
+        "language": "en",
+        "previous": {
+          "activeDays": 2,
+          "matched": 4,
+          "noSpeech": 0,
+          "scored": 4,
+          "technical": 0,
+          "unrecognized": 4
+        }
+      },
+      {
+        "code": "personal_1",
+        "current": {
+          "activeDays": 2,
+          "matched": 2,
+          "noSpeech": 0,
+          "scored": 2,
+          "technical": 0,
+          "unrecognized": 4
+        },
+        "language": "ar",
+        "previous": {
+          "activeDays": 0,
+          "matched": 0,
+          "noSpeech": 0,
+          "scored": 0,
+          "technical": 0,
+          "unrecognized": 0
+        }
+      }
+    ]
+  },
+  "reportId": "77777777-7777-4777-8777-777777777777",
+  "schemaVersion": 2,
+  "subjectId": "88888888-8888-4888-8888-888888888888",
+  "tasks": {
+    "approved": 4,
+    "assigned": 5,
+    "awaitingReview": 1,
+    "cohortApproved": 3,
+    "oldestAwaitingHours": 3.0,
+    "reviewHoursMedian": 23.0,
+    "reviewSamples": 4,
+    "snapshot": {
+      "approved": 3,
+      "pending": 0,
+      "rejected": 0,
+      "submitted": 1,
+      "total": 5,
+      "unable": 1
+    },
+    "submitted": 5,
+    "support": {
+      "assisted": 1,
+      "independent": 1,
+      "notRecorded": 1,
+      "prompted": 1
+    },
+    "timedAwaiting": 1,
+    "unable": 1
+  }
+}

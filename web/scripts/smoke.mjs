@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { createPublicKey, randomUUID, verify } from "node:crypto";
+import { readFileSync } from "node:fs";
 process.loadEnvFile(".env.local");
 const base = process.env.APP_URL;
 assert.equal(
@@ -58,17 +59,31 @@ for (const [currency, interval, amount] of [
   ["SAR", "monthly", 9900],
   ["SAR", "annual", 89900],
 ]) {
-  const result = (await request("checkout", {
-    tier: "FAMILY_PRO", currency, interval, gateway: "demo", lang: "en",
-  })).data;
+  const result = (
+    await request("checkout", {
+      tier: "FAMILY_PRO",
+      currency,
+      interval,
+      gateway: "demo",
+      lang: "en",
+    })
+  ).data;
   const pending = (await request(`orders/${result.orderId}`)).data;
   assert.equal(pending.order.amount, amount);
   assert.equal(pending.order.currency, currency);
   assert.equal(pending.license, undefined);
 }
-await request("checkout", {
-  tier: "CLINICAL_SLP", currency: "EGP", interval: "annual", gateway: "demo", lang: "en",
-}, 400);
+await request(
+  "checkout",
+  {
+    tier: "CLINICAL_SLP",
+    currency: "EGP",
+    interval: "annual",
+    gateway: "demo",
+    lang: "en",
+  },
+  400,
+);
 await request("checkout/demo/complete", { orderId: checkout.orderId });
 await request("checkout/demo/complete", { orderId: checkout.orderId });
 order = (await request(`orders/${checkout.orderId}`)).data;
@@ -137,6 +152,33 @@ await request("reports", { ...report, recordings: ["not-allowed"] }, 400);
 await request("reports", report);
 await request("reports", report);
 assert.equal((await request("reports")).data.length, 1);
+assert.equal(
+  (await request("reports", undefined, 200, otherCookie)).data.length,
+  0,
+);
+const review = JSON.parse(
+  readFileSync(
+    new URL("../../config/progress-report-example.json", import.meta.url),
+    "utf8",
+  ),
+);
+review.reportId = randomUUID();
+review.subjectId = randomUUID();
+await request("reports", { ...review, transcript: "not-allowed" }, 400);
+const inconsistent = structuredClone(review);
+inconsistent.tasks.support.independent++;
+await request("reports", inconsistent, 400);
+await request("reports", review);
+await request("reports", review);
+const uploaded = (await request("reports")).data;
+assert.equal(uploaded.length, 2);
+assert.ok(
+  uploaded.some(
+    (x) =>
+      x.summary.schemaVersion === 2 &&
+      x.summary.practice.current.matched === 30,
+  ),
+);
 assert.equal(
   (await request("reports", undefined, 200, otherCookie)).data.length,
   0,
