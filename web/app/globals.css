@@ -2129,3 +2129,48 @@ th {
 }
 
 .brand { direction: ltr; unicode-bidi: isolate; }
+
+/* Keep activation controls and the generated QR together in one desktop view. */
+.activation-page { padding-block: 20px 24px; }
+.activation-page .page-intro { max-width: none; padding: 0; text-align: start; }
+.activation-page .page-intro .eyebrow { justify-content: start; font-size: 10px; }
+.activation-page .page-intro h1 { font-size: clamp(28px, 2.5vw, 36px); line-height: 1.18; margin: 8px 0; }
+.activation-page .page-intro h1 br { display: none; }
+.activation-page .page-intro h1 em::before { content: " "; }
+.activation-page .page-intro p { max-width: none; margin: 0; font-size: 13px; line-height: 1.6; }
+.activation-page .activation-layout { grid-template-columns: minmax(260px, .85fr) minmax(0, 2fr); gap: 24px; margin-block: 22px 16px; }
+.activation-page .activation-steps article { padding-block: 14px; gap: 14px; }
+.activation-page .activation-steps h2 { font-size: 17px; margin-bottom: 5px; }
+.activation-page .activation-steps p { font-size: 12px; line-height: 1.6; }
+.activation-page .activation-steps .notice { margin-block: 14px; padding: 12px; font-size: 11px; }
+.activation-page .activation-steps > .button { padding: 10px 14px; font-size: 11px; }
+.activation-page .activation-panel { padding: 22px; }
+.activation-page .activation-panel.has-result { display: grid; grid-template-columns: minmax(0, .9fr) minmax(250px, 1.1fr); gap: 20px; align-items: start; }
+.activation-page .activation-panel .form { margin: 0; gap: 18px; }
+.activation-page .panel-heading { align-items: start; gap: 10px; }
+.activation-page .panel-heading .page-icon { width: 38px; height: 38px; border-radius: 11px; }
+.activation-page .panel-heading .page-icon svg { width: 19px; height: 19px; }
+.activation-page .panel-heading h2 { font-size: 20px; }
+.activation-page .panel-heading p { font-size: 11px; }
+.activation-page .activation-panel .form .button { padding: 12px; font-size: 12px; white-space: normal; }
+.activation-page .activation-result { margin: 0; padding: 0; border: 0; }
+.activation-page .short-activation-code { margin-top: 10px; font-size: 18px; letter-spacing: .5px; }
+.activation-page .activation-qr { width: min(100%, clamp(240px, 28vh, 290px)); margin: 12px auto 8px; }
+.activation-page .activation-result > .text-link { margin: 0; font-size: 11px; }
+.activation-page .activation-result .hero-actions { margin-top: 12px; gap: 8px; }
+.activation-page .activation-result .hero-actions .button { padding: 10px 12px; font-size: 11px; }
+.activation-page .activation-result > .subtle { margin-top: 10px; font-size: 10px; line-height: 1.5; }
+.activation-page > .hero-actions { margin: 0; gap: 22px; }
+.activation-page > .hero-actions .text-link { font-size: 11px; }
+.qr-dialog { overflow: auto; }
+.qr-dialog img { width: min(75vw, 560px, 65dvh); }
+@media (max-width: 850px) {
+  .activation-page .activation-layout { grid-template-columns: 1fr; }
+  .activation-page .activation-panel { grid-row: 1; }
+}
+@media (max-width: 600px) {
+  .activation-page { padding-top: 16px; }
+  .activation-page .activation-panel.has-result { grid-template-columns: 1fr; }
+  .activation-page .activation-result { border-top: 1px solid var(--line); padding-top: 20px; }
+  .activation-page .activation-qr { width: min(100%, 280px); }
+}

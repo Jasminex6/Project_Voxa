@@ -45,7 +45,7 @@ export function ActivationDemo({ lang }: { lang: Lang }) {
       ].map(([title, body], i) => <article key={i}><span className="step-number">0{i + 1}</span><div><h2>{title}</h2><p>{body}</p></div></article>)}
       <div className="notice"><ShieldCheck size={18} />{ar ? "عرض هاكاثون مجاني: ١٠٠ رمز قابل لإعادة الاستخدام على أجهزة الاختبار؛ ٥٠ لكل خطة. كل تفعيل يمنح ٧ أيام مع فترة السماح دون اتصال. لا نطلب بيانات الطفل أو تسجيلاته." : "Free hackathon demo: 100 reusable codes, 50 per plan, for your test devices. Each activation grants seven days plus offline grace. No child information or recordings are requested."}</div>
       <button className="button quiet" type="button" onClick={downloadPool}><Download size={16} />{ar ? "تنزيل رموز العرض الـ١٠٠" : "Download all 100 demo codes"}</button>
-    </div><div className="activation-panel"><form className="form" onSubmit={generate}>
+    </div><div className={`activation-panel${result ? " has-result" : ""}`}><form className="form" onSubmit={generate}>
       <div className="panel-heading"><span className="page-icon"><Smartphone /></span><div><h2>{ar ? "رمز تفعيل خطتك" : "Your plan activation"}</h2><p>{ar ? "استخدم إصدار العرض المحدّث من تطبيق فوكسا." : "Use the updated Voxa demo APK."}</p></div></div>
       <label>{ar ? "الخطة" : "Plan"}<select value={tier} onChange={e => { setTier(e.target.value as PaidTier); setResult(null); }}><option value="FAMILY_PRO">Family Pro</option><option value="CLINICAL_SLP">Clinical SLP</option></select></label>
       <button className="button primary full" disabled={busy}><QrCode size={18} />{busy ? ar ? "جارٍ إنشاء الرمز…" : "Generating…" : ar ? "إنشاء رمز التفعيل وQR" : "Generate activation code & QR"}</button>
