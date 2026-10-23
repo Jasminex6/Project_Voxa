@@ -65,6 +65,8 @@ Expiry preserves existing profiles and trained sounds. Emergency tools and exist
 
 ## Reports and privacy
 
+Every report visibly includes User ID: the selected child's full anonymous profile identifier. It links successive reports without including their name; the report reference identifies the individual export.
+
 Profile → Progress review shows a short overview: practice days, new tasks confirmed, and up to three plain-language insights. The PDF is one page; supporting numbers are behind Details and in the full JSON export. Phone reports use the selected child's real local activity. The website preview and sample downloads are explicitly fictional. PDF and JSON sharing require caregiver PIN confirmation and work offline. No-speech and technical captures never reduce the match rate, and insufficient data never produces a made-up trend.
 
 The website's center report uses illustrative data. Actual reports can be uploaded through the configured web account flow; the public hosted activation demo does not provision customer accounts. Automatic weekly uploads, doctor access, center membership invitations, appointments, calendars, and payment-dues management are not implemented in this preview.

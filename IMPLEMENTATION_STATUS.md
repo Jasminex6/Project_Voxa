@@ -44,6 +44,8 @@ The supplied `EXECUTION_PLAN.md` is preserved. This file records actual implemen
 
 ## Verified locally
 
+- User ID follow-up: committed snapshot `40fc2dc` built in isolation and was installed on the Samsung without clearing data. All five focused report device checks passed, including the full ID visible in both languages and themes. The actual Android sample exports remain one page in English and Arabic, have the same checked-in fictional JSON, and were rendered and visually inspected with the full ID. Web TypeScript validation passed. Charts were left unimplemented as requested.
+
 - Latest phone validation used committed source snapshot `6a6bd82`, built in an isolated directory to exclude concurrent speech/licensing edits. Five focused checks passed: actual one-page PDF rendering with small/large data, bilingual UI in both themes and Details disclosure, durable task observations, and preservation migration. The isolated debug APK was installed as an update and the normal app reopened.
 - The same isolated snapshot built successfully in debug and minified release, and release vital lint passed. The short overview was checked live in English and Arabic, including Details expand/collapse, at the available narrow browser viewport. Both public downloads returned HTTP 200 and matched the reviewed one-page fictional PDFs byte-for-byte.
 

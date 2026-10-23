@@ -4,6 +4,8 @@ The report should help a caregiver and clinician decide what to discuss next. It
 
 ## Default presentation
 
+The overview and PDF visibly label the full anonymous profile `subjectId` as User ID. It stays stable for that local child profile so successive reports can be linked without a name. It is separate from the report reference and is not a global account or center membership identifier. Charts remain a demo presentation idea, without implementation.
+
 The app, website and one-page PDF show two activity summaries (practice days and newly assigned tasks confirmed) and at most three short observations. The overview omits daily charts, target tables, aggregate percentage-point scores, review-delay statistics and long methodology text. Supporting counts and coverage are available under Details and in the full JSON export.
 
 Highlights identify the largest supported per-target decline and increase using the evidence safeguards below. They can instead show a current target needing discussion, a starting-baseline message, or a caregiver review action. If at least a quarter of captures had no speech or technical issues, checking capture conditions takes priority over word trends. This is a presentation safeguard, not a clinical threshold. Caregiver-reported support is summarized only when recorded and no review queue takes priority. A maximum of three observations prevents a checklist of every available parameter.
