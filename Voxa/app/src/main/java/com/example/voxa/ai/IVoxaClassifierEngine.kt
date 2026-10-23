@@ -34,4 +34,7 @@ interface IVoxaClassifierEngine {
      * The engine can use this to suppress classification of its own audio output.
      */
     fun notifyAudioPlaybackStarted()
+
+    /** Ends playback suppression and starts a cooldown for speaker echo and buffered audio. */
+    fun notifyAudioPlaybackFinished()
 }

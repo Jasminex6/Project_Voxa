@@ -28,7 +28,8 @@ class VoxaClassifierEngine(
     context: Context,
     private val activeProfile: ChildProfile?,
     private val enrolledIntents: List<EnrolledIntent>,
-    private val intentTemplates: Map<Long, List<AcousticTemplate>>
+    private val intentTemplates: Map<Long, List<AcousticTemplate>>,
+    private val clockMs: () -> Long = android.os.SystemClock::elapsedRealtime
 ) : IVoxaClassifierEngine {
 
     companion object {
@@ -64,6 +65,7 @@ class VoxaClassifierEngine(
 
     // Cooldown state: timestamp of the last classification result (match or reject)
     private var lastResultTimeMs: Long = 0L
+    private var playbackInProgress = false
 
     /**
      * Parses serialized MFCC template features from AcousticTemplate.templateFeatures.
@@ -121,41 +123,22 @@ class VoxaClassifierEngine(
     // so we can lose up to 319 samples per block — enough to split a word boundary
     private var carryOver: ShortArray = ShortArray(0)
 
+    @Synchronized
     override fun processAudioBlock(pcmData: ShortArray): ClassificationResult? {
-        val now = System.currentTimeMillis()
+        val now = clockMs()
 
         // ── Cooldown gate ──
         // After any classification result, suppress new results for COOLDOWN_MS.
         // This prevents echo/reverb from a single utterance re-triggering the VAD
         // and producing ghost matches (e.g., saying "مياه" triggers "water" then "milk" from echo).
         //
-        // During cooldown, we still feed frames to the VAD so it drains its buffers
-        // and resets cleanly, but we discard any completed segments.
-        if (now - lastResultTimeMs < COOLDOWN_MS) {
-            // Drain VAD: feed frames but discard segments
-            val frameSize = 320
-            val combined: ShortArray
-            if (carryOver.isNotEmpty()) {
-                combined = ShortArray(carryOver.size + pcmData.size)
-                System.arraycopy(carryOver, 0, combined, 0, carryOver.size)
-                System.arraycopy(pcmData, 0, combined, carryOver.size, pcmData.size)
-            } else {
-                combined = pcmData
-            }
-
-            var offset = 0
-            while (offset + frameSize <= combined.size) {
-                val frame = combined.copyOfRange(offset, offset + frameSize)
-                vad.processFrame(frame) // feed but ignore result
-                offset += frameSize
-            }
-            carryOver = if (offset < combined.size) {
-                combined.copyOfRange(offset, combined.size)
-            } else {
-                ShortArray(0)
-            }
-
-            return null // Suppressed during cooldown
+        // Ignore queued synthesis and the ENTIRE playback, then its echo tail.
+        // Feeding suppressed audio into VAD would let a partial speaker segment
+        // survive the cooldown and be classified when listening resumes.
+        if (playbackInProgress || now - lastResultTimeMs < COOLDOWN_MS) {
+            vad.reset()
+            carryOver = ShortArray(0)
+            return null
         }
 
         // ── Step 1: Prepend carry-over from previous block, then feed frames to VAD ──
@@ -288,9 +271,18 @@ class VoxaClassifierEngine(
         return result
     }
 
+    @Synchronized
     override fun notifyAudioPlaybackStarted() {
-        // Start cooldown to prevent classifying the app's own speech output
-        lastResultTimeMs = System.currentTimeMillis()
+        playbackInProgress = true
         vad.reset()
+        carryOver = ShortArray(0)
+    }
+
+    @Synchronized
+    override fun notifyAudioPlaybackFinished() {
+        lastResultTimeMs = clockMs()
+        playbackInProgress = false
+        vad.reset()
+        carryOver = ShortArray(0)
     }
 }

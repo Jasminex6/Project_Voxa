@@ -276,16 +276,30 @@ class VoxaListenerService : Service() {
 
         // Play translation audio on match
         if (result.isMatch && result.audioAssetPath != null && result.outputPhrase != null) {
-            // Extend cooldown BEFORE playback starts — the mic will pick up the speaker output
-            // and the VAD would re-trigger on the TTS audio, producing false ghost matches.
-            classifierEngine?.notifyAudioPlaybackStarted()
+            // Suppress recognition from queueing through actual playback completion.
+            // A fixed timeout from this point can expire before TTS even starts.
+            val engine = classifierEngine
+            engine?.notifyAudioPlaybackStarted()
 
             val dao = VoxaDatabase.getDatabase(applicationContext).voxaDao()
             serviceScope.launch {
-                val profile = dao.getActiveProfile()
-                val gender = profile?.gender ?: "Male"
-                withContext(Dispatchers.Main) {
-                    audioPlayer?.playTranslation(result.audioAssetPath, gender, result.outputPhrase)
+                try {
+                    val profile = dao.getActiveProfile()
+                    val gender = profile?.gender ?: "Male"
+                    withContext(Dispatchers.Main) {
+                        val player = audioPlayer
+                        if (player != null && !suppressResults) {
+                            player.playTranslation(result.audioAssetPath, gender, result.outputPhrase) {
+                                engine?.notifyAudioPlaybackFinished()
+                            }
+                        } else {
+                            engine?.notifyAudioPlaybackFinished()
+                        }
+                    }
+                } catch (e: Exception) {
+                    engine?.notifyAudioPlaybackFinished()
+                    if (e is CancellationException) throw e
+                    Log.e("VoxaService", "Translation playback failed", e)
                 }
             }
         }
@@ -340,7 +354,6 @@ class VoxaListenerService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         Log.d("VoxaService", "Service Destroyed")
-        isRunning = false
 
         // 1. Immediately suppress all classification results to prevent ghost output
         // during recording thread teardown (critical for push-to-talk release)
@@ -352,6 +365,8 @@ class VoxaListenerService : Service() {
         
         // 2. Shut down and release the microphone hardware
         stopAudioHardware()
+        // Practice waits for this flag before binding its speech service.
+        isRunning = false
 
         // 3. Release the CPU WakeLock if it is currently held, letting the processor enter sleep mode again
         wakeLock?.let {

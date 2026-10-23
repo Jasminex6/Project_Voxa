@@ -88,7 +88,8 @@ Microphone: 16 kHz mono PCM
   → 40-dimensional MFCC features
   → DTW comparison with enrolled templates (top-two consensus)
   → Absolute-distance and ambiguity gates
-  → Arabic phrase playback and cooldown
+  → Arabic phrase playback, with recognition suppressed until playback completes
+  → 1.5-second echo cooldown; discard speaker audio before listening resumes
 ```
 
 Enrollment stores multiple local feature templates for each intent. YAMNet and prototypical-matching code/assets remain in the repository from earlier experiments; they are not the active `VoxaClassifierEngine` pipeline. Speech practice uses the separate on-device speech-recognition flow described above.

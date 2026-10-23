@@ -3,8 +3,11 @@ package com.example.voxa.utils
 import android.content.Context
 import android.media.MediaPlayer
 import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
 import android.util.Log
 import java.util.Locale
+import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * 🔊 AudioPlayer — Translation Playback Wrapper
@@ -23,13 +26,25 @@ class AudioPlayer(private val context: Context) {
     }
 
     private var mediaPlayer: MediaPlayer? = null
+    private var mediaCompletion: (() -> Unit)? = null
+    private val speechCompletions = ConcurrentHashMap<String, () -> Unit>()
     private var tts: TextToSpeech? = null
-    private var isTtsReady = false
+    @Volatile
+    internal var isTtsReady = false
+        private set
 
     init {
         // Initialize TTS as a fallback
         tts = TextToSpeech(context) { status ->
             if (status == TextToSpeech.SUCCESS) {
+                tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                    override fun onStart(utteranceId: String?) {}
+                    override fun onDone(utteranceId: String?) { finishSpeech(utteranceId) }
+                    @Deprecated("Legacy TTS error callback")
+                    override fun onError(utteranceId: String?) { finishSpeech(utteranceId) }
+                    override fun onError(utteranceId: String?, errorCode: Int) { finishSpeech(utteranceId) }
+                    override fun onStop(utteranceId: String?, interrupted: Boolean) { finishSpeech(utteranceId) }
+                })
                 isTtsReady = true
                 // Try setting Arabic locale
                 val arabicLocale = Locale("ar", "EG")
@@ -49,9 +64,10 @@ class AudioPlayer(private val context: Context) {
      * @param gender The active profile's gender ("Male" or "Female")
      * @param outputPhrase The Arabic translation phrase (used as TTS fallback)
      */
-    fun playTranslation(audioAssetPath: String, gender: String, outputPhrase: String) {
+    fun playTranslation(audioAssetPath: String, gender: String, outputPhrase: String, onComplete: (() -> Unit)? = null) {
         // Release any previous playback
         releaseMediaPlayer()
+        tts?.stop()
 
         // Resolve the gendered audio path
         val genderFolder = if (gender == "Female") "girl" else "boy"
@@ -59,19 +75,27 @@ class AudioPlayer(private val context: Context) {
 
         try {
             // Try loading from assets
-            val afd = context.assets.openFd(assetPath)
-            mediaPlayer = MediaPlayer().apply {
-                setDataSource(afd.fileDescriptor, afd.startOffset, afd.declaredLength)
-                afd.close()
-                prepare()
-                setOnCompletionListener { releaseMediaPlayer() }
-                start()
+            val player = MediaPlayer()
+            mediaPlayer = player
+            mediaCompletion = onComplete
+            context.assets.openFd(assetPath).use { afd ->
+                player.setDataSource(afd.fileDescriptor, afd.startOffset, afd.declaredLength)
             }
+            player.setOnCompletionListener { if (mediaPlayer === player) releaseMediaPlayer() }
+            player.setOnErrorListener { _, _, _ ->
+                if (mediaPlayer === player) releaseMediaPlayer()
+                true
+            }
+            player.prepare()
+            player.start()
             Log.d(TAG, "Playing translation: $assetPath")
         } catch (e: Exception) {
             Log.w(TAG, "Audio asset not found: $assetPath — falling back to TTS")
+            // The same request continues through TTS; it has not finished yet.
+            mediaCompletion = null
+            releaseMediaPlayer()
             // Fallback to TTS
-            speakWithTts(outputPhrase, gender)
+            speakWord(outputPhrase, "ar", gender, onComplete)
         }
     }
 
@@ -106,14 +130,21 @@ class AudioPlayer(private val context: Context) {
      * Dynamically sets language to English (Locale.US) or Egyptian Arabic (Locale("ar", "EG")),
      * applies Arabic Tashkeel when appropriate, and selects a gender-matching voice.
      */
-    fun speakWord(text: String, language: String = "ar", gender: String = "Male") {
+    fun speakWord(text: String, language: String = "ar", gender: String = "Male", onComplete: (() -> Unit)? = null) {
         releaseMediaPlayer()
-        if (isTtsReady && tts != null) {
+        val utteranceId = UUID.randomUUID().toString()
+        if (onComplete != null) speechCompletions[utteranceId] = onComplete
+        try {
+            if (!isTtsReady || tts == null) {
+                Log.w(TAG, "TTS not ready, cannot speak: $text")
+                finishSpeech(utteranceId)
+                return
+            }
             val isEn = language.equals("en", ignoreCase = true)
             val targetLocale = if (isEn) Locale.US else Locale("ar", "EG")
             tts?.language = targetLocale
 
-            val voices = tts?.voices?.filter { !it.isNetworkConnectionRequired }
+            val voices = tts?.voices
             if (voices != null) {
                 val isFemale = gender.equals("Female", ignoreCase = true)
                 val langPrefix = if (isEn) "en" else "ar"
@@ -137,32 +168,37 @@ class AudioPlayer(private val context: Context) {
                 if (matchVoice != null) {
                     tts?.voice = matchVoice
                     Log.d(TAG, "Selected TTS Voice for $language: ${matchVoice.name}")
-                } else { Log.w(TAG, "No installed offline voice for requested language"); return }
-            } else { return }
+                }
+            }
 
             val textToSpeak = if (!isEn) applyTashkeel(text) else text
-            tts?.speak(textToSpeak, TextToSpeech.QUEUE_FLUSH, null, "voxa_speech")
+            if (tts?.speak(textToSpeak, TextToSpeech.QUEUE_FLUSH, null, utteranceId) != TextToSpeech.SUCCESS) {
+                finishSpeech(utteranceId)
+            }
             Log.d(TAG, "TTS speaking ($language): $textToSpeak")
-        } else {
-            Log.w(TAG, "TTS not ready, cannot speak: $text")
+        } catch (e: Exception) {
+            Log.e(TAG, "Speech playback failed", e)
+            finishSpeech(utteranceId)
         }
     }
 
-    /**
-     * Uses Android's Text-To-Speech engine to speak the Arabic phrase (backward compat).
-     */
-    private fun speakWithTts(text: String, gender: String) {
-        speakWord(text = text, language = "ar", gender = gender)
+    private fun finishSpeech(utteranceId: String?) {
+        if (utteranceId != null) speechCompletions.remove(utteranceId)?.invoke()
     }
 
     private fun releaseMediaPlayer() {
+        val player = mediaPlayer
+        val completion = mediaCompletion
+        mediaPlayer = null
+        mediaCompletion = null
         try {
-            mediaPlayer?.stop()
-            mediaPlayer?.release()
+            player?.stop()
         } catch (e: Exception) {
             // Ignore — player may already be released
+        } finally {
+            runCatching { player?.release() }
+            completion?.invoke()
         }
-        mediaPlayer = null
     }
 
     fun release() {
@@ -170,5 +206,7 @@ class AudioPlayer(private val context: Context) {
         tts?.stop()
         tts?.shutdown()
         tts = null
+        isTtsReady = false
+        speechCompletions.keys.toList().forEach { finishSpeech(it) }
     }
 }
