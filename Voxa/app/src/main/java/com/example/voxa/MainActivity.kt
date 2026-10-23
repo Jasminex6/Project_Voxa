@@ -226,7 +226,7 @@ fun VoxaAppContent(
                     onNavigateToEnrollment = { navStack.add(Screen.Enrollment) }
                 )
                 Screen.Emergency -> EmergencyScreen(viewModel = viewModel)
-                Screen.Practice -> SpeechPracticeScreen(viewModel = viewModel)
+                Screen.Practice -> SpeechPracticeScreen(viewModel = viewModel, onUpgrade = { navStack.add(Screen.Profile) })
                 Screen.Profile -> ProfileScreen(
                     viewModel = viewModel,
                     onBack = { if (navStack.size > 1) navStack.removeLast() }

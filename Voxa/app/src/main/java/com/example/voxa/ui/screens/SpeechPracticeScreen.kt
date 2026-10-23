@@ -16,8 +16,8 @@ val PracticeVioletBg = Color(0xFF581c87)
  * The old Pronunciation Lab has been removed per user specification.
  */
 @Composable
-fun SpeechPracticeScreen(viewModel: IVoxaViewModel) {
-    SayAndEarnScreen(viewModel = viewModel)
+fun SpeechPracticeScreen(viewModel: IVoxaViewModel, onUpgrade: () -> Unit = {}) {
+    SayAndEarnScreen(viewModel = viewModel, onUpgrade = onUpgrade)
 }
 
 @androidx.compose.ui.tooling.preview.Preview(showBackground = true, showSystemUi = true, name = "Speech Practice Screen")

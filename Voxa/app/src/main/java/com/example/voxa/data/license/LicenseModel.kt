@@ -16,13 +16,12 @@ data class ActiveLicense(
     val effectiveTier: LicenseTier
         get() = if (status == LicenseStatus.ACTIVE || status == LicenseStatus.GRACE) tier else LicenseTier.FREE
     val canSendProfiles: Boolean get() = effectiveTier != LicenseTier.FREE
-    // Core voice features retain the unrestricted behavior of justinbeiber.
-    val hasFullPractice: Boolean get() = true
+    val hasFullPractice: Boolean get() = effectiveTier != LicenseTier.FREE
     val canExportProgress: Boolean get() = effectiveTier != LicenseTier.FREE
     fun canCreateProfile(count: Int): Boolean = count < when (effectiveTier) {
         LicenseTier.FREE -> 1
         LicenseTier.FAMILY_PRO -> Int.MAX_VALUE
         LicenseTier.CLINICAL_SLP -> Int.MAX_VALUE
     }
-    fun canEnrollIntent(@Suppress("UNUSED_PARAMETER") count: Int): Boolean = true
+    fun canEnrollIntent(count: Int): Boolean = effectiveTier != LicenseTier.FREE || count < 3
 }

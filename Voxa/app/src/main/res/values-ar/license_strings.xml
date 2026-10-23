@@ -9,7 +9,7 @@
     <string name="license_pairing_copy">نسخ معرّف التثبيت</string>
     <string name="license_pairing_copied">تم نسخ معرّف التثبيت</string>
     <string name="license_free_name">مجانية</string>
-    <string name="license_free_details">ملف طفل واحد · التدريب الصوتي وإضافة الكلمات بالكامل</string>
+    <string name="license_free_details">ملف طفل واحد · ٣ كلمات</string>
     <string name="license_enter_code">تفعيل رمز</string>
     <string name="license_compare">مقارنة الخطط</string>
     <string name="license_grace_badge">فترة سماح</string>
@@ -22,7 +22,7 @@
     <string name="license_free_status">الخطة المجانية نشطة</string>
     <string name="license_purchase_hint">اشتريت خطة من موقع فوكسا؟ الصق رمز التفعيل هنا، ثم أكّد باستخدام رمز ولي الأمر.</string>
     <string name="license_purchase_code">رمز تفعيل الشراء</string>
-    <string name="license_free">مجاني · ملف طفل واحد · الميزات الصوتية بالكامل</string>
+    <string name="license_free">مجاني · ملف طفل واحد · ٣ كلمات</string>
     <string name="license_valid_until">الوصول المدفوع حتى %1$s</string>
     <string name="license_grace">فترة سماح لمدة سبعة أيام. اتصل لتجديد الاشتراك.</string>
     <string name="license_expired">انتهى الوصول المميز. ملفات الأطفال ونماذج الصوت محفوظة.</string>
@@ -49,5 +49,11 @@
     <string name="license_handover_limit">يتطلب إرسال الملف Family Pro. يظل الاستقبال متاحاً.</string>
     <string name="license_back">رجوع</string>
     <string name="license_offline_unavailable">التعرف على الكلام على الجهاز غير متاح لهذا الجهاز أو اللغة. ثبّت حزمة اللغة دون إنترنت؛ لن يتم إرسال الصوت عبر الشبكة.</string>
-    <string name="license_practice_demo">تجربة التمرين المجانية · تشمل Family Pro المكتبة الكاملة</string>
+    <string name="license_practice_demo">تشمل الخطة المجانية ٣ كلمات للتدريب. رقِّ إلى Family Pro لفتح المكتبة الكاملة والكلمات المخصصة.</string>
+    <string name="license_practice_upgrade">ترقية</string>
+    <string name="license_deactivate">تسجيل الخروج من الاشتراك</string>
+    <string name="license_deactivate_note">إعادة هذا الهاتف للخطة المجانية دون حذف الملفات أو التسجيلات أو التقدم. يمكنك تفعيل رمزك مجدداً في أي وقت. لن يُلغى اشتراكك المدفوع.</string>
+    <string name="license_deactivate_confirm">العودة للمجاني</string>
+    <string name="license_deactivated">تم تسجيل الخروج من الاشتراك على هذا الهاتف. بياناتك محفوظة.</string>
+    <string name="license_deactivate_error">تعذر تسجيل الخروج. حاول مجدداً.</string>
 </resources>

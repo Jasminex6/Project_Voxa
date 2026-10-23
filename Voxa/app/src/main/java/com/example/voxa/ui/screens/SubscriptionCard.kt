@@ -41,6 +41,8 @@ fun SubscriptionCard(viewModel: IVoxaViewModel) {
     val context = LocalContext.current
     var purchaseCode by remember { mutableStateOf("") }
     var expanded by remember { mutableStateOf(false) }
+    var showDeactivate by remember { mutableStateOf(false) }
+    var deactivateError by remember { mutableStateOf(false) }
     val paid = license.effectiveTier != LicenseTier.FREE
     val colors = LocalVoxaColors.current
     val accent = if (colors.isDark) {
@@ -108,6 +110,11 @@ fun SubscriptionCard(viewModel: IVoxaViewModel) {
                         .onFailure { android.widget.Toast.makeText(context, R.string.license_browser_error, android.widget.Toast.LENGTH_SHORT).show() }
                 }) { Text(stringResource(R.string.license_compare), color = colors.secondaryText, style = MaterialTheme.typography.labelMedium) }
             }
+            if (license.status != LicenseStatus.FREE) {
+                TextButton(onClick = { deactivateError = false; showDeactivate = true }) {
+                    Text(stringResource(R.string.license_deactivate), color = colors.secondaryText)
+                }
+            }
             AnimatedVisibility(visible = expanded) {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     HorizontalDivider(color = accent.copy(alpha = 0.15f))
@@ -141,6 +148,32 @@ fun SubscriptionCard(viewModel: IVoxaViewModel) {
                 }
             }
         }
+    }
+    if (showDeactivate) {
+        AlertDialog(
+            onDismissRequest = { showDeactivate = false },
+            title = { Text(stringResource(R.string.license_deactivate)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(stringResource(R.string.license_deactivate_note))
+                    if (deactivateError) Text(stringResource(R.string.license_deactivate_error), color = MaterialTheme.colorScheme.error)
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    runCatching { viewModel.deactivateSubscription() }
+                        .onSuccess {
+                            purchaseCode = ""
+                            expanded = false
+                            showDeactivate = false
+                            android.widget.Toast.makeText(context, R.string.license_deactivated, android.widget.Toast.LENGTH_SHORT).show()
+                        }.onFailure { deactivateError = true }
+                }) { Text(stringResource(R.string.license_deactivate_confirm)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeactivate = false }) { Text(stringResource(android.R.string.cancel)) }
+            }
+        )
     }
 }
 

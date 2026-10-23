@@ -34,10 +34,10 @@ The website has **100 stable reusable demo codes: 50 per plan**. Download the co
 |---|---|
 | Communication | Caregiver-enrolled vocalizations are matched locally and played back as Arabic phrases using bundled audio or Android TTS. |
 | Enrollment and library | Record training examples, manage vocabulary per child, and replay recordings made on the local device. |
-| Speech practice | Arabic/English word practice uses Android's on-device speech recognizer and text matching, with rewards and per-profile history. It requires Android 12+ and a supported installed language service; online recognition is not used as a fallback. |
+| Speech practice | Arabic/English practice uses the installed Android speech service and text matching, with rewards and per-profile history. Free includes three practice words and an Upgrade link to My Plan; paid plans unlock the full library and custom words. The speech provider may use its online or offline backend. |
 | Quests and rewards | Caregivers create tasks, review submissions, award points, and fulfill rewards. Caregiver actions are PIN protected. |
 | Profiles and handover | Create and switch child profiles, choose avatars and voices, and transfer profiles between trusted nearby devices. Sending a profile requires a paid tier. |
-| My plan | Compact plan status and activation controls live in Profile, with a plan indicator in the sidebar. |
+| My plan | Plan status, activation controls, and subscription logout live in Profile. Logout returns this phone to Free while preserving profiles, recordings, progress and the installation ID; the same valid code can be activated again. It does not cancel billing. |
 | Progress reports | Family and Clinical users can export summary JSON or PDF after caregiver confirmation. Authenticated web accounts support formatted report uploads, deduplication, and newest-first ordering. |
 | Emergency tools | Contact dialer, SMS/WhatsApp launchers, location sharing, and a siren. External calls, messages, and location sharing depend on the relevant services, permissions, and connectivity. |
 | Languages | Arabic and English interfaces, including right-to-left website layouts. |

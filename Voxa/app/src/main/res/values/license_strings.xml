@@ -13,7 +13,7 @@
     <string name="license_pairing_copy">Copy installation ID</string>
     <string name="license_pairing_copied">Installation ID copied</string>
     <string name="license_free_name">Free</string>
-    <string name="license_free_details">1 child profile · full voice practice and enrollment</string>
+    <string name="license_free_details">1 child profile · 3 words</string>
     <string name="license_enter_code">Activate a code</string>
     <string name="license_compare">Compare plans</string>
     <string name="license_grace_badge">Grace period</string>
@@ -26,7 +26,7 @@
     <string name="license_free_status">Free plan active</string>
     <string name="license_purchase_hint">Purchased a plan on the Voxa website? Paste your activation code below, then confirm with your caregiver PIN.</string>
     <string name="license_purchase_code">Purchase activation code</string>
-    <string name="license_free">Free · 1 profile · full voice features</string>
+    <string name="license_free">Free · 1 profile · 3 words</string>
     <string name="license_valid_until">Paid access until %1$s</string>
     <string name="license_grace">Seven-day grace period. Reconnect to renew.</string>
     <string name="license_expired">Premium access has expired. Your profiles and voice templates are preserved.</string>
@@ -53,5 +53,11 @@
     <string name="license_handover_limit">Sending a profile requires Family Pro. Receiving remains available.</string>
     <string name="license_back">Back</string>
     <string name="license_offline_unavailable">On-device speech recognition is unavailable for this device or language. Install the offline language pack; audio will not be sent online.</string>
-    <string name="license_practice_demo">Free practice demo · Family Pro includes the full library</string>
+    <string name="license_practice_demo">Free includes 3 practice words. Upgrade to Family Pro for the full library and custom words.</string>
+    <string name="license_practice_upgrade">Upgrade</string>
+    <string name="license_deactivate">Log out of subscription</string>
+    <string name="license_deactivate_note">Return this phone to Free without deleting profiles, recordings or progress. Activate your code again anytime. This does not cancel your paid plan.</string>
+    <string name="license_deactivate_confirm">Return to Free</string>
+    <string name="license_deactivated">Subscription removed from this phone. Your data is saved.</string>
+    <string name="license_deactivate_error">Could not log out. Please try again.</string>
 </resources>

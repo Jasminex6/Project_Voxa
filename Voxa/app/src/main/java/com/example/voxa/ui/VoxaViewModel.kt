@@ -35,6 +35,10 @@ class VoxaViewModel(application: Application) : AndroidViewModel(application), I
     private val _pendingActivation = MutableStateFlow<String?>(null)
     override val pendingActivation = _pendingActivation.asStateFlow()
     override fun requestActivation(value: String?) { _pendingActivation.value = value?.take(8192) }
+    override fun deactivateSubscription() {
+        licenseManager.deactivate()
+        _pendingActivation.value = null
+    }
     private val creationMutex = kotlinx.coroutines.sync.Mutex()
 
     // Access door to the database queries.

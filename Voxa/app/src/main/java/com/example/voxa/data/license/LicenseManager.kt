@@ -16,8 +16,8 @@ import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
 /** Stores a signed, installation-bound license with Android Keystore encryption. */
-class LicenseManager private constructor(context: Context) {
-    private val prefs = context.getSharedPreferences("voxa_license", Context.MODE_PRIVATE)
+class LicenseManager internal constructor(context: Context, preferencesName: String = "voxa_license") {
+    private val prefs = context.getSharedPreferences(preferencesName, Context.MODE_PRIVATE)
     val deviceId: String = runCatching { prefs.getString("device_id", null)?.also { UUID.fromString(it) } }.getOrNull() ?: UUID.randomUUID().toString().also {
         prefs.edit().putString("device_id", it).commit()
     }
@@ -75,6 +75,12 @@ class LicenseManager private constructor(context: Context) {
             val token = String(cipher.doFinal(bytes.copyOfRange(12, bytes.size)), Charsets.UTF_8)
             verifier.verify(token, deviceId, now / 1000)
         }.getOrElse { ActiveLicense(status = LicenseStatus.EXPIRED) }
+    }
+
+    /** Only remove the entitlement. Keep installation identity, clock checks and all child data. */
+    @Synchronized fun deactivate() {
+        check(prefs.edit().remove("token").commit()) { "Could not remove license" }
+        _license.value = ActiveLicense()
     }
 
     private fun encryptionKey(): SecretKey {

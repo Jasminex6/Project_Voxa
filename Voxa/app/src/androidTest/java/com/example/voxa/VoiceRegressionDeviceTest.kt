@@ -20,6 +20,7 @@ import com.example.voxa.ai.MfccExtractor
 import com.example.voxa.ai.VoxaClassifierEngine
 import com.example.voxa.ai.VoxaVAD
 import com.example.voxa.data.*
+import com.example.voxa.data.license.*
 import com.example.voxa.ui.IVoxaViewModel
 import com.example.voxa.ui.LogEvent
 import com.example.voxa.ui.screens.*
@@ -42,6 +43,7 @@ import java.util.Locale
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
+import org.json.JSONObject
 
 /** Uses isolated UI state and cache files; never modifies the child's database or wallet. */
 @RunWith(AndroidJUnit4::class)
@@ -175,8 +177,9 @@ class VoiceRegressionDeviceTest {
         }
     }
 
-    @Test fun freePracticeIncludesOldVocabularyAndCustomWords() {
+    @Test fun paidPracticeIncludesFullVocabularyAndCustomWords() {
         val model = VoiceModel()
+        model.license.value = ActiveLicense(tier = LicenseTier.FAMILY_PRO, status = LicenseStatus.ACTIVE)
         ui.setContent { VoxaTheme { SayAndEarnScreen(model) } }
         ui.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("Sleep"))
         ui.onNodeWithText("Sleep").assertIsDisplayed().performClick()
@@ -185,14 +188,77 @@ class VoiceRegressionDeviceTest {
         ui.onAllNodesWithText("CustomVoiceWord").assertCountEquals(2)
     }
 
-    @Test fun existingWordsDoNotBlockVoiceEnrollment() {
+    @Test fun paidPlanAllowsEnrollmentBeyondThreeWords() {
         val model = VoiceModel()
+        model.license.value = ActiveLicense(tier = LicenseTier.FAMILY_PRO, status = LicenseStatus.ACTIVE)
         model.enrolledIntents.value = (1L..6L).map {
             EnrolledIntent(id = it, profileId = 101, intentName = "Word$it", outputPhrase = "Word$it", audioAssetPath = "")
         }
         ui.setContent { VoxaTheme { EnrollmentScreen(model, onBack = {}) } }
         ui.onNodeWithText(context.getString(R.string.enroll_title)).assertIsDisplayed()
         ui.onNodeWithText(context.getString(R.string.license_intent_limit)).assertDoesNotExist()
+    }
+
+    @Test fun freePracticeExplainsUpgradeAndRespondsToPlanChanges() {
+        val model = VoiceModel()
+        var upgradeClicks = 0
+        ui.setContent { VoxaTheme { SayAndEarnScreen(model, onUpgrade = { upgradeClicks++ }) } }
+        ui.onAllNodesWithTag("practice_word").assertCountEquals(3)
+        ui.onNodeWithText(context.getString(R.string.license_practice_demo)).assertIsDisplayed()
+        ui.onNodeWithText(context.getString(R.string.license_practice_upgrade)).performClick()
+        assertEquals(1, upgradeClicks)
+        ui.runOnIdle { model.license.value = ActiveLicense(tier = LicenseTier.FAMILY_PRO, status = LicenseStatus.ACTIVE) }
+        ui.onNodeWithText(context.getString(R.string.license_practice_demo)).assertDoesNotExist()
+        ui.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("CustomVoiceWord"))
+        ui.onNodeWithText("CustomVoiceWord").performClick()
+        ui.runOnIdle { model.deactivateSubscription() }
+        ui.onAllNodesWithTag("practice_word").assertCountEquals(3)
+        ui.onNodeWithTag("practice_result").assertDoesNotExist()
+        ui.onNodeWithContentDescription("Listening Paused").assertExists()
+        assertEquals(1, model.enrolledIntents.value.size)
+    }
+
+    @Test fun subscriptionLogoutRequiresConfirmationAndPreservesChildState() {
+        val model = VoiceModel()
+        model.license.value = ActiveLicense(tier = LicenseTier.FAMILY_PRO, status = LicenseStatus.ACTIVE)
+        ui.setContent { VoxaTheme { SubscriptionCard(model) } }
+        ui.onNodeWithText(context.getString(R.string.license_deactivate)).performClick()
+        ui.onNodeWithText(context.getString(android.R.string.cancel)).performClick()
+        assertEquals(LicenseTier.FAMILY_PRO, model.license.value.effectiveTier)
+        ui.onNodeWithText(context.getString(R.string.license_deactivate)).performClick()
+        ui.onNodeWithText(context.getString(R.string.license_deactivate_confirm)).performClick()
+        ui.onNodeWithText(context.getString(R.string.license_free_name)).assertIsDisplayed()
+        assertEquals(1, model.allProfiles.value.size)
+        assertEquals(1, model.enrolledIntents.value.size)
+        assertEquals(101L, model.activeProfile.value?.id)
+    }
+
+    @Test fun licenseLogoutPersistsAndTheSameCodeCanBeReactivated() {
+        val fixture = JSONObject(InstrumentationRegistry.getInstrumentation().context.assets
+            .open("license-test-fixture.json").bufferedReader().use { it.readText() })
+        val name = "voxa_license_logout_regression"
+        val prefs = context.getSharedPreferences(name, Context.MODE_PRIVATE)
+        prefs.edit().clear().putString("device_id", fixture.getString("deviceId"))
+            .putString("data_marker", "preserved").commit()
+        try {
+            val manager = LicenseManager(context, name)
+            val token = fixture.getString("token")
+            manager.activate(token)
+            val identity = manager.deviceId
+            val maxSeen = prefs.getLong("max_seen_time", 0)
+            assertEquals(LicenseTier.FAMILY_PRO, manager.license.value.effectiveTier)
+            manager.deactivate()
+            manager.refresh()
+            assertEquals(LicenseStatus.FREE, manager.license.value.status)
+            assertFalse(prefs.contains("token"))
+            assertEquals(identity, manager.deviceId)
+            assertEquals(identity, prefs.getString("device_id", null))
+            assertEquals("preserved", prefs.getString("data_marker", null))
+            assertTrue(prefs.getLong("max_seen_time", 0) >= maxSeen)
+            manager.activate(token)
+            manager.refresh()
+            assertEquals(LicenseTier.FAMILY_PRO, manager.license.value.effectiveTier)
+        } finally { prefs.edit().clear().commit() }
     }
 
     @Test fun installedRecognizerAcceptsArabicAndEnglishPracticeRequests() {
@@ -380,6 +446,8 @@ class VoiceRegressionDeviceTest {
     }
 
     private class VoiceModel : IVoxaViewModel {
+        override val license = MutableStateFlow(ActiveLicense())
+        override fun deactivateSubscription() { license.value = ActiveLicense() }
         val observations = mutableListOf<Triple<String, PracticeOutcome, Boolean>>()
         var coins = 0
         override fun addPracticeCoins(coins: Int) { this.coins += coins }

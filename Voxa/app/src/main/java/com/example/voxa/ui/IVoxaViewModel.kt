@@ -29,6 +29,7 @@ interface IVoxaViewModel {
         get() = kotlinx.coroutines.flow.MutableStateFlow(com.example.voxa.data.license.ActiveLicense())
     val pendingActivation: StateFlow<String?> get() = kotlinx.coroutines.flow.MutableStateFlow(null)
     fun requestActivation(value: String?) {}
+    fun deactivateSubscription() {}
     val allProfiles: StateFlow<List<ChildProfile>>
     val activeProfile: StateFlow<ChildProfile?>
     val enrolledIntents: StateFlow<List<EnrolledIntent>>

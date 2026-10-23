@@ -173,17 +173,19 @@ val DEFAULT_SAY_AND_EARN_WORDS = listOf(
 fun SayAndEarnScreen(
     viewModel: IVoxaViewModel,
     onBack: (() -> Unit)? = null,
-    speechClientFactory: (Context) -> PracticeSpeechClient? = PracticeSpeechRecognizer::client
+    speechClientFactory: (Context) -> PracticeSpeechClient? = PracticeSpeechRecognizer::client,
+    onUpgrade: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val activeProfile by viewModel.activeProfile.collectAsState()
     val enrolledIntents by viewModel.enrolledIntents.collectAsState()
     val childPoints by viewModel.childPoints.collectAsState()
+    val license by viewModel.license.collectAsState()
     val rewardGold = if (LocalVoxaColors.current.isDark) QuestGold else QuestGoldLight
 
     // Combined vocabulary: default core words + child's custom enrolled words
-    val allWords = remember(enrolledIntents) {
+    val allWords = remember(enrolledIntents, license.hasFullPractice) {
         val customWords = enrolledIntents.map { intent ->
             SayAndEarnWord(
                 english = intent.outputPhrase,
@@ -193,7 +195,8 @@ fun SayAndEarnScreen(
                 audioAssetPath = intent.audioAssetPath
             )
         }
-        (DEFAULT_SAY_AND_EARN_WORDS + customWords).distinctBy { it.arabic }
+        if (license.hasFullPractice) (DEFAULT_SAY_AND_EARN_WORDS + customWords).distinctBy { it.arabic }
+        else DEFAULT_SAY_AND_EARN_WORDS.take(3)
     }
 
     var selectedWordIndex by remember { mutableIntStateOf(0) }
@@ -299,6 +302,14 @@ fun SayAndEarnScreen(
         onDispose {
             cancelRecognition()
         }
+    }
+
+    LaunchedEffect(license.hasFullPractice) {
+        cancelRecognition()
+        selectedWordIndex = 0
+        showResult = false
+        matchResult = null
+        partialSpokenText = ""
     }
 
     fun stopListening() {
@@ -773,6 +784,14 @@ fun SayAndEarnScreen(
             }
 
             // ── WORD SELECTOR (Horizontal Row) ──
+            if (!license.hasFullPractice) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text(stringResource(R.string.license_practice_demo),
+                        modifier = Modifier.weight(1f), color = LocalVoxaColors.current.secondaryText,
+                        fontSize = 12.sp)
+                    TextButton(onClick = onUpgrade) { Text(stringResource(R.string.license_practice_upgrade)) }
+                }
+            }
             Text(
                 text = stringResource(R.string.speech_practice_choose_word),
                 fontSize = 13.sp,
@@ -802,6 +821,7 @@ fun SayAndEarnScreen(
                             BorderStroke(1.dp, LocalVoxaColors.current.glassBorder),
                         modifier = Modifier
                             .width(88.dp)
+                            .testTag("practice_word")
                             .clickable {
                                 cancelRecognition()
                                 selectedWordIndex = index
