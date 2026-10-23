@@ -35,6 +35,7 @@ val QuestTeal = Color(0xFF14B8A6)
 val QuestPurple = Color(0xFFA855F7)
 val QuestOrange = Color(0xFFF97316)
 val QuestGold = Color(0xFFFFD700)
+val QuestGoldLight = Color(0xFFB7791F)
 
 // Status Indicator Colors
 val SuccessGreen = Color(0xFF22C55E)     // Live state / success action
@@ -42,3 +43,36 @@ val SuccessGreenDark = Color(0xFF065F46) // Successful matching timeline event
 val WarningAmber = Color(0xFFF59E0B)     // Ambiguous warning / alert states
 val WarningAmberDark = Color(0xFF78350F) // Ambiguous matching timeline event
 val ErrorRed = Color(0xFFEF4444)         // Stopped / error state
+
+// Approved Light theme palette. Keep these values exact.
+val LightBackground = Color(0xFFE9E7F2)
+val LightSurface = Color(0xFFF6F4FB)
+val LightSurfaceVariant = Color(0xFFD9D2EB)
+val LightBorder = Color(0xFFA89ABB)
+
+val LightPrimaryText = Color(0xFF171126)
+val LightSecondaryText = Color(0xFF625873)
+
+val LightPrimaryPurple = Color(0xFF8B5CF6)
+val LightNeonCyan = Color(0xFF22D3EE)
+val LightDeepPurple = Color(0xFF7C3AED)
+
+// Explicit Dark theme aliases preserve the existing Voxa palette.
+val DarkBackground = Slate900
+val DarkSurface = Slate800
+val DarkSurfaceVariant = Slate700
+val DarkBorder = Slate600
+
+val DarkPrimaryText = Color.White
+val DarkSecondaryText = Slate400
+
+val DarkPrimary = Sky400
+val DarkSecondary = Sky500
+val DarkTertiary = Sky600
+
+// Existing functional colors with specification names.
+val PracticePurple = QuestPurple
+val EmergencyCallBlue = Color(0xFF2196F3)
+val EmergencySmsGreen = Color(0xFF4CAF50)
+val EmergencyLocationOrange = Color(0xFFFF9800)
+val EmergencySirenRed = Color(0xFFF44336)

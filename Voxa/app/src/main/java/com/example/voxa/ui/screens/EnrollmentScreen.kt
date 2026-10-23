@@ -228,7 +228,7 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Slate900)
+            .background(LocalVoxaColors.current.background)
             .verticalScroll(scrollState)
             .padding(16.dp)
     ) {
@@ -243,20 +243,20 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                 Icon(
                     imageVector = Icons.Default.ArrowBack,
                     contentDescription = "Back to Library",
-                    tint = Color.White
+                    tint = LocalVoxaColors.current.primaryText
                 )
             }
             Text(
                 text = stringResource(id = R.string.enroll_title),
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = LocalVoxaColors.current.primaryText
             )
         }
         Text(
             text = stringResource(id = R.string.enroll_subtitle),
             fontSize = 13.sp,
-            color = Slate400,
+            color = LocalVoxaColors.current.secondaryText,
             modifier = Modifier.padding(bottom = 16.dp)
         )
 
@@ -269,7 +269,7 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
             ) {
                 Text(
                     text = stringResource(id = R.string.enroll_no_profile),
-                    color = Slate400,
+                    color = LocalVoxaColors.current.secondaryText,
                     textAlign = TextAlign.Center
                 )
             }
@@ -281,8 +281,8 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                 // ── TEXT INPUTS ──
                 Card(
                     shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = Slate800),
-                    border = BorderStroke(1.dp, Slate700),
+                    colors = CardDefaults.cardColors(containerColor = LocalVoxaColors.current.normalCard),
+                    border = BorderStroke(1.dp, LocalVoxaColors.current.glassBorder),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                      Column(
@@ -296,13 +296,13 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                         ) {
                             Text(
                                 text = stringResource(id = R.string.enroll_card_title),
-                                color = Color.White,
+                                color = LocalVoxaColors.current.primaryText,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 13.sp
                             )
                             Text(
                                 text = stringResource(id = R.string.btn_suggestions),
-                                color = Sky400,
+                                color = LocalVoxaColors.current.primaryAction,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 12.sp,
                                 modifier = Modifier.clickable { showSuggestionsDialog = true }
@@ -312,13 +312,15 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                         OutlinedTextField(
                             value = intentName,
                             onValueChange = { intentName = it },
-                            label = { Text(stringResource(id = R.string.field_meaning), color = Slate400) },
+                            label = { Text(stringResource(id = R.string.field_meaning), color = LocalVoxaColors.current.secondaryText) },
                             singleLine = true,
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedTextColor = Color.White,
-                                unfocusedTextColor = Color.White,
-                                focusedBorderColor = Sky400,
-                                unfocusedBorderColor = Slate600
+                focusedContainerColor = LocalVoxaColors.current.textFieldBackground,
+                unfocusedContainerColor = LocalVoxaColors.current.textFieldBackground,
+                                focusedTextColor = LocalVoxaColors.current.primaryText,
+                                unfocusedTextColor = LocalVoxaColors.current.primaryText,
+                                focusedBorderColor = LocalVoxaColors.current.primaryAction,
+                                unfocusedBorderColor = LocalVoxaColors.current.inputBorder
                             ),
                             modifier = Modifier.fillMaxWidth()
                         )
@@ -326,15 +328,17 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                         OutlinedTextField(
                             value = outputPhrase,
                             onValueChange = { outputPhrase = it },
-                            label = { Text(stringResource(id = R.string.field_translation), color = Slate400) },
+                            label = { Text(stringResource(id = R.string.field_translation), color = LocalVoxaColors.current.secondaryText) },
                             singleLine = false,
                             minLines = 2,
                             maxLines = 3,
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedTextColor = Color.White,
-                                unfocusedTextColor = Color.White,
-                                focusedBorderColor = Sky400,
-                                unfocusedBorderColor = Slate600
+                focusedContainerColor = LocalVoxaColors.current.textFieldBackground,
+                unfocusedContainerColor = LocalVoxaColors.current.textFieldBackground,
+                                focusedTextColor = LocalVoxaColors.current.primaryText,
+                                unfocusedTextColor = LocalVoxaColors.current.primaryText,
+                                focusedBorderColor = LocalVoxaColors.current.primaryAction,
+                                unfocusedBorderColor = LocalVoxaColors.current.inputBorder
                             ),
                             modifier = Modifier.fillMaxWidth()
                         )
@@ -361,7 +365,7 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                             Spacer(modifier = Modifier.height(6.dp))
                             Text(
                                 text = bifurcationWarning!!,
-                                color = Color.White,
+                                color = LocalVoxaColors.current.primaryText,
                                 fontSize = 13.sp
                             )
                             Spacer(modifier = Modifier.height(12.dp))
@@ -379,8 +383,8 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                 // ── INTERACTIVE RECORDING WIZARD ──
                 Card(
                     shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = Slate800),
-                    border = BorderStroke(1.dp, Slate700),
+                    colors = CardDefaults.cardColors(containerColor = LocalVoxaColors.current.normalCard),
+                    border = BorderStroke(1.dp, LocalVoxaColors.current.glassBorder),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(
@@ -394,7 +398,7 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                             text = stringResource(id = R.string.enroll_progress_title),
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White
+                            color = LocalVoxaColors.current.primaryText
                         )
                         Spacer(modifier = Modifier.height(6.dp))
 
@@ -406,7 +410,7 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                                 .height(8.dp)
                                 .clip(RoundedCornerShape(4.dp)),
                             color = SuccessGreen,
-                            trackColor = Slate600
+                            trackColor = LocalVoxaColors.current.inputBorder
                         )
 
                         Row(
@@ -421,7 +425,7 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                             )
                             Text(
                                 text = "Target: 5",
-                                color = if (recordedSamplesCount >= 3) SuccessGreen else Slate400,
+                                color = if (recordedSamplesCount >= 3) SuccessGreen else LocalVoxaColors.current.secondaryText,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -436,7 +440,7 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                                     .fillMaxWidth()
                                     .height(24.dp)
                                     .clip(RoundedCornerShape(6.dp))
-                                    .background(Slate900)
+                                    .background(LocalVoxaColors.current.background)
                                     .padding(horizontal = 4.dp),
                                 contentAlignment = Alignment.CenterStart
                             ) {
@@ -445,7 +449,7 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                                         .fillMaxWidth(volumeLevel)
                                         .fillMaxHeight(0.7f)
                                         .clip(RoundedCornerShape(4.dp))
-                                        .background(Sky400)
+                                        .background(LocalVoxaColors.current.primaryAction)
                                 )
                             }
                         } else {
@@ -455,7 +459,7 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                                 } else {
                                     stringResource(id = R.string.enroll_guideline_tap)
                                 },
-                                color = if (recordedSamplesCount > 0 && recordedSamplesCount < 5) SuccessGreen else Slate400,
+                                color = if (recordedSamplesCount > 0 && recordedSamplesCount < 5) SuccessGreen else LocalVoxaColors.current.secondaryText,
                                 fontSize = 11.sp,
                                 textAlign = TextAlign.Center
                             )
@@ -473,14 +477,14 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                             contentPadding = PaddingValues(0.dp), // Clear default margins for comfy circle text
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = if (isRecordingSample) ErrorRed else Sky500,
-                                disabledContainerColor = Slate700
+                                disabledContainerColor = LocalVoxaColors.current.surfaceVariant
                             ),
                             shape = CircleShape,
                             modifier = Modifier.size(90.dp)
                         ) {
                             Text(
                                 text = if (isRecordingSample) stringResource(id = R.string.btn_stop) else stringResource(id = R.string.btn_record),
-                                color = Color.White,
+                                color = LocalVoxaColors.current.primaryText,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
                                 textAlign = TextAlign.Center
@@ -497,7 +501,7 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                             enabled = recordedSamplesCount >= 3,
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = SuccessGreen,
-                                disabledContainerColor = Slate700
+                                disabledContainerColor = LocalVoxaColors.current.surfaceVariant
                             ),
                             shape = RoundedCornerShape(8.dp),
                             modifier = Modifier
@@ -547,15 +551,15 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
             dismissButton = {
                 OutlinedButton(
                     onClick = { showSaveDialog = false },
-                    border = BorderStroke(1.dp, Slate600),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Slate300)
+                    border = BorderStroke(1.dp, LocalVoxaColors.current.inputBorder),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = LocalVoxaColors.current.secondaryText)
                 ) {
                     Text(stringResource(id = R.string.dialog_cancel))
                 }
             },
-            containerColor = Slate800,
-            titleContentColor = Color.White,
-            textContentColor = Slate300
+            containerColor = LocalVoxaColors.current.normalCard,
+            titleContentColor = LocalVoxaColors.current.primaryText,
+            textContentColor = LocalVoxaColors.current.secondaryText
         )
     }
 
@@ -563,7 +567,7 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
     if (showSuggestionsDialog) {
         AlertDialog(
             onDismissRequest = { showSuggestionsDialog = false },
-            title = { Text(stringResource(id = R.string.dialog_suggestions_title), color = Color.White, fontWeight = FontWeight.Bold) },
+            title = { Text(stringResource(id = R.string.dialog_suggestions_title), color = LocalVoxaColors.current.primaryText, fontWeight = FontWeight.Bold) },
             text = {
                 Column(
                     modifier = Modifier
@@ -572,7 +576,7 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                 ) {
                     Text(
                         text = stringResource(id = R.string.dialog_suggestions_desc),
-                        color = Slate300,
+                        color = LocalVoxaColors.current.secondaryText,
                         fontSize = 12.sp,
                         modifier = Modifier.padding(bottom = 12.dp)
                     )
@@ -601,7 +605,7 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                         items(categories) { (categoryName, list) ->
                             Text(
                                 text = categoryName,
-                                color = Sky400,
+                                color = LocalVoxaColors.current.primaryAction,
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.padding(vertical = 4.dp)
@@ -612,8 +616,8 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                                 for (item in list) {
                                     Card(
                                         shape = RoundedCornerShape(8.dp),
-                                        colors = CardDefaults.cardColors(containerColor = Slate900),
-                                        border = BorderStroke(1.dp, Slate700),
+                                        colors = CardDefaults.cardColors(containerColor = LocalVoxaColors.current.background),
+                                        border = BorderStroke(1.dp, LocalVoxaColors.current.glassBorder),
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .clickable {
@@ -632,7 +636,7 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
                                         ) {
                                             Text(
                                                 text = item.first,
-                                                color = Color.White,
+                                                color = LocalVoxaColors.current.primaryText,
                                                 fontWeight = FontWeight.Bold,
                                                 fontSize = 13.sp
                                             )
@@ -652,12 +656,12 @@ fun EnrollmentScreen(viewModel: IVoxaViewModel, onBack: () -> Unit) {
             },
             confirmButton = {
                 TextButton(onClick = { showSuggestionsDialog = false }) {
-                    Text(stringResource(id = R.string.dialog_cancel), color = Sky400, fontWeight = FontWeight.Bold)
+                    Text(stringResource(id = R.string.dialog_cancel), color = LocalVoxaColors.current.primaryAction, fontWeight = FontWeight.Bold)
                 }
             },
-            containerColor = Slate800,
-            titleContentColor = Color.White,
-            textContentColor = Slate300
+            containerColor = LocalVoxaColors.current.normalCard,
+            titleContentColor = LocalVoxaColors.current.primaryText,
+            textContentColor = LocalVoxaColors.current.secondaryText
         )
     }
 }

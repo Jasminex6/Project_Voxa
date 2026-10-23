@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="theme_switch_light">التبديل إلى الوضع الفاتح</string>
+    <string name="theme_switch_dark">التبديل إلى الوضع الداكن</string>
+    <string name="p2p_share_title">مشاركة ملف %1$s</string>
+    <string name="p2p_permissions_required">اسمح بأذونات الأجهزة القريبة لمشاركة الملفات.</string>
+    <string name="p2p_processing">جارٍ حفظ الملف المستلم…</string>
+    <string name="p2p_prepare_error">تعذّر تجهيز الملف. أغلق المشاركة وحاول مرة أخرى.</string>
+</resources>

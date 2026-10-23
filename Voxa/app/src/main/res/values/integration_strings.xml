@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="theme_switch_light">Switch to light mode</string>
+    <string name="theme_switch_dark">Switch to dark mode</string>
+    <string name="p2p_share_title">Share %1$s\'s profile</string>
+    <string name="p2p_permissions_required">Allow nearby device permissions to share profiles.</string>
+    <string name="p2p_processing">Saving received profile…</string>
+    <string name="p2p_prepare_error">Could not prepare this profile. Close sharing and try again.</string>
+</resources>

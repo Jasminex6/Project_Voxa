@@ -2,6 +2,8 @@
 
 Branch: `codex/voxa-platform-integration`, based on `justinbeiber` at `899ebbed53f9ca94e047835ca402a4a798964840`.
 
+Theme integration: merges `dark/light_theme` at `ef4f94437950c80153d30c8d42f8da095efad79f` into this branch. The existing Nearby transport and pairing-PIN protocol are retained.
+
 The supplied `EXECUTION_PLAN.md` is preserved. This file records actual implementation, deliberate corrections, validation, and work that is not complete. This is a working hackathon integration, not a claim that the entire commercial launch is finished.
 
 ## Implemented
@@ -24,6 +26,8 @@ The supplied `EXECUTION_PLAN.md` is preserved. This file records actual implemen
 - Optional transactional fulfillment email through Resend, with server-verified checkout email and delivery deduplication. Email links to the authenticated account, where a fresh activation code can be created. Demo mode never sends email.
 - Explicit local-only demo checkout with persistent ignored demo data, real cryptographic signing, and no real charge. Demo routes and storage refuse common hosted deployment environments.
 - CI workflow for web checks and Android builds.
+- Persisted Home light/dark toggle and themed native/system bars from `dark/light_theme`, with matching Profile plan/report cards and sidebar plan status. The practice merge retains both offline entitlement checks and theme-aware reward colors. Theme-switch accessibility labels and sharing status messages are bilingual.
+- Sharing a non-active profile now exports that selected profile's own vocabulary and recognition templates. Receiving uses an atomic database transaction and checks profile allowance before opening the receive sheet as well as before import. Nearby runtime permissions are selected by Android version; the original peer-to-peer wire format is unchanged.
 
 ## Corrections to the supplied plan
 
@@ -37,7 +41,9 @@ The supplied `EXECUTION_PLAN.md` is preserved. This file records actual implemen
 
 ## Verified locally
 
-- 37 Android JVM tests passed, including hosted-plan token interoperability and the existing license-verification/entitlement tests.
+- 40 Android JVM tests passed after the theme merge, including hosted-plan token interoperability, license verification/entitlements, and Nearby permission coverage across supported Android versions.
+- Eight targeted integration checks passed on both the Pixel emulator and connected Samsung after the theme merge: dashboard light/dark switching and preference restoration, activation-code preservation across a theme change and report controls, readable text contrast, selected non-active profile transfer with its own recognition templates, atomic import rollback, missing-profile rejection, database migration, and live hosted demo QR/license verification. P2P database fixtures are in-memory and theme preferences use a separate test file; these checks do not alter family data or PINs. A fresh two-phone Nearby radio transfer was not run because a second phone was unavailable.
+- After the theme merge, debug and minified release APK builds and release vital lint passed. The merged debug APK, built against the hosted activation URL, was installed as an update on the Samsung without clearing app data.
 - A targeted Samsung test decoded actual short-URL QR image fixtures, redeemed their codes on the live site, verified both tiers and their premium features, and rejected a different installation. It did not change the family's PIN, license, or data. Camera framing remains a user-operated scan; the app scanner now targets QR codes with auto-zoom and validates payloads before confirmation.
 - A Pixel 6 Android 14 emulator test passed Keystore storage, airplane-mode license verification, invalid-token rejection, clock rollback handling, and caregiver confirmation for external activation links.
 - Debug APK, minified unsigned release APK, and release AAB built; release vital lint passed. Artifacts require production signing/configuration before distribution.

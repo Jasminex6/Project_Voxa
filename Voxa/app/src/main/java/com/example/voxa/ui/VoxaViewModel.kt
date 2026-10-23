@@ -643,39 +643,8 @@ class VoxaViewModel(application: Application) : AndroidViewModel(application), I
                     onError(getApplication<Application>().getString(com.example.voxa.R.string.license_profile_limit))
                     return@launch
                 }
-                // 1. Create the child profile (marked as NOT active initially)
-                val newProfile = ChildProfile(
-                    name = "${dto.childName} (Shared)",
-                    gender = dto.childGender,
-                    avatarEmoji = dto.childAvatarEmoji,
-                    speakerEmbedding = dto.speakerEmbedding,
-                    isActive = false,
-                    caregiverPhone1 = dto.caregiverPhone
-                )
-                val newProfileId = voxaDao.insertProfile(newProfile)
-
-                // 2. Insert each intent with isImported = true
-                for (intentDto in dto.intents) {
-                    val enrolledIntent = EnrolledIntent(
-                        profileId = newProfileId,
-                        intentName = intentDto.intentName,
-                        outputPhrase = intentDto.outputPhrase,
-                        audioAssetPath = intentDto.audioAssetPath,
-                        oodThreshold = intentDto.oodThreshold,
-                        isImported = true  // KEY: marks this as P2P-imported
-                    )
-                    val newIntentId = voxaDao.insertIntent(enrolledIntent)
-
-                    // 3. Insert all acoustic templates (centroids/MFCC vectors)
-                    //    These enable classification to work on this device
-                    for (templateFeatures in intentDto.templateFeatures) {
-                        val template = AcousticTemplate(
-                            intentId = newIntentId,
-                            templateFeatures = templateFeatures
-                        )
-                        voxaDao.insertTemplate(template)
-                    }
-                }
+                // Save the selected profile and all recognition templates atomically.
+                val newProfileId = voxaDao.insertP2PProfile(dto)
 
                 // 4. Store caregiver data in SharedPreferences
                 //    (only if the receiver doesn't already have a contact set)

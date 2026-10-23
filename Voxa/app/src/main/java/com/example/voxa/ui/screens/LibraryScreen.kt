@@ -41,7 +41,7 @@ fun LibraryScreen(viewModel: IVoxaViewModel, onNavigateToEnrollment: () -> Unit)
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Slate900)
+                .background(LocalVoxaColors.current.background)
         ) {
             Column(
                 modifier = Modifier
@@ -52,7 +52,7 @@ fun LibraryScreen(viewModel: IVoxaViewModel, onNavigateToEnrollment: () -> Unit)
                     text = stringResource(id = R.string.library_title),
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = LocalVoxaColors.current.primaryText
                 )
                 Text(
                     text = if (activeProfile != null) {
@@ -61,7 +61,7 @@ fun LibraryScreen(viewModel: IVoxaViewModel, onNavigateToEnrollment: () -> Unit)
                         stringResource(id = R.string.library_no_profile)
                     },
                     fontSize = 13.sp,
-                    color = Slate400,
+                    color = LocalVoxaColors.current.secondaryText,
                     modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
                 )
 
@@ -74,7 +74,7 @@ fun LibraryScreen(viewModel: IVoxaViewModel, onNavigateToEnrollment: () -> Unit)
                     ) {
                         Text(
                             text = stringResource(id = R.string.library_no_profile),
-                            color = Slate400,
+                            color = LocalVoxaColors.current.secondaryText,
                             textAlign = TextAlign.Center
                         )
                     }
@@ -87,7 +87,7 @@ fun LibraryScreen(viewModel: IVoxaViewModel, onNavigateToEnrollment: () -> Unit)
                     ) {
                         Text(
                             text = stringResource(id = R.string.library_empty),
-                            color = Slate400,
+                            color = LocalVoxaColors.current.secondaryText,
                             textAlign = TextAlign.Center,
                             lineHeight = 20.sp
                         )
@@ -118,7 +118,7 @@ fun LibraryScreen(viewModel: IVoxaViewModel, onNavigateToEnrollment: () -> Unit)
                         .height(100.dp)
                         .background(
                             brush = androidx.compose.ui.graphics.Brush.verticalGradient(
-                                colors = listOf(Color.Transparent, Slate900.copy(alpha = 0.95f)),
+                                colors = listOf(Color.Transparent, LocalVoxaColors.current.background.copy(alpha = 0.95f)),
                                 startY = 0f,
                                 endY = 200f
                             )
@@ -127,12 +127,12 @@ fun LibraryScreen(viewModel: IVoxaViewModel, onNavigateToEnrollment: () -> Unit)
                 ) {
                     Button(
                         onClick = onNavigateToEnrollment,
-                        colors = ButtonDefaults.buttonColors(containerColor = Sky400),
+                        colors = ButtonDefaults.buttonColors(containerColor = LocalVoxaColors.current.primaryAction),
                         contentPadding = PaddingValues(horizontal = 28.dp, vertical = 12.dp),
                         shape = RoundedCornerShape(14.dp),
                         modifier = Modifier.padding(bottom = 20.dp)
                     ) {
-                        Text(stringResource(id = R.string.btn_add_sound), color = Slate900, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        Text(stringResource(id = R.string.btn_add_sound), color = LocalVoxaColors.current.onPrimaryAction, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                     }
                 }
             }
@@ -145,7 +145,7 @@ fun LibraryIntentItem(intent: EnrolledIntent, onPlayPreview: () -> Unit, onDelet
     val isImported = intent.isImported
     Card(
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Slate800),
+        colors = CardDefaults.cardColors(containerColor = LocalVoxaColors.current.normalCard),
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
@@ -158,9 +158,9 @@ fun LibraryIntentItem(intent: EnrolledIntent, onPlayPreview: () -> Unit, onDelet
                     Text(
                         text = stringResource(id = R.string.p2p_shared_badge),
                         fontSize = 10.sp,
-                        color = Sky400,
+                        color = LocalVoxaColors.current.primaryAction,
                         modifier = Modifier
-                            .background(Sky400.copy(alpha = 0.15f), RoundedCornerShape(4.dp))
+                            .background(LocalVoxaColors.current.primaryAction.copy(alpha = 0.15f), RoundedCornerShape(4.dp))
                             .padding(horizontal = 6.dp, vertical = 2.dp)
                     )
                     Spacer(modifier = Modifier.height(4.dp))
@@ -169,20 +169,20 @@ fun LibraryIntentItem(intent: EnrolledIntent, onPlayPreview: () -> Unit, onDelet
                     text = stringResource(id = R.string.label_intent, intent.intentName),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = LocalVoxaColors.current.primaryText
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = stringResource(id = R.string.label_phrase, intent.outputPhrase),
                     fontSize = 18.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = Sky400 // Highlighting translation phrase in cyan
+                    color = LocalVoxaColors.current.primaryAction // Highlighting translation phrase in cyan
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = stringResource(id = R.string.label_audio, intent.audioAssetPath.substringAfterLast("/")),
                     fontSize = 11.sp,
-                    color = Slate400
+                    color = LocalVoxaColors.current.secondaryText
                 )
             }
 

@@ -254,7 +254,7 @@
     <string name="profile_error">Error: %1$s</string>
     <string name="profile_cancel">Cancel</string>
     <string name="p2p_section_title">📡 Profile Sharing</string>
-    <string name="p2p_send_button">Send Profile</string>
+    <string name="p2p_send_button">Share</string>
     <string name="p2p_receive_button">Receive</string>
     <string name="p2p_receive_title">📥 Receive Profile</string>
     <string name="p2p_receive_desc">Open the Share screen on the other device.\nThis device is waiting for a connection…</string>

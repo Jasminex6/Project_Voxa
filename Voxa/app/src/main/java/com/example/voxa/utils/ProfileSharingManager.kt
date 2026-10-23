@@ -43,6 +43,10 @@ class ProfileSharingManager(private val context: Context) {
         onPinVerified = listener
     }
 
+    fun reportError(message: String) {
+        _sharingState.value = SharingState.Error(message)
+    }
+
     // ==========================================
     // 📡 DISCOVERY (SENDER)
     // ==========================================

@@ -42,19 +42,24 @@ fun SubscriptionCard(viewModel: IVoxaViewModel) {
     var purchaseCode by remember { mutableStateOf("") }
     var expanded by remember { mutableStateOf(false) }
     val paid = license.effectiveTier != LicenseTier.FREE
-    val accent = if (paid) QuestTeal else Sky400
+    val colors = LocalVoxaColors.current
+    val accent = if (colors.isDark) {
+        if (paid) QuestTeal else Sky400
+    } else {
+        if (paid) SuccessGreenDark else LightDeepPurple
+    }
     val statusColor = when (license.status) {
         LicenseStatus.ACTIVE, LicenseStatus.FREE -> accent
-        LicenseStatus.GRACE -> WarningAmber
+        LicenseStatus.GRACE -> if (colors.isDark) WarningAmber else WarningAmberDark
         else -> ErrorRed
     }
     Card(
         shape = RoundedCornerShape(20.dp),
         border = BorderStroke(1.dp, accent.copy(alpha = 0.3f)),
-        colors = CardDefaults.cardColors(containerColor = Slate800), modifier = Modifier.fillMaxWidth()
+        colors = CardDefaults.cardColors(containerColor = colors.normalCard), modifier = Modifier.fillMaxWidth()
     ) {
         Column(
-            Modifier.background(Brush.linearGradient(listOf(accent.copy(alpha = 0.10f), Slate800)))
+            Modifier.background(Brush.linearGradient(listOf(accent.copy(alpha = 0.10f), colors.normalCard)))
                 .padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -63,9 +68,9 @@ fun SubscriptionCard(viewModel: IVoxaViewModel) {
                         modifier = Modifier.padding(10.dp).size(22.dp))
                 }
                 Column(Modifier.weight(1f)) {
-                    Text(stringResource(R.string.license_title), color = Slate300, style = MaterialTheme.typography.labelMedium)
+                    Text(stringResource(R.string.license_title), color = colors.secondaryText, style = MaterialTheme.typography.labelMedium)
                     Text(if (paid) licensePlanName(license) else stringResource(R.string.license_free_name),
-                        color = Color.White, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        color = colors.primaryText, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 }
                 Surface(shape = RoundedCornerShape(50), color = statusColor.copy(alpha = 0.13f)) {
                     Text(stringResource(when (license.status) {
@@ -81,7 +86,7 @@ fun SubscriptionCard(viewModel: IVoxaViewModel) {
                 if (license.expiresAt > 0) stringResource(R.string.license_valid_until,
                     DateFormat.getDateInstance().format(Date(license.expiresAt)))
                 else stringResource(R.string.license_free_details),
-                color = Slate300, style = MaterialTheme.typography.bodySmall
+                color = colors.secondaryText, style = MaterialTheme.typography.bodySmall
             )
             if (license.status !in listOf(LicenseStatus.ACTIVE, LicenseStatus.FREE)) {
                 Text(licenseStatusText(license), color = statusColor, style = MaterialTheme.typography.bodySmall)
@@ -101,20 +106,20 @@ fun SubscriptionCard(viewModel: IVoxaViewModel) {
                     val lang = if (context.resources.configuration.locales[0].language == "ar") "ar" else "en"
                     runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("${BuildConfig.VOXA_WEB_URL}/$lang/pricing"))) }
                         .onFailure { android.widget.Toast.makeText(context, R.string.license_browser_error, android.widget.Toast.LENGTH_SHORT).show() }
-                }) { Text(stringResource(R.string.license_compare), color = Slate300, style = MaterialTheme.typography.labelMedium) }
+                }) { Text(stringResource(R.string.license_compare), color = colors.secondaryText, style = MaterialTheme.typography.labelMedium) }
             }
             AnimatedVisibility(visible = expanded) {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     HorizontalDivider(color = accent.copy(alpha = 0.15f))
-                    Text(stringResource(R.string.license_purchase_hint), color = Slate400, style = MaterialTheme.typography.bodySmall)
+                    Text(stringResource(R.string.license_purchase_hint), color = colors.secondaryText, style = MaterialTheme.typography.bodySmall)
                     OutlinedTextField(
                         value = purchaseCode,
                         onValueChange = { purchaseCode = it.take(8192) },
                         label = { Text(stringResource(R.string.license_purchase_code)) },
                         modifier = Modifier.fillMaxWidth(), maxLines = 3,
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = Color.White, unfocusedTextColor = Color.White,
-                            focusedLabelColor = Sky400, unfocusedLabelColor = Slate400
+                            focusedTextColor = colors.primaryText, unfocusedTextColor = colors.primaryText,
+                            focusedLabelColor = accent, unfocusedLabelColor = colors.secondaryText
                         )
                     )
                     Button(modifier = Modifier.fillMaxWidth(), enabled = purchaseCode.isNotBlank(),

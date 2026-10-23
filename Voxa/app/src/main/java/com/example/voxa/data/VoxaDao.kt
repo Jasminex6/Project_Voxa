@@ -17,6 +17,54 @@ interface VoxaDao {
     @Query("SELECT COUNT(*) FROM enrolled_intents WHERE profileId = :profileId AND isImported = 0")
     suspend fun customIntentCount(profileId: Long): Int
 
+    @Query("SELECT * FROM child_profiles WHERE id = :profileId")
+    suspend fun getProfileById(profileId: Long): ChildProfile?
+
+    /** Read one selected profile and its own templates in a consistent snapshot. */
+    @Transaction
+    suspend fun exportP2PProfile(
+        profileId: Long,
+        caregiverName: String,
+        caregiverPhone: String,
+        caregiverRelation: String
+    ): P2PSharingDto {
+        val profile = checkNotNull(getProfileById(profileId)) { "Profile no longer exists" }
+        return P2PSharingDto(
+            childName = profile.name, childGender = profile.gender,
+            childAvatarEmoji = profile.avatarEmoji, speakerEmbedding = profile.speakerEmbedding,
+            caregiverName = caregiverName, caregiverPhone = caregiverPhone,
+            caregiverRelation = caregiverRelation,
+            intents = getIntentsForProfile(profileId).map { intent ->
+                IntentWithTemplates(intent.intentName, intent.outputPhrase, intent.audioAssetPath,
+                    intent.oodThreshold, getTemplatesForIntent(intent.id).map { it.templateFeatures })
+            }
+        )
+    }
+
+    /** A failed transfer import must not leave a partial profile or vocabulary behind. */
+    @Transaction
+    suspend fun insertP2PProfile(dto: P2PSharingDto): Long {
+        require(dto.childName.isNotBlank()) { "Missing profile name" }
+        val profileId = insertProfile(ChildProfile(
+            name = "${dto.childName} (Shared)", gender = dto.childGender,
+            avatarEmoji = dto.childAvatarEmoji, speakerEmbedding = dto.speakerEmbedding,
+            isActive = false, caregiverPhone1 = dto.caregiverPhone
+        ))
+        for (intent in dto.intents) {
+            require(intent.intentName.isNotBlank() && intent.outputPhrase.isNotBlank()) { "Incomplete shared word" }
+            val intentId = insertIntent(EnrolledIntent(
+                profileId = profileId, intentName = intent.intentName,
+                outputPhrase = intent.outputPhrase, audioAssetPath = intent.audioAssetPath,
+                oodThreshold = intent.oodThreshold, isImported = true
+            ))
+            for (features in intent.templateFeatures) {
+                require(features.isNotBlank()) { "Empty shared template" }
+                insertTemplate(AcousticTemplate(intentId = intentId, templateFeatures = features))
+            }
+        }
+        return profileId
+    }
+
     // ==========================================
     // 👤 PROFILE QUERIES
     // ==========================================

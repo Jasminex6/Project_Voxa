@@ -27,12 +27,13 @@ fun PracticeProgressCard(viewModel: IVoxaViewModel) {
     var pin by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
+    val colors = LocalVoxaColors.current
     Spacer(Modifier.height(16.dp))
-    Card(colors = CardDefaults.cardColors(containerColor = Slate800), modifier = Modifier.fillMaxWidth()) {
+    Card(colors = CardDefaults.cardColors(containerColor = colors.normalCard), modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text(stringResource(R.string.license_progress_title), color = Sky400)
-            Text(stringResource(R.string.license_progress_count, stats.size), color = Slate400)
-            Text(stringResource(R.string.license_progress_note), color = Slate400, style = MaterialTheme.typography.bodySmall)
+            Text(stringResource(R.string.license_progress_title), color = colors.primaryText)
+            Text(stringResource(R.string.license_progress_count, stats.size), color = colors.secondaryText)
+            Text(stringResource(R.string.license_progress_note), color = colors.secondaryText, style = MaterialTheme.typography.bodySmall)
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedButton(onClick = { exportPdf = true; pin = ""; error = null }) { Text("PDF") }
                 OutlinedButton(onClick = { exportPdf = false; pin = ""; error = null }) { Text("JSON") }

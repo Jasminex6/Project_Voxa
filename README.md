@@ -15,7 +15,7 @@ Core communication works offline. Plan activation needs a connection once; progr
 - [Voxa for centers](https://voxa-web-pi.vercel.app/en/clinical)
 - [Generate an activation code and QR](https://voxa-web-pi.vercel.app/en/plan-demo)
 
-This branch, `codex/voxa-platform-integration`, builds on `justinbeiber` and includes the Android licensing integration and bilingual web platform. The hosted preview demonstrates plan activation without charging money or asking for payment details.
+This branch, `codex/voxa-platform-integration`, builds on `justinbeiber`, integrates `dark/light_theme`, and includes the Android licensing integration and bilingual web platform. The hosted preview demonstrates plan activation without charging money or asking for payment details.
 
 Plans, center benefits, and activation controls fit in one desktop view at the checked 1280×720 viewport. The activation form has a compact Generate button, with Copy code and Open in Voxa beside the QR. FAQs and the sample progress report open in dialogs. How it works remains a scrolling explanation; narrow screens retain normal scrolling so content stays readable.
 
@@ -41,6 +41,15 @@ The website has **100 stable reusable demo codes: 50 per plan**. Download the co
 | Progress reports | Family and Clinical users can export summary JSON or PDF after caregiver confirmation. Authenticated web accounts support formatted report uploads, deduplication, and newest-first ordering. |
 | Emergency tools | Contact dialer, SMS/WhatsApp launchers, location sharing, and a siren. External calls, messages, and location sharing depend on the relevant services, permissions, and connectivity. |
 | Languages | Arabic and English interfaces, including right-to-left website layouts. |
+| Appearance | Light/dark switch in the Home header, with the choice retained after restarting. Until a choice is made, the app follows the device theme. Profile, plan controls, reports, sharing sheets, and the sidebar use the same palette. |
+
+### Nearby sharing and theme integration
+
+The existing Nearby Connections transfer and receiver PIN flow are retained. Sharing from an individual profile card exports that selected child's metadata and recognition templates, even when another child is active. Receiver imports save the profile and vocabulary in one database transaction; an incomplete import rolls back. Raw recordings remain on the sender, so imported words can be recognized but their original recording previews are unavailable.
+
+Share requires an active Family Pro or Clinical SLP entitlement. Receive checks the receiver's profile allowance before opening the transfer; a Free installation with an existing profile is already at its one-profile limit. Existing data is preserved. Runtime permission requests account for Android version differences.
+
+To check two phones, install the merged build on both, activate a paid tier on the sender, choose Share on the intended profile, choose Receive on the other device, and enter the displayed pairing PIN. Switch themes and restart either app to verify the chosen appearance persists. A complete radio transfer requires two devices; the automated tests separately cover selected-profile serialization, recognition-template preservation, and failed-import rollback using synthetic in-memory databases.
 
 ## Plans
 
@@ -143,7 +152,7 @@ From `Voxa/`:
 .\gradlew.bat :app:testDebugUnitTest :app:assembleDebug
 ```
 
-The recorded integration checks include 24 web/backend tests, 37 Android JVM tests, Android builds, a database-preservation migration test, and a Samsung test that decodes QR fixtures and verifies both hosted demo plans. The latest layout change passed a production build and browser checks. See [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md) for the scope and limits of these checks.
+The recorded integration checks include 24 web/backend tests, 40 Android JVM tests, Android builds, a database-preservation migration test, and a Samsung test that decodes QR fixtures and verifies both hosted demo plans. After the theme merge, eight integration checks passed on both the Pixel emulator and Samsung for the real dashboard theme switch and saved preference, plan-code entry, report controls, text contrast, selected-profile transfer data, import rollback, migration, and hosted demo activation. Debug and minified release APKs built, and release vital lint passed. The updated debug APK was installed on the Samsung without clearing app data. Two-phone Nearby radio transfer was not repeated for this merge. The latest website layout change passed a production build and browser checks. See [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md) for the scope and limits of these checks.
 
 GitHub Actions runs the web checks and Android build on pushes and pull requests. Device tests need a suitable emulator or connected phone; the license-state test must only run on a disposable QA device because it initializes license preferences.
 
