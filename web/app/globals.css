@@ -2322,6 +2322,8 @@ th {
 .report-review .eyebrow { font-size: 10px; margin: 0 0 8px; }
 .report-review .review-title h2 { font-size: 28px; margin: 0 0 8px; }
 .report-review .review-title p { font-size: 12px; margin: 0; color: var(--muted); }
+.report-review .review-title .review-user-id { margin-top: 10px; font-size: 11px; overflow-wrap: anywhere; }
+.review-user-id code { display: inline-block; user-select: text; }
 .review-metrics { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; margin-block: 22px; }
 .review-metrics > div { background: #79cfff0a; border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
 .review-metrics strong { display: block; color: var(--sky); font-size: 30px; line-height: 1.2; margin-bottom: 9px; letter-spacing: -.03em; text-align: start; }

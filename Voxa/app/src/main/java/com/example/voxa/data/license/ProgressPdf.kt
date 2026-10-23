@@ -42,6 +42,7 @@ object ProgressPdf {
             y += text(if (ar) "لمحة عن التقدم" else "Progress at a glance", 40f, y, 515f, 27f, ink, true) + 10
             y += text("${date(report.period.start)} - ${date(report.period.end)}", 40f, y, 515f, 10f, muted) + 5
             y += text(report.period.timeZone, 40f, y, 515f, 9f, muted) + 22
+            y += text(if (ar) "معرّف المستخدم: \u2066${report.subjectId}\u2069" else "User ID: ${report.subjectId}", 40f, y, 515f, 10f, ink) + 16
             val practice = report.practice.current
             val task = report.tasks
             val metrics = listOf(
@@ -71,7 +72,7 @@ object ProgressPdf {
             check(y<775) { "Report summary exceeds its one page: $y" }
             canvas.drawLine(40f,794f,555f,794f,Paint().apply { color=line;strokeWidth=.7f })
             text(if(ar) "دون أسماء أو صوت. البيانات الكاملة في JSON." else "No names or audio. Full numerical data is available in JSON.",40f,803f,380f,8f,muted)
-            text(report.reportId.take(8),470f,803f,85f,8f,muted)
+            text(if (ar) "تقرير: \u2066${report.reportId.take(8)}\u2069" else "Report: ${report.reportId.take(8)}",470f,803f,85f,8f,muted)
             doc.finishPage(page)
             file.outputStream().use { doc.writeTo(it) }
         } finally { doc.close() }

@@ -36,6 +36,10 @@ export function ReportReview({
         <p>
           {date(report.period.start)} - {date(report.period.end)}
         </p>
+        <p className="review-user-id">
+          <span>{ar ? "معرّف المستخدم" : "User ID"}: </span>
+          <code dir="ltr">{report.subjectId}</code>
+        </p>
       </div>
       <div className="review-metrics">
         <div>
@@ -102,9 +106,7 @@ export function ReportReview({
             ? `المساعدة حسب ولي الأمر: ${t.support.independent} مستقلة، ${t.support.prompted} بتوجيه، ${t.support.assisted} بمساعدة، ${t.support.notRecorded} غير مسجلة.`
             : `Caregiver-reported support: ${t.support.independent} independent, ${t.support.prompted} prompted, ${t.support.assisted} assisted, ${t.support.notRecorded} not recorded.`}
         </p>
-        <code>
-          {report.subjectId.slice(0, 8)} / {report.reportId.slice(0, 8)}
-        </code>
+        <code>{ar ? "مرجع التقرير" : "Report reference"}: {report.reportId.slice(0, 8)}</code>
       </details>
     </div>
   );

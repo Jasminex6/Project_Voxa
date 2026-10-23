@@ -42,6 +42,7 @@ class ProgressReviewUiTest {
         for(language in listOf(false,true)) for(mode in listOf(false,true)) {
             ui.runOnIdle { ar=language;dark=mode }
             ui.onNodeWithText(if(language) "أيام الممارسة" else "Practice days").assertIsDisplayed()
+            ui.onNodeWithText(report.subjectId).assertIsDisplayed()
             val bitmap=ui.onRoot().captureToImage().asAndroidBitmap()
             File(context.getExternalFilesDir(null),"report-ui-${if(language) "ar" else "en"}-${if(mode) "dark" else "light"}.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG,100,it) }
             ui.onNodeWithText(if(language) "التفاصيل" else "Details").performScrollTo().performClick()

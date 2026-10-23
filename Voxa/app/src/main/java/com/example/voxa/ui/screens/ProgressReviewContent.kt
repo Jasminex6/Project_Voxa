@@ -34,6 +34,13 @@ fun ProgressReviewContent(report: ProgressReview) {
         }
     }
     note("${date(report.period.start)} - ${date(report.period.end)}")
+    Spacer(Modifier.height(8.dp))
+    note(if (ar) "معرّف المستخدم" else "User ID")
+    androidx.compose.foundation.text.selection.SelectionContainer {
+        Text(report.subjectId, style = MaterialTheme.typography.labelSmall.copy(
+            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+            textDirection = androidx.compose.ui.text.style.TextDirection.Ltr), color = colors.secondaryText)
+    }
     Spacer(Modifier.height(16.dp))
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         metric("${current.activeDays} / ${report.period.days}", if (ar) "أيام الممارسة" else "Practice days",
