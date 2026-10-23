@@ -8,9 +8,11 @@ import java.net.HttpURLConnection
 import java.net.URI
 
 object ActivationClient {
-    /** A QR or deep link contains a single-use exchange code, never a reusable bearer license. */
+    private val demoCode = Regex("VOXA-[FC]-[0-9]{3}-[A-F0-9]{8}", RegexOption.IGNORE_CASE)
+    /** Paid exchange codes are single-use; demo pool codes are reusable across test devices. */
     fun parse(input: String): String {
         val value = input.trim()
+        if (BuildConfig.DEBUG && demoCode.matches(value)) return value.uppercase(java.util.Locale.ROOT)
         if (value.length <= 8192 && value.matches(Regex("[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+"))) return value
         if (value.matches(Regex("[A-Za-z0-9_-]{32,128}"))) return value
         val uri = URI(value)
@@ -25,8 +27,8 @@ object ActivationClient {
         }
         require(pairs.count { it.firstOrNull() == "code" } == 1) { "Invalid activation link" }
         val code = pairs.first { it[0] == "code" }.getOrNull(1).orEmpty()
-        require(code.matches(Regex("[A-Za-z0-9_-]{32,128}"))) { "Invalid activation code" }
-        return code
+        require(code.matches(Regex("[A-Za-z0-9_-]{32,128}")) || (BuildConfig.DEBUG && demoCode.matches(code))) { "Invalid activation code" }
+        return if (demoCode.matches(code)) code.uppercase(java.util.Locale.ROOT) else code
     }
 
     suspend fun redeem(codeOrToken: String, manager: LicenseManager): ActiveLicense = withContext(Dispatchers.IO) {

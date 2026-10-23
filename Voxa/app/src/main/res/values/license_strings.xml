@@ -34,6 +34,7 @@
     <string name="license_safety">Emergency tools and existing offline translations stay available on every plan.</string>
     <string name="license_activate">Activate or renew</string>
     <string name="license_scan">Scan activation QR</string>
+    <string name="license_scan_invalid">This QR is not a Voxa activation code. Scan the QR beside your demo code on the Voxa website.</string>
     <string name="license_scan_error">Scanner unavailable. Paste the activation link instead.</string>
     <string name="license_scan_note">The scanner may need a one-time Google Play Services download.</string>
     <string name="license_upgrade">View plans on the web</string>

@@ -1,44 +1,52 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { generateKeyPairSync, randomUUID } from "node:crypto";
-import { issuePublicDemo } from "../lib/public-demo";
+import { issuePublicDemo, publicDemoCodes, redeemPublicDemo } from "../lib/public-demo";
 import { verifyLicense } from "../lib/license";
-
+import { activationDeepLink } from "../lib/activation-link";
 const pair = generateKeyPairSync("ed25519");
 const keys = { "hosted-demo-test": pair.publicKey.export({ type: "spki", format: "pem" }).toString() };
 process.env.VOXA_PUBLIC_DEMO = "true";
 process.env.VOXA_PUBLIC_DEMO_KEY_ID = "hosted-demo-test";
 process.env.VOXA_PUBLIC_DEMO_PRIVATE_KEY = pair.privateKey.export({ type: "pkcs8", format: "pem" }).toString();
-
-test("hosted demonstration signs the chosen tier for exactly one installation", () => {
-  const now = Date.now(), deviceId = randomUUID();
-  for (const tier of ["FAMILY_PRO", "CLINICAL_SLP"]) {
-    const demo = issuePublicDemo({ tier, deviceId }, now);
+test("100 stable reusable codes select the correct plan on different installations", () => {
+  const pool = publicDemoCodes();
+  assert.equal(pool.length, 100);
+  assert.equal(new Set(pool.map(row => row.code)).size, 100);
+  assert.equal(pool.filter(row => row.tier === "FAMILY_PRO").length, 50);
+  assert.deepEqual(publicDemoCodes(), pool);
+  for (const { code, tier } of pool) {
+    const deviceId = randomUUID(), now = Date.now();
+    const demo = redeemPublicDemo(code, deviceId, now);
     const claims = verifyLicense(demo.token, keys, deviceId, now);
     assert.equal(claims.tier, tier);
-    assert.equal(claims.devices_allowed, 1);
     assert.equal(demo.expiresAt, now + 7 * 86400_000);
-    assert.equal(claims.exp, Math.floor(demo.expiresAt / 1000));
-    assert.equal(new URL(demo.deepLink).searchParams.get("token"), demo.token);
     assert.throws(() => verifyLicense(demo.token, keys, randomUUID(), now));
-    assert.throws(() => verifyLicense(demo.token, {}, deviceId, now));
-    const parts = demo.token.split(".");
-    const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString());
-    payload.tier = tier === "FAMILY_PRO" ? "CLINICAL_SLP" : "FAMILY_PRO";
-    parts[1] = Buffer.from(JSON.stringify(payload)).toString("base64url");
-    assert.throws(() => verifyLicense(parts.join("."), keys, deviceId, now));
+    const second = randomUUID();
+    assert.equal(verifyLicense(redeemPublicDemo(code, second, now).token, keys, second, now).tier, tier);
   }
 });
-test("demo issuance rejects child fields, invalid IDs, arbitrary tiers and client expiry", () => {
-  const good = { tier: "FAMILY_PRO", deviceId: randomUUID() };
-  for (const input of [{ ...good, childName: "not allowed" }, { ...good, deviceId: "invalid" },
-    { ...good, tier: "ADMIN" }, { ...good, expiresAt: Date.now() + 9999999999 }]) {
-    assert.throws(() => issuePublicDemo(input));
+test("generated short codes need no device ID and forged plan codes cannot redeem", () => {
+  for (const tier of ["FAMILY_PRO", "CLINICAL_SLP"]) {
+    const { code, deepLink } = issuePublicDemo({ tier });
+    assert.equal(code.length, 19);
+    assert.equal(new URL(deepLink).searchParams.get("code"), code);
+    const changed = code.replace(tier === "FAMILY_PRO" ? "-F-" : "-C-", tier === "FAMILY_PRO" ? "-C-" : "-F-");
+    assert.throws(() => redeemPublicDemo(changed, randomUUID()));
   }
+  for (const input of [{ tier: "FAMILY_PRO", childName: "not allowed" }, { tier: "ADMIN" }, { tier: "FAMILY_PRO", expiresAt: 9999999999999 }]) assert.throws(() => issuePublicDemo(input));
+  assert.throws(() => redeemPublicDemo(publicDemoCodes()[0].code, "invalid"));
 });
-test("explicit enablement is required for public demo codes", () => {
-  const prior = process.env.VOXA_PUBLIC_DEMO;
+test("QR landing page forwards short codes and old paired tokens and rejects ambiguous links", () => {
+  const code = publicDemoCodes()[0].code;
+  assert.equal(activationDeepLink({ code }), `voxa://activate?code=${code}`);
+  assert.equal(activationDeepLink({ token: "abc.def.ghi" }), "voxa://activate?token=abc.def.ghi");
+  assert.equal(activationDeepLink({ code, token: "abc.def.ghi" }), null);
+  assert.equal(activationDeepLink({ code: [code, code] }), null);
+  assert.equal(activationDeepLink({ code: "javascript:alert(1)" }), null);
+});
+test("public code generation and redemption require explicit demo enablement", () => {
   process.env.VOXA_PUBLIC_DEMO = "false";
-  try { assert.throws(() => issuePublicDemo({ tier: "FAMILY_PRO", deviceId: randomUUID() }), /not enabled/); }
-  finally { process.env.VOXA_PUBLIC_DEMO = prior; }
+  try { assert.throws(() => issuePublicDemo({ tier: "FAMILY_PRO" }), /not enabled/); }
+  finally { process.env.VOXA_PUBLIC_DEMO = "true"; }
 });

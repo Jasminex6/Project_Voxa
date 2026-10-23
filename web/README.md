@@ -10,13 +10,17 @@ Deployments are manual from this `web` folder with `vercel deploy --prod`. `.ver
 
 ## Hosted plan activation demo
 
-1. Install the updated demo APK. In Voxa, open Sidebar → Profile → My plan → Activate a code and copy its installation ID.
-2. Visit `/en/plan-demo` or `/ar/plan-demo`. Choose Family Pro or Clinical SLP, paste that ID, and generate the signed activation code and QR.
-3. Scan the QR **inside Voxa**, paste its activation code, or tap “Open in Voxa” on the paired phone. Confirm with the caregiver PIN. The selected tier unlocks on that installation, with seven demo days plus the normal seven-day offline grace period. A different installation rejects the token.
+1. Open `/en/plan-demo` or `/ar/plan-demo`, choose Family Pro or Clinical SLP, and generate a short code and QR. No device ID is requested.
+2. In the updated demo APK, open My plan → Activate a code and scan the QR, or type its short `VOXA-F-...` / `VOXA-C-...` code.
+3. Confirm the caregiver PIN. The app connects once to redeem the code, automatically supplies its installation ID, and receives a signed, device-bound license. Verification and cached access then work offline for seven days plus the normal seven-day grace period.
 
-This flow is explicitly a no-charge hackathon demonstration. It does not simulate a verified purchase or create a customer account. It grants one installation per generated token, independent of the commercial multi-device allowance. It stores no customer/child records on the server and needs no database. Codes are signed server-side, then verified and cached locally by the app. The public demo endpoint is separate from paid checkout and disabled unless `VOXA_PUBLIC_DEMO`, `VOXA_PUBLIC_DEMO_KEY_ID`, and `VOXA_PUBLIC_DEMO_PRIVATE_KEY` are configured. Its separate key is trusted only by debug APKs; release builds do not accept it.
+The demo has 100 stable reusable codes, 50 per plan. The same code can be used on multiple test phones. Download all codes as CSV from the activation page. They are intentionally public hackathon codes, not purchased seats or single-use paid exchange codes. Changing the plan letter or checksum causes redemption to fail. The existing paid flow remains separate and enforces its own ownership/seat limits.
 
-To initialize a new hosted demo, run `node scripts/setup-hosted-demo.mjs --configure-vercel` after Vercel sign-in. It preserves the ignored private key in `../.local/hosted-demo-private.pem`, sends secrets through CLI stdin, configures the production origin, and exports only the public verification key to `config/`. Never commit or upload the private file. `npx tsx scripts/hosted-demo-fixture.ts` regenerates the public synthetic interoperability fixture.
+QRs contain a short HTTPS activation URL rather than a dense signed token. Voxa scans that URL directly; regular phone cameras can open the activation page and its “Open Voxa” link. The landing page also supports earlier device-bound token links. Pixel-decoding tests cover 240, 360, and 640px. A focused Android test decodes actual QR fixtures with an independent decoder on the Samsung, redeems their codes on the hosted site, and verifies both tiers without changing the family's data, PIN, or license.
+
+A separate signer is trusted only by debug APKs; release builds do not accept demo licenses. `VOXA_PUBLIC_DEMO`, `VOXA_PUBLIC_DEMO_KEY_ID`, and `VOXA_PUBLIC_DEMO_PRIVATE_KEY` enable the endpoint. The code pool is derived server-side from this key, so it persists across deploys without a database; rotating the key changes the pool. No payment, customer account, or child records are stored by this demonstration.
+
+Run `node scripts/setup-hosted-demo.mjs --configure-vercel` after Vercel sign-in to preserve/configure the ignored private key and export only its public verification key. Never commit or upload the private file. `npx tsx scripts/hosted-demo-fixture.ts` regenerates public synthetic interoperability and QR image fixtures.
 
 Build the connected-phone demo with:
 
@@ -25,7 +29,7 @@ cd ../Voxa
 .\gradlew.bat :app:assembleDebug -PVOXA_WEB_URL=https://voxa-web-pi.vercel.app
 ```
 
-The center report is interactive sample data, not a live center dashboard. Actual progress summaries remain caregiver-generated and deliberately shared. Automatic weekly delivery, center membership, appointments, and billing are outside this preview.
+The center report is interactive sample data, not a live center dashboard. Actual summaries remain caregiver-generated and deliberately shared. Automatic weekly delivery, appointments, and billing are outside this preview.
 
 ## Run the local demo
 

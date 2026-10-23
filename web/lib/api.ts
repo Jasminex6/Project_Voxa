@@ -30,7 +30,7 @@ import {
 import { demoMode, transaction, type Order } from "./store";
 import { reportSchema } from "./report";
 import { notifyPaidOrder } from "./email";
-import { issuePublicDemo, publicDemoEnabled } from "./public-demo";
+import { issuePublicDemo, publicDemoCodes, publicDemoCodePattern, publicDemoEnabled, redeemPublicDemo } from "./public-demo";
 
 const checkoutSchema = z
   .object({
@@ -51,7 +51,7 @@ const checkoutSchema = z
   });
 const uuid = z.string().uuid();
 const activateSchema = z
-  .object({ code: z.string().regex(/^[A-Za-z0-9_-]{32,128}$/), deviceId: uuid })
+  .object({ code: z.string().refine(code => /^[A-Za-z0-9_-]{32,128}$/.test(code) || publicDemoCodePattern.test(code)), deviceId: uuid })
   .strict();
 
 export async function handleApi(
@@ -76,19 +76,21 @@ export async function handleApi(
           !!process.env.PAYMOB_SECRET_KEY && !!process.env.PAYMOB_HMAC_SECRET,
         authConfigured: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
       });
+    if (route === "demo/codes" && request.method === "GET") return response({ codes: publicDemoCodes() });
     if (route === "demo/activate" && request.method === "POST") {
       checkOrigin(request);
       rateLimit("public-demo:" + (request.headers.get("x-forwarded-for")?.split(",")[0] ?? "local"), 15);
       return response(issuePublicDemo(await jsonBody(request)));
     }
     if (route === "license/activate" && request.method === "POST") {
-      if (demoMode()) assertLocalDemo(request);
       rateLimit(
         "activate:" +
           (request.headers.get("x-forwarded-for")?.split(",")[0] ?? "local"),
         20,
       );
       const input = activateSchema.parse(await jsonBody(request));
+      if (publicDemoCodePattern.test(input.code)) return response(redeemPublicDemo(input.code, input.deviceId));
+      if (demoMode()) assertLocalDemo(request);
       return response(
         await transaction((store) =>
           redeemExchange(store, input.code, input.deviceId),

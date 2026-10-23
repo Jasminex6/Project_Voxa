@@ -1,64 +1,63 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import QRCode from "qrcode";
-import { Check, Copy, KeyRound, QrCode, ShieldCheck, Smartphone } from "lucide-react";
+import { renderDemoQr } from "@/lib/demo-qr";
+import { Check, Copy, Download, KeyRound, Maximize2, QrCode, ShieldCheck, Smartphone } from "lucide-react";
 import { api } from "@/lib/browser";
 import type { PaidTier } from "@/lib/catalog";
 import type { Lang } from "./Shell";
 
+type DemoCode = { code: string; deepLink: string; tier: PaidTier };
 export function ActivationDemo({ lang }: { lang: Lang }) {
   const ar = lang === "ar";
   const params = useSearchParams();
   const [tier, setTier] = useState<PaidTier>(params.get("tier") === "CLINICAL_SLP" ? "CLINICAL_SLP" : "FAMILY_PRO");
-  const [deviceId, setDeviceId] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  const [copied, setCopied] = useState(false);
-  const [result, setResult] = useState<{ token: string; deepLink: string; tier: PaidTier; expiresAt: number; qr: string } | null>(null);
+  const [busy, setBusy] = useState(false), [error, setError] = useState(""), [copied, setCopied] = useState(false);
+  const [result, setResult] = useState<(DemoCode & { qr: string }) | null>(null);
+  const largeQr = useRef<HTMLDialogElement>(null);
   async function generate(event: React.FormEvent) {
     event.preventDefault(); setError(""); setBusy(true); setResult(null); setCopied(false);
     try {
-      const response = await api<{ token: string; deepLink: string; tier: PaidTier; expiresAt: number }>("demo/activate", { tier, deviceId: deviceId.trim().toLowerCase() });
-      const qr = await QRCode.toDataURL(response.deepLink, { width: 560, margin: 3, errorCorrectionLevel: "M", color: { dark: "#09111f", light: "#ffffff" } });
+      const response = await api<DemoCode>("demo/activate", { tier });
+      const qr = await renderDemoQr(window.location.origin, response.code);
       setResult({ ...response, qr });
     } catch (e) { setError((e as Error).message); }
     finally { setBusy(false); }
   }
+  async function downloadPool() {
+    try {
+      const { codes } = await api<{ codes: DemoCode[] }>("demo/codes");
+      const file = new Blob(["plan,code\n" + codes.map(row => `${row.tier},${row.code}`).join("\n")], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(file), a = document.createElement("a");
+      a.href = url; a.download = "voxa-100-demo-codes.csv"; a.click(); URL.revokeObjectURL(url);
+    } catch (e) { setError((e as Error).message); }
+  }
   return <section className="section activation-page">
-    <div className="page-intro">
-      <div className="eyebrow"><KeyRound size={16} /> {ar ? "من الموقع إلى تطبيقك" : "FROM THE WEBSITE TO YOUR APP"}</div>
-      <h1>{ar ? "اختر خطتك. فعّلها." : <>Your plan.<br /><em>Ready on your phone.</em></>}</h1>
-      <p>{ar ? "جرّب مزايا الخطة في تطبيق فوكسا برمز تفعيل حقيقي، دون بطاقة أو دفع." : "Try a Voxa plan with a real app activation code. No card, no charge, no account needed."}</p>
-    </div>
-    <div className="activation-layout">
-      <div className="activation-steps">
-        {[
-          [ar ? "افتح خطتي في التطبيق" : "Open My plan in Voxa", ar ? "من القائمة الجانبية ← الملف الشخصي ← تفعيل رمز. انسخ معرّف التثبيت." : "Sidebar → Profile → Activate a code. Copy your installation ID."],
-          [ar ? "أنشئ رمز خطتك" : "Generate your plan code", ar ? "الصق المعرّف واختر Family Pro أو Clinical SLP. الرمز مخصص لهذا التثبيت فقط." : "Paste the ID and choose Family Pro or Clinical SLP. Your code works only on that installation."],
-          [ar ? "امسح الرمز أو الصقه" : "Scan or paste, then confirm", ar ? "امسح QR من التطبيق أو الصق رمز التفعيل، ثم أدخل رمز ولي الأمر. تعمل المزايا دون اتصال." : "Scan the QR inside Voxa or paste the activation code, then enter your caregiver PIN. Plan verification works offline."],
-        ].map(([title, body], i) => <article key={i}><span className="step-number">0{i + 1}</span><div><h2>{title}</h2><p>{body}</p></div></article>)}
-        <div className="notice"><ShieldCheck size={18} /> {ar ? "عرض هاكاثون: ٧ أيام على جهاز واحد، مع فترة السماح دون اتصال. ليس اشتراكاً مدفوعاً. نستخدم معرّف تثبيت عشوائياً فقط؛ لا نطلب بيانات الطفل أو صوته." : "Hackathon demo: seven days on one installation, plus offline grace. This is not a paid subscription. Pairing uses a random installation ID, never child data or audio."}</div>
-      </div>
-      <div className="activation-panel">
-        <form className="form" onSubmit={generate}>
-          <div className="panel-heading"><span className="page-icon"><Smartphone /></span><div><h2>{ar ? "ربط وتفعيل" : "Pair & activate"}</h2><p>{ar ? "يتطلب إصدار العرض المحدّث من تطبيق Android." : "Use the updated Voxa Android demo build."}</p></div></div>
-          <label>{ar ? "الخطة" : "Plan"}<select value={tier} onChange={e => { setTier(e.target.value as PaidTier); setResult(null); }}><option value="FAMILY_PRO">Family Pro</option><option value="CLINICAL_SLP">Clinical SLP</option></select></label>
-          <label>{ar ? "معرّف التثبيت من التطبيق" : "Installation ID from My plan"}<input required autoComplete="off" spellCheck={false} dir="ltr" value={deviceId} onChange={e => { setDeviceId(e.target.value); setResult(null); }} placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" pattern="[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}" /></label>
-          <button className="button primary full" disabled={busy}><QrCode size={18} />{busy ? ar ? "جارٍ إنشاء الرمز…" : "Generating…" : ar ? "إنشاء رمز التفعيل وQR" : "Generate activation code & QR"}</button>
-        </form>
-        {error && <p className="error" role="alert">{error}</p>}
-        {result && <div className="activation-result" role="status">
-          <span className="badge"><Check size={14} /> {result.tier === "FAMILY_PRO" ? "Family Pro" : "Clinical SLP"} · {ar ? "جاهز للتفعيل" : "Ready to activate"}</span>
-          <img className="activation-qr" width={280} height={280} src={result.qr} alt={ar ? "رمز QR لتفعيل خطتك على الجهاز المرتبط" : "Scan this QR in Voxa to activate the paired installation"} />
-          <p>{ar ? "الدخول المدفوع التجريبي حتى " : "Demo access through "}{new Intl.DateTimeFormat(ar ? "ar-EG" : "en", { dateStyle: "medium" }).format(result.expiresAt)}</p>
-          <div className="hero-actions"><button type="button" className="button quiet" onClick={async () => { try { await navigator.clipboard.writeText(result.token); setCopied(true); } catch { setError(ar ? "حدّد الرمز أدناه وانسخه يدوياً." : "Select the code below and copy it manually."); } }}>{copied ? <Check size={16} /> : <Copy size={16} />}{copied ? ar ? "تم النسخ" : "Copied" : ar ? "نسخ رمز التفعيل" : "Copy activation code"}</button><a className="button primary" href={result.deepLink}>{ar ? "افتح في فوكسا" : "Open in Voxa"}</a></div>
-          <details><summary>{ar ? "عرض رمز التفعيل" : "Show activation code"}</summary><textarea readOnly value={result.token} dir="ltr" aria-label={ar ? "رمز التفعيل" : "Activation code"} /></details>
-          <p className="subtle">{ar ? "إذا ظهر «مفتاح غير موثوق»، حدّث إصدار العرض من التطبيق أولاً." : "If the app reports an untrusted key, install the updated demo APK first."}</p>
-        </div>}
-      </div>
-    </div>
-    <div className="hero-actions"><Link className="text-link" href={`/${lang}/pricing`}>{ar ? "مقارنة الخطط" : "Compare plan benefits"}</Link><Link className="text-link" href={`/${lang}/clinical`}>{ar ? "اكتشف استخدام المراكز" : "Explore Voxa for centers"}</Link></div>
+    <div className="page-intro"><div className="eyebrow"><KeyRound size={16} />{ar ? "رمز واحد. وخطتك جاهزة." : "ONE CODE. YOUR PLAN IS READY."}</div>
+      <h1>{ar ? "اختر. امسح. فعّل." : <>Choose. Scan.<br /><em>Start using Voxa.</em></>}</h1>
+      <p>{ar ? "اختر الخطة وأنشئ رمزاً قصيراً. امسح QR داخل التطبيق أو اكتب الرمز، دون معرّفات أجهزة أو حسابات أو بطاقات دفع." : "Choose a plan and generate a short code. Scan its QR in Voxa or type the code. No device IDs, accounts, or payment cards."}</p></div>
+    <div className="activation-layout"><div className="activation-steps">
+      {[
+        [ar ? "اختر الخطة" : "Choose your plan", ar ? "Family Pro للأسرة أو Clinical SLP لتجربة أدوات المركز." : "Family Pro for family use, or Clinical SLP to try the clinic tools."],
+        [ar ? "امسح أو اكتب" : "Scan or type", ar ? "افتح خطتي ← تفعيل رمز. امسح QR أو اكتب رمز VOXA الظاهر بجواره." : "In My plan → Activate a code, scan the QR or enter the VOXA code shown beside it."],
+        [ar ? "أكّد وابدأ" : "Confirm and start", ar ? "أدخل رمز ولي الأمر. يتصل التطبيق مرة واحدة للتفعيل، ثم تعمل مزايا الخطة دون اتصال." : "Confirm your caregiver PIN. The app connects once to activate, then verifies plan access offline."],
+      ].map(([title, body], i) => <article key={i}><span className="step-number">0{i + 1}</span><div><h2>{title}</h2><p>{body}</p></div></article>)}
+      <div className="notice"><ShieldCheck size={18} />{ar ? "عرض هاكاثون مجاني: ١٠٠ رمز قابل لإعادة الاستخدام على أجهزة الاختبار؛ ٥٠ لكل خطة. كل تفعيل يمنح ٧ أيام مع فترة السماح دون اتصال. لا نطلب بيانات الطفل أو تسجيلاته." : "Free hackathon demo: 100 reusable codes, 50 per plan, for your test devices. Each activation grants seven days plus offline grace. No child information or recordings are requested."}</div>
+      <button className="button quiet" type="button" onClick={downloadPool}><Download size={16} />{ar ? "تنزيل رموز العرض الـ١٠٠" : "Download all 100 demo codes"}</button>
+    </div><div className="activation-panel"><form className="form" onSubmit={generate}>
+      <div className="panel-heading"><span className="page-icon"><Smartphone /></span><div><h2>{ar ? "رمز تفعيل خطتك" : "Your plan activation"}</h2><p>{ar ? "استخدم إصدار العرض المحدّث من تطبيق فوكسا." : "Use the updated Voxa demo APK."}</p></div></div>
+      <label>{ar ? "الخطة" : "Plan"}<select value={tier} onChange={e => { setTier(e.target.value as PaidTier); setResult(null); }}><option value="FAMILY_PRO">Family Pro</option><option value="CLINICAL_SLP">Clinical SLP</option></select></label>
+      <button className="button primary full" disabled={busy}><QrCode size={18} />{busy ? ar ? "جارٍ إنشاء الرمز…" : "Generating…" : ar ? "إنشاء رمز التفعيل وQR" : "Generate activation code & QR"}</button>
+    </form>{error && <p className="error" role="alert">{error}</p>}
+    {result && <div className="activation-result" role="status"><span className="badge"><Check size={14} />{result.tier === "FAMILY_PRO" ? "Family Pro" : "Clinical SLP"} · {ar ? "جاهز للتفعيل" : "Ready to activate"}</span>
+      <code className="short-activation-code" dir="ltr">{result.code}</code>
+      <img className="activation-qr" width={360} height={360} src={result.qr} alt={ar ? "رمز QR لتفعيل الخطة" : "Voxa plan activation QR"} />
+      <button className="text-link" type="button" onClick={() => largeQr.current?.showModal()}><Maximize2 size={15} />{ar ? "تكبير QR" : "Enlarge QR"}</button>
+      <div className="hero-actions"><button type="button" className="button quiet" onClick={async () => { try { await navigator.clipboard.writeText(result.code); setCopied(true); } catch { setError(ar ? "حدّد الرمز وانسخه يدوياً." : "Select the short code and copy it manually."); } }}>{copied ? <Check size={16} /> : <Copy size={16} />}{copied ? ar ? "تم النسخ" : "Copied" : ar ? "نسخ الرمز" : "Copy code"}</button><a className="button primary" href={result.deepLink}>{ar ? "افتح في فوكسا" : "Open in Voxa"}</a></div>
+      <p className="subtle">{ar ? "يمكنك استخدام الرمز نفسه على أجهزة العرض الأخرى. لا يتم تحصيل أي مبلغ." : "The same demo code works on your other test devices. No money is charged."}</p>
+      <dialog ref={largeQr} className="qr-dialog"><button className="button quiet" onClick={() => largeQr.current?.close()}>{ar ? "إغلاق" : "Close"}</button><img src={result.qr} alt={ar ? "QR مكبّر" : "Enlarged activation QR"} /><code dir="ltr">{result.code}</code></dialog>
+    </div>}</div></div>
+    <div className="hero-actions"><Link className="text-link" href={`/${lang}/pricing`}>{ar ? "مقارنة الخطط" : "Compare plan benefits"}</Link><Link className="text-link" href={`/${lang}/clinical`}>{ar ? "استخدام المراكز" : "Explore Voxa for centers"}</Link></div>
   </section>;
 }

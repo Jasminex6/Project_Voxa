@@ -29,6 +29,8 @@ import com.example.voxa.data.license.*
 import com.example.voxa.ui.IVoxaViewModel
 import com.example.voxa.ui.theme.*
 import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
+import com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions
+import com.google.mlkit.vision.barcode.common.Barcode
 import kotlinx.coroutines.launch
 import java.text.DateFormat
 import java.util.Date
@@ -37,7 +39,6 @@ import java.util.Date
 fun SubscriptionCard(viewModel: IVoxaViewModel) {
     val license by viewModel.license.collectAsState()
     val context = LocalContext.current
-    val installationId = remember { LicenseManager.get(context).deviceId }
     var purchaseCode by remember { mutableStateOf("") }
     var expanded by remember { mutableStateOf(false) }
     val paid = license.effectiveTier != LicenseTier.FREE
@@ -106,17 +107,6 @@ fun SubscriptionCard(viewModel: IVoxaViewModel) {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     HorizontalDivider(color = accent.copy(alpha = 0.15f))
                     Text(stringResource(R.string.license_purchase_hint), color = Slate400, style = MaterialTheme.typography.bodySmall)
-                    Surface(shape = RoundedCornerShape(12.dp), color = Slate900) {
-                        Column(Modifier.fillMaxWidth().padding(12.dp)) {
-                            Text(stringResource(R.string.license_pairing_title), color = Sky400, style = MaterialTheme.typography.labelMedium)
-                            Text(installationId, color = Slate300, style = MaterialTheme.typography.bodySmall)
-                            TextButton(onClick = {
-                                (context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager)
-                                    .setPrimaryClip(android.content.ClipData.newPlainText("Voxa installation ID", installationId))
-                                android.widget.Toast.makeText(context, R.string.license_pairing_copied, android.widget.Toast.LENGTH_SHORT).show()
-                            }, contentPadding = PaddingValues(0.dp)) { Text(stringResource(R.string.license_pairing_copy)) }
-                        }
-                    }
                     OutlinedTextField(
                         value = purchaseCode,
                         onValueChange = { purchaseCode = it.take(8192) },
@@ -132,8 +122,15 @@ fun SubscriptionCard(viewModel: IVoxaViewModel) {
                         Text(stringResource(R.string.license_activate))
                     }
                     OutlinedButton(modifier = Modifier.fillMaxWidth(), onClick = {
-                        GmsBarcodeScanning.getClient(context).startScan()
-                            .addOnSuccessListener { barcode -> barcode.rawValue?.let { viewModel.requestActivation(it) } }
+                        val options = GmsBarcodeScannerOptions.Builder().setBarcodeFormats(Barcode.FORMAT_QR_CODE).enableAutoZoom().build()
+                        GmsBarcodeScanning.getClient(context, options).startScan()
+                            .addOnSuccessListener { barcode ->
+                                val value = barcode.rawValue
+                                if (value.isNullOrBlank()) android.widget.Toast.makeText(context, R.string.license_scan_error, android.widget.Toast.LENGTH_LONG).show()
+                                else runCatching { ActivationClient.parse(value) }
+                                    .onSuccess { viewModel.requestActivation(value) }
+                                    .onFailure { android.widget.Toast.makeText(context, R.string.license_scan_invalid, android.widget.Toast.LENGTH_LONG).show() }
+                            }
                             .addOnFailureListener { android.widget.Toast.makeText(context, R.string.license_scan_error, android.widget.Toast.LENGTH_LONG).show() }
                     }) { Text(stringResource(R.string.license_scan)) }
                 }
