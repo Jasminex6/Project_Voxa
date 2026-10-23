@@ -63,6 +63,8 @@ Catalog prices are defined in [`web/lib/catalog.ts`](web/lib/catalog.ts). The ho
 
 Expiry preserves existing profiles and trained sounds. Emergency tools and existing translations remain available. Paid access is verified locally through its signed expiry and grace period.
 
+Microphone modes on Home and Practice: Hold records only while pressed and stops on release or cancellation; Always On / Continuous uses a tap to start and another tap to stop. The Practice recognizer can finish a word automatically. Its microphone hint follows the selected mode.
+
 ## Reports and privacy
 
 Every report visibly includes User ID: the selected child's full anonymous profile identifier. It links successive reports without including their name; the report reference identifies the individual export.

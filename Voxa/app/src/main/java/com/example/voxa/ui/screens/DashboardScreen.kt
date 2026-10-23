@@ -6,8 +6,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -68,7 +66,8 @@ fun DashboardScreen(
     viewModel: IVoxaViewModel,
     onNavigateToProfile: () -> Unit,
     isDarkTheme: Boolean = LocalVoxaColors.current.isDark,
-    onToggleTheme: () -> Unit = {}
+    onToggleTheme: () -> Unit = {},
+    settings: android.content.SharedPreferences? = null,
 ) {
     // Observing state flows from the ViewModel. Think of these as subscribing to digital notice boards.
     // Compose automatically recomposes (re-renders) this screen whenever these values change.
@@ -126,7 +125,7 @@ fun DashboardScreen(
     var caregiverName by remember { mutableStateOf("Parent / Caregiver") }
     var caregiverPhone by remember { mutableStateOf("+1 234 567 890") }
     val context = LocalContext.current
-    val prefs = context.getSharedPreferences("voxa_settings", Context.MODE_PRIVATE)
+    val prefs = settings ?: context.getSharedPreferences("voxa_settings", Context.MODE_PRIVATE)
     var micMode by remember { mutableStateOf(prefs.getString("mic_mode", "hold") ?: "hold") }
 
     // Emergency contact data from SharedPreferences
@@ -259,24 +258,11 @@ fun DashboardScreen(
                             color = if (isListening) LocalVoxaColors.current.microphone else LocalVoxaColors.current.surfaceVariant,
                             shape = CircleShape
                         )
-                        .then(
-                            if (micMode == "hold") {
-                                Modifier.pointerInput(Unit) {
-                                    detectTapGestures(
-                                        onPress = {
-                                            if (!isListening) {
-                                                viewModel.toggleListening()
-                                            }
-                                            val released = tryAwaitRelease()
-                                            if (released && isListening) {
-                                                viewModel.toggleListening()
-                                            }
-                                        }
-                                    )
-                                }
-                            } else {
-                                Modifier.clickable { viewModel.toggleListening() }
-                            }
+                        .microphoneGesture(
+                            holdMode = micMode == "hold",
+                            onStart = { if (!viewModel.isListening.value) viewModel.toggleListening() },
+                            onStop = { if (viewModel.isListening.value) viewModel.toggleListening() },
+                            onToggle = viewModel::toggleListening,
                         ),
                     contentAlignment = Alignment.Center
                 ) {

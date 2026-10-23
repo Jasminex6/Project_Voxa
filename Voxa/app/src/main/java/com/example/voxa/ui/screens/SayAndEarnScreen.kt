@@ -21,7 +21,6 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -43,7 +42,6 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -54,6 +52,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.example.voxa.R
 import com.example.voxa.ui.IVoxaViewModel
+import com.example.voxa.ui.microphoneGesture
 import com.example.voxa.ui.theme.*
 import com.example.voxa.utils.AudioPlayer
 import com.example.voxa.utils.FuzzyMatcher
@@ -213,6 +212,7 @@ fun SayAndEarnScreen(
     var bonusAwarded by remember { mutableStateOf(false) }
     val prefs = remember { context.getSharedPreferences("voxa_settings", Context.MODE_PRIVATE) }
     var micMode by remember { mutableStateOf(prefs.getString("mic_mode", "hold") ?: "hold") }
+    var micHeld by remember { mutableStateOf(false) }
 
     // Audio Player instance for authentic pronunciation playback
     val audioPlayer = remember { AudioPlayer(context) }
@@ -555,9 +555,9 @@ fun SayAndEarnScreen(
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
-        if (isGranted) {
+        if (isGranted && (micMode != "hold" || micHeld)) {
             startListeningInternal()
-        } else {
+        } else if (!isGranted) {
             Toast.makeText(context, context.getString(R.string.say_and_earn_mic_permission), Toast.LENGTH_LONG).show()
         }
     }
@@ -1052,30 +1052,18 @@ fun SayAndEarnScreen(
                             color = if (isListening) LocalVoxaColors.current.microphone else LocalVoxaColors.current.surfaceVariant,
                             shape = CircleShape
                         )
-                        .then(
-                            if (micMode == "hold") {
-                                Modifier.pointerInput(selectedWordIndex, selectedLanguage, micMode) {
-                                    detectTapGestures(
-                                        onPress = {
-                                            val hasPermission = ContextCompat.checkSelfPermission(
-                                                context,
-                                                Manifest.permission.RECORD_AUDIO
-                                            ) == PackageManager.PERMISSION_GRANTED
-
-                                            if (!hasPermission) {
-                                                permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                                                return@detectTapGestures
-                                            }
-
-                                            startListeningInternal()
-                                            tryAwaitRelease()
-                                            stopListening()
-                                        }
-                                    )
-                                }
-                            } else {
-                                Modifier.clickable { handleMicTap() }
-                            }
+                        .microphoneGesture(
+                            holdMode = micMode == "hold",
+                            gestureKey = selectedWordIndex to selectedLanguage,
+                            onStart = {
+                                micHeld = true
+                                if (!isListening) handleMicTap()
+                            },
+                            onStop = {
+                                micHeld = false
+                                if (isListening) stopListening()
+                            },
+                            onToggle = { handleMicTap() },
                         ),
                     contentAlignment = Alignment.Center
                 ) {
@@ -1091,9 +1079,9 @@ fun SayAndEarnScreen(
             // Status text below mic
             Text(
                 text = when {
-                    isListening -> stringResource(R.string.say_and_earn_listening)
+                    isListening -> stringResource(if (micMode == "hold") R.string.dashboard_release_to_stop else R.string.say_and_earn_listening)
                     isProcessing -> stringResource(R.string.say_and_earn_processing)
-                    else -> stringResource(R.string.say_and_earn_tap_to_speak)
+                    else -> stringResource(if (micMode == "hold") R.string.dashboard_hold_mic else R.string.say_and_earn_tap_to_speak)
                 },
                 fontSize = 13.sp,
                 color = if (isListening) LocalVoxaColors.current.microphone else LocalVoxaColors.current.secondaryText,

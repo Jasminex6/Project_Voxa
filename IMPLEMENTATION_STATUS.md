@@ -44,6 +44,8 @@ The supplied `EXECUTION_PLAN.md` is preserved. This file records actual implemen
 
 ## Verified locally
 
+- Microphone mode fix: four isolated Samsung gesture checks passed for Home Hold release/repeated quick taps, Continuous tap-to-toggle, cancelled presses using fresh callbacks, and changing modes during a hold. Home and Practice share the same gesture implementation; Practice no longer latches a short Hold press. The isolated debug app/test builds passed and the updated app was installed without clearing data. Actual recognition accuracy was not re-evaluated by these fake-state gesture checks.
+
 - User ID follow-up: committed snapshot `40fc2dc` built in isolation and was installed on the Samsung without clearing data. All five focused report device checks passed, including the full ID visible in both languages and themes. The actual Android sample exports remain one page in English and Arabic, have the same checked-in fictional JSON, and were rendered and visually inspected with the full ID. Web TypeScript validation passed. Charts were left unimplemented as requested.
 
 - Latest phone validation used committed source snapshot `6a6bd82`, built in an isolated directory to exclude concurrent speech/licensing edits. Five focused checks passed: actual one-page PDF rendering with small/large data, bilingual UI in both themes and Details disclosure, durable task observations, and preservation migration. The isolated debug APK was installed as an update and the normal app reopened.

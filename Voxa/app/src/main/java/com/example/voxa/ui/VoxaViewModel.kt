@@ -343,7 +343,9 @@ class VoxaViewModel(application: Application) : AndroidViewModel(application), I
         val context = getApplication<Application>().applicationContext
         val serviceIntent = Intent(context, VoxaListenerService::class.java)
 
-        if (VoxaListenerService.isRunning) {
+        // UI state changes synchronously; service startup is asynchronous. A quick
+        // hold release must stop the requested session even before onCreate runs.
+        if (_isListening.value || VoxaListenerService.isRunning) {
             context.stopService(serviceIntent)
             _isListening.value = false
             addLogSystemEvent("Listening session manually paused")
