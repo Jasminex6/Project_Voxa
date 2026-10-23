@@ -37,7 +37,7 @@
     <string name="license_scan_invalid">This QR is not a Voxa activation code. Scan the QR beside your demo code on the Voxa website.</string>
     <string name="license_scan_error">Scanner unavailable. Paste the activation link instead.</string>
     <string name="license_scan_note">The scanner may need a one-time Google Play Services download.</string>
-    <string name="license_upgrade">View plans on the web</string>
+    <string name="license_upgrade">Upgrade on website</string>
     <string name="license_browser_error">No browser is available.</string>
     <string name="license_activation_note">Confirm as caregiver. A web code needs internet once; a paired signed token can be verified offline.</string>
     <string name="license_code">Activation link, exchange code, or signed token</string>

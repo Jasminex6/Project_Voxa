@@ -185,6 +185,7 @@ fun VoxaAppContent(
     modifier: Modifier = Modifier
 ) {
     val navStack = remember { mutableStateListOf(Screen.Dashboard) }
+    val context = LocalContext.current
     val currentScreen = navStack.last()
 
     BackHandler(enabled = navStack.size > 1) {
@@ -226,7 +227,10 @@ fun VoxaAppContent(
                     onNavigateToEnrollment = { navStack.add(Screen.Enrollment) }
                 )
                 Screen.Emergency -> EmergencyScreen(viewModel = viewModel)
-                Screen.Practice -> SpeechPracticeScreen(viewModel = viewModel, onUpgrade = { navStack.add(Screen.Profile) })
+                Screen.Practice -> SpeechPracticeScreen(viewModel = viewModel, onUpgrade = {
+                    if (BuildConfig.WEB_UPGRADE_ENABLED) com.example.voxa.utils.openUpgradeWebsite(context)
+                    else navStack.add(Screen.Profile)
+                })
                 Screen.Profile -> ProfileScreen(
                     viewModel = viewModel,
                     onBack = { if (navStack.size > 1) navStack.removeLast() }

@@ -33,7 +33,7 @@
     <string name="license_scan_invalid">هذا الرمز ليس رمز تفعيل فوكسا. امسح QR الظاهر بجوار رمز العرض على موقع فوكسا.</string>
     <string name="license_scan_error">الماسح غير متاح. الصق رابط التفعيل بدلاً منه.</string>
     <string name="license_scan_note">قد يحتاج الماسح إلى تنزيل أولي من خدمات Google Play.</string>
-    <string name="license_upgrade">عرض الخطط على الموقع</string>
+    <string name="license_upgrade">الترقية عبر الموقع</string>
     <string name="license_browser_error">لا يوجد متصفح متاح.</string>
     <string name="license_activation_note">أكد بصفتك ولي الأمر. يحتاج رمز الموقع إلى الإنترنت مرة واحدة؛ ويمكن التحقق من الرمز الموقع المقترن دون إنترنت.</string>
     <string name="license_code">رابط التفعيل أو رمز الاستبدال أو الرمز الموقع</string>

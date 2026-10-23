@@ -1,7 +1,5 @@
 package com.example.voxa.ui.screens
 
-import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.layout.*
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
@@ -104,11 +102,12 @@ fun SubscriptionCard(viewModel: IVoxaViewModel) {
                         contentDescription = stringResource(if (expanded) R.string.license_collapse else R.string.license_expand),
                         modifier = Modifier.size(18.dp))
                 }
-                if (BuildConfig.WEB_UPGRADE_ENABLED) TextButton(onClick = {
-                    val lang = if (context.resources.configuration.locales[0].language == "ar") "ar" else "en"
-                    runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("${BuildConfig.VOXA_WEB_URL}/$lang/pricing"))) }
-                        .onFailure { android.widget.Toast.makeText(context, R.string.license_browser_error, android.widget.Toast.LENGTH_SHORT).show() }
-                }) { Text(stringResource(R.string.license_compare), color = colors.secondaryText, style = MaterialTheme.typography.labelMedium) }
+            }
+            if (BuildConfig.WEB_UPGRADE_ENABLED) {
+                OutlinedButton(modifier = Modifier.fillMaxWidth(),
+                    onClick = { com.example.voxa.utils.openUpgradeWebsite(context) }) {
+                    Text(stringResource(R.string.license_upgrade))
+                }
             }
             if (license.status != LicenseStatus.FREE) {
                 TextButton(onClick = { deactivateError = false; showDeactivate = true }) {
