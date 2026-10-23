@@ -65,7 +65,7 @@ Expiry preserves existing profiles and trained sounds. Emergency tools and exist
 
 ## Reports and privacy
 
-Profile → Progress review shows 7 or 30 calendar days of practice, comparable-target changes, task follow-through, caregiver-reported help, and the review queue. PDF and JSON exports require caregiver PIN confirmation and work offline. A report distinguishes app matches, unrecognized responses, no-speech captures, and technical problems; the last two never reduce its match rate. Its review prompts identify topics for the next conversation rather than assign a clinical score.
+Profile → Progress review shows a short overview: practice days, new tasks confirmed, and up to three plain-language insights. The PDF is one page; supporting numbers are behind Details and in the full JSON export. Phone reports use the selected child's real local activity. The website preview and sample downloads are explicitly fictional. PDF and JSON sharing require caregiver PIN confirmation and work offline. No-speech and technical captures never reduce the match rate, and insufficient data never produces a made-up trend.
 
 The website's center report uses illustrative data. Actual reports can be uploaded through the configured web account flow; the public hosted activation demo does not provision customer accounts. Automatic weekly uploads, doctor access, center membership invitations, appointments, calendars, and payment-dues management are not implemented in this preview.
 
@@ -154,7 +154,7 @@ From `Voxa/`:
 .\gradlew.bat :app:testDebugUnitTest :app:assembleDebug
 ```
 
-The progress-review update passed 30 web/backend tests, 49 Android JVM tests, and 14 targeted checks on the Samsung, including actual onboarding language switching/recreation, bilingual review UI in both themes, PDF generation/pagination, preserved database upgrades, selected-profile transfer/import rollback, and live demo activation. The 13 report/theme/transfer/migration/license checks also passed on the emulator. The local HTTP smoke test covers both report versions, privacy validation, ownership and deduplication. All four pages of the bilingual sample PDFs were rendered and visually inspected. Two-phone Nearby radio transfer was not repeated. See [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md) for the scope and limits of verification.
+The short-report revision passed 33 web/backend tests, 52 Android JVM tests, and five focused Samsung checks for bilingual overview UI, one-page exports with empty/large data, durable task events, and migration preservation. Earlier integration checks also covered onboarding language switching/recreation, both themes, selected-profile transfer/import rollback, and live activation. The 13 report/theme/transfer/migration/license checks also passed on the emulator. The local HTTP smoke test covers both report versions, privacy validation, ownership and deduplication. Both one-page bilingual sample PDFs were rendered and visually inspected. Two-phone Nearby radio transfer was not repeated. See [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md) for the scope and limits of verification.
 
 Onboarding language changes apply immediately by recreating the existing activity; setup fields and the current step survive recreation. The same locale helper serves Home's language setting. Current work is isolated on `codex/progress-review-onboarding`, branched from the merged platform integration.
 
